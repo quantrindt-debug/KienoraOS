@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập Hệ thống - KienonrOS</title>
+    <title>Đăng nhập Hệ thống - KienoraOS</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 min-h-screen flex items-center justify-center p-6">
@@ -13,21 +13,25 @@
             <p class="text-sm text-slate-300 mt-2">Hệ thống Quản lý Trường học Thông minh</p>
         </div>
 
-        <form onsubmit="xuLyDangNhap(event)" class="space-y-5">
+        <!-- Đã sửa onsubmit gọi đúng hàm doLogin(event) -->
+        <form onsubmit="doLogin(event)" class="space-y-5">
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Tên đăng nhập / Tài khoản</label>
-                <input type="text" id="username" required class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Nhập tài khoản quản trị...">
+                <!-- Đã khớp id="accInput" -->
+                <input type="text" id="accInput" required class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="VD: C3NDT.GV001">
             </div>
 
             <div>
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Mật khẩu</label>
-                <input type="password" id="password" required class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••">
+                <!-- Đã khớp id="passInput" -->
+                <input type="password" id="passInput" required class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••">
             </div>
 
             <div id="thongBaoLoi" class="hidden text-xs text-rose-400 font-medium text-center bg-rose-950/50 p-2.5 rounded-lg border border-rose-800/50"></div>
 
-            <button type="submit" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/30 transition duration-200">
-                Đăng nhập Hệ thống
+            <!-- Đã bổ sung id="btnLogin" -->
+            <button type="submit" id="btnLogin" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/30 transition duration-200">
+                <span>XÁC THỰC & ĐĂNG NHẬP</span>
             </button>
         </form>
 
@@ -36,24 +40,81 @@
         </div>
     </div>
 
+    <!-- Nhúng đoạn code hàm doLogin(event) vào đây hoặc file js riêng -->
     <script>
-        function xuLyDangNhap(event) {
-            event.preventDefault();
-            const user = document.getElementById('username').value.trim();
-            const pass = document.getElementById('password').value.trim();
-            const thongBao = document.getElementById('thongBaoLoi');
+        const API_URL = "https://script.google.com/macros/s/AKfycbxw9_IwDZqka0NzwFKX9KihjvTP2-EEBsNGzxVBrPn4vQJMXMfwFQtsQTsliPA0xaRa/exec";
 
-            // Thầy có thể thay đổi tài khoản mật khẩu mặc định tại đây hoặc kết nối API xác thực GV
-            if (user === "C3NDT.GV001" && pass === "123") {
-                // Đánh dấu phiên làm việc đã đăng nhập hợp lệ
-                sessionStorage.setItem("kienora_auth", "authenticated_true");
-                
-                // Chuyển hướng sang trang tổng quan/dashboard hoặc trang hồ sơ học sinh
-                window.location.href = "KienoraOS.html";
-            } else {
-                thongBao.classList.remove('hidden');
-                thongBao.innerText = "Tên đăng nhập hoặc mật khẩu không chính xác!";
+        function doLogin(event) {
+            if (event) event.preventDefault();
+
+            const rawAcc = document.getElementById('accInput').value.trim();
+            const pass = document.getElementById('passInput').value.trim();
+            const btn = document.getElementById('btnLogin');
+
+            if (!rawAcc || !pass) {
+                showMsg("❌ Vui lòng nhập đầy đủ Mã Tài Khoản và Mật Khẩu!", "error");
+                return;
             }
+
+            const dotIndex = rawAcc.indexOf('.');
+            if (dotIndex === -1) {
+                showMsg("❌ Mẫu tài khoản chưa đúng! Phải có dấu chấm (VD: C3NDT.GV001)", "error");
+                return;
+            }
+
+            const extractedMaTruong = rawAcc.substring(0, dotIndex).toUpperCase();
+            const extractedMaNS = rawAcc.substring(dotIndex + 1);
+
+            btn.disabled = true;
+            btn.innerHTML = '<span>Đang xác thực...</span>';
+
+            const requestUrl = `${API_URL}?action=login&account=${encodeURIComponent(rawAcc)}&password=${encodeURIComponent(pass)}&maTruong=${encodeURIComponent(extractedMaTruong)}`;
+
+            fetch(requestUrl)
+                .then(response => response.json())
+                .then(res => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>XÁC THỰC & ĐĂNG NHẬP</span>';
+
+                    if (res.status === 'success') {
+                        const sessionData = {
+                            maTruong: extractedMaTruong,
+                            maNhanSu: extractedMaNS,
+                            token: res.token || (extractedMaTruong + "_" + new Date().getTime()),
+                            ...res.user
+                        };
+
+                        localStorage.setItem('kienona_session', JSON.stringify(sessionData));
+                        localStorage.setItem('kienona_school', JSON.stringify(res.school || { maTruong: extractedMaTruong }));
+
+                        showMsg("✅ Đăng nhập thành công! Đang chuyển hướng...", "success");
+
+                        setTimeout(() => {
+                            window.location.href = "KienoraOS.html";
+                        }, 500);
+
+                    } else {
+                        showMsg("❌ " + (res.message || "Tài khoản hoặc mật khẩu không chính xác!"), "error");
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>XÁC THỰC & ĐĂNG NHẬP</span>';
+                    showMsg("⚠️ Lỗi kết nối Máy chủ API: " + err.message, "error");
+                });
+        }
+
+        function showMsg(message, type) {
+            let thongBao = document.getElementById('thongBaoLoi');
+            if (!thongBao) return;
+            thongBao.classList.remove('hidden', 'text-rose-400', 'text-emerald-400');
+            
+            if (type === 'error') {
+                thongBao.classList.add('text-rose-400');
+            } else {
+                thongBao.classList.add('text-emerald-400');
+            }
+            thongBao.innerText = message;
         }
     </script>
 </body>
