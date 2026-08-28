@@ -274,7 +274,7 @@
       
       if (!savedSession) {
         alert("⚠️ Bạn chưa đăng nhập hoặc truy cập trực tiếp trái phép! Hệ thống sẽ chuyển về trang đăng nhập.");
-        window.location.href = 'KienoraOS/login.html'; // Thay 'login.html' bằng tên file trang đăng nhập thực tế của thầy
+        window.location.href = '/KienoraOS/login.html'; // Thay 'login.html' bằng tên file trang đăng nhập thực tế của thầy
         return;
       }
 
@@ -298,7 +298,7 @@
       } catch (e) {
         localStorage.removeItem('kienona_session');
         alert("⚠️ Phiên làm việc đã hết hạn hoặc bị lỗi! Vui lòng đăng nhập lại.");
-        window.location.href = 'KienoraOS/login.html';
+        window.location.href = '/KienoraOS/login.html';
       }
     }
 
