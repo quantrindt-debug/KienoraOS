@@ -119,8 +119,9 @@
   <div id="desktop-windows-container"></div>
 
 
-  <!-- ================= 3. START MENU ================= -->
+  <!-- ================= 4. START MENU (HOVER FLYOUT MENU) ================= -->
   <div id="startMenu" class="hidden absolute bottom-12 left-2 w-80 md:w-96 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 z-[9000] transition-all duration-200">
+    <!-- USER HEADER -->
     <div class="bg-gradient-to-r from-sky-700 to-blue-900 p-4 text-white flex items-center gap-3 rounded-t-2xl">
       <div class="w-12 h-12 bg-white/10 border border-white/20 text-amber-300 rounded-2xl flex items-center justify-center font-bold text-xl shadow-inner backdrop-blur-sm">
         <i class="fa-solid fa-user-tie"></i>
@@ -135,9 +136,10 @@
       </div>
     </div>
 
-    <div class="p-2 max-h-80 overflow-y-auto custom-scrollbar space-y-1">
+    <!-- DANH SÁCH NHÓM MENU CHA -->
+    <div class="p-2 max-h-80 overflow-y-visible custom-scrollbar space-y-1">
       
-      <!-- NHÓM 1: TUYỂN SINH -->
+      <!-- NHÓM 1: QUẢN LÝ TUYỂN SINH -->
       <div class="relative group">
         <div class="flex items-center justify-between px-3 py-2.5 hover:bg-sky-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
           <div class="flex items-center gap-2.5">
@@ -149,6 +151,7 @@
           <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:translate-x-0.5 transition-transform"></i>
         </div>
 
+        <!-- MENU CON (HIỂN THỊ KHI HOVER) -->
         <div class="hidden group-hover:block absolute left-full top-0 ml-1 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 p-1.5 space-y-1 z-[9010]">
           <button onclick="launchApp('tuyensinh10')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
             <i class="fa-solid fa-user-plus text-rose-500 w-4 text-center"></i>
@@ -177,8 +180,9 @@
           <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:translate-x-0.5 transition-transform"></i>
         </div>
 
+        <!-- MENU CON (HIỂN THỊ KHI HOVER) -->
         <div class="hidden group-hover:block absolute left-full top-0 ml-1 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 p-1.5 space-y-1 z-[9010]">
-          <button onclick="launchApp('hosohocsinh')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+          <button onclick="launchApp('HoSoHocSinh')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
             <i class="fa-solid fa-folder-open text-violet-500 w-4 text-center"></i>
             <span>Quản lý Hồ sơ học sinh</span>
           </button>
@@ -197,7 +201,7 @@
         </div>
       </div>
 
-      <!-- NHÓM 3: CÔNG VIỆC -->
+      <!-- NHÓM 3: HỒ SƠ QUẢN LÝ CÔNG VIỆC -->
       <div class="relative group">
         <div class="flex items-center justify-between px-3 py-2.5 hover:bg-emerald-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
           <div class="flex items-center gap-2.5">
@@ -209,6 +213,7 @@
           <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:translate-x-0.5 transition-transform"></i>
         </div>
 
+        <!-- MENU CON (HIỂN THỊ KHI HOVER) -->
         <div class="hidden group-hover:block absolute left-full top-0 ml-1 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 p-1.5 space-y-1 z-[9010]">
           <button onclick="openDbLink()" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
             <i class="fa-solid fa-database text-emerald-600 w-4 text-center"></i>
@@ -218,18 +223,26 @@
             <i class="fa-solid fa-calendar-check text-blue-500 w-4 text-center"></i>
             <span>Giao nhiệm vụ phát sinh</span>
           </button>
+          <button onclick="launchApp('KeHoachNamHoc')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+            <i class="fa-solid fa-file-contract text-teal-500 w-4 text-center"></i>
+            <span>Kế hoạch năm học</span>
+          </button>
+          <button onclick="launchApp('BaoCaoKeHoachGiao')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+            <i class="fa-solid fa-file-contract text-teal-500 w-4 text-center"></i>
+            <span>Báo cáo kế hoạch giao & Kết quả</span>
+          </button>
         </div>
       </div>
 
     </div>
 
+    <!-- BUTTON ĐĂNG XUẤT -->
     <div class="p-2 bg-slate-50 border-t border-slate-200 rounded-b-2xl">
       <button onclick="logout()" class="w-full flex items-center justify-center gap-2 p-2 hover:bg-rose-100 text-rose-600 rounded-xl transition font-semibold text-xs">
         <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất hệ thống
       </button>
     </div>
   </div>
-
 
   <!-- ================= 4. TASKBAR ================= -->
   <div class="absolute bottom-0 left-0 w-full h-11 bg-slate-900/80 backdrop-blur-md border-t border-slate-700/50 flex items-center justify-between px-3 z-[9000]">
@@ -264,39 +277,44 @@
       'CKDBCLGD': { title: 'Hệ thống CKĐBCLGD', icon: 'fa-solid fa-shield-halved text-violet-400' }
     };
 
-    let currentSession = { maTruong: '', maNhanSu: '', token: '', user: null, school: null };
+    let currentSession = { maTruong: '', maNhanSu: '', user: null, school: null };
     let activeZIndex = 100;
     let openWindowsCount = 0;
 
     // --- KIỂM TRA BẢO MẬT & NHẬN PHIÊN LÀM VIỆC KHI MỞ TRANG ---
     function checkSessionAndInit() {
       const savedSession = localStorage.getItem('kienona_session');
+      const savedSchool = localStorage.getItem('kienona_school');
       
-      if (!savedSession) {
+      if (!savedSession || !savedSchool) {
         alert("⚠️ Bạn chưa đăng nhập hoặc truy cập trực tiếp trái phép! Hệ thống sẽ chuyển về trang đăng nhập.");
-        window.location.href = 'login.html'; // Thay 'login.html' bằng tên file trang đăng nhập thực tế của thầy
+        window.location.href = 'login.html'; 
         return;
       }
 
       try {
-        const sessionData = JSON.parse(savedSession);
-        if (!sessionData.token || !sessionData.maTruong) {
-          throw new Error("Phiên không hợp lệ");
-        }
+        const userData = JSON.parse(savedSession);
+        const schoolData = JSON.parse(savedSchool);
         
-        // Gán dữ liệu phiên làm việc
-        currentSession = sessionData;
+        // Gán dữ liệu phiên làm việc từ cấu trúc localStorage chuẩn
+        currentSession = {
+          maTruong: schoolData.maTruong || '',
+          maNhanSu: userData.maNhanSu || '',
+          user: userData,
+          school: schoolData
+        };
 
         // Hiển thị thông tin lên Start Menu và Taskbar
-        const extractedMaNS = sessionData.maNhanSu || '';
-        document.getElementById('userFullName').innerText = (sessionData.user.fullName || 'Cán bộ') + (extractedMaNS ? " (" + extractedMaNS + ")" : "");
-        document.getElementById('userSchoolName').innerText = sessionData.school.tenTruong || ('Trường: ' + sessionData.maTruong);
-        document.getElementById('userSchoolCode').innerText = "MÃ: " + sessionData.maTruong;
-        document.getElementById('userRole').innerText = sessionData.user.vaiTro || 'Giáo viên';
-        document.getElementById('taskbarUser').innerText = sessionData.user.fullName || sessionData.maTruong;
+        const extractedMaNS = userData.maNhanSu || '';
+        document.getElementById('userFullName').innerText = (userData.fullName || 'Cán bộ') + (extractedMaNS ? " (" + extractedMaNS + ")" : "");
+        document.getElementById('userSchoolName').innerText = schoolData.tenTruong || ('Trường: ' + schoolData.maTruong);
+        document.getElementById('userSchoolCode').innerText = "MÃ: " + schoolData.maTruong;
+        document.getElementById('userRole').innerText = userData.vaiTro || 'Giáo viên';
+        document.getElementById('taskbarUser').innerText = userData.fullName || schoolData.maTruong;
 
       } catch (e) {
         localStorage.removeItem('kienona_session');
+        localStorage.removeItem('kienona_school');
         alert("⚠️ Phiên làm việc đã hết hạn hoặc bị lỗi! Vui lòng đăng nhập lại.");
         window.location.href = 'login.html';
       }
@@ -306,7 +324,7 @@
     checkSessionAndInit();
 
     function launchApp(appId) {
-      if (!currentSession.maTruong || !currentSession.token) {
+      if (!currentSession.maTruong) {
         alert("Vui lòng đăng nhập hệ thống trước!");
         return;
       }
@@ -366,7 +384,8 @@
       container.appendChild(winDiv);
       addTaskbarItem(appId, appMeta);
 
-      const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maTruong + "." + currentSession.maNhanSu)}&sessionToken=${encodeURIComponent(currentSession.token)}&maTruong=${encodeURIComponent(currentSession.maTruong)}&appId=${encodeURIComponent(appId)}`;
+      // Cập nhật lại request gọi sang Apps Script phù hợp với hàm handleGetAppUrl
+      const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maNhanSu)}&sessionToken=active&maTruong=${encodeURIComponent(currentSession.maTruong)}&appId=${encodeURIComponent(appId)}`;
 
       fetch(requestUrl)
         .then(res => res.json())
@@ -486,12 +505,10 @@
     }
 
     function logout() {
-      // Xóa thông tin phiên trong localStorage để chặn truy cập lần sau
       localStorage.removeItem('kienona_session');
-      currentSession = { maTruong: '', maNhanSu: '', token: '', user: null, school: null };
-      
-      // Chuyển hướng người dùng về trang đăng nhập
-      window.location.href = '/KienoraOS/login.html'; // Thay 'login.html' bằng tên file trang đăng nhập của thầy
+      localStorage.removeItem('kienona_school');
+      currentSession = { maTruong: '', maNhanSu: '', user: null, school: null };
+      window.location.href = 'login.html'; 
     }
 
     function toggleStartMenu(event) {
