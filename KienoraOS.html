@@ -182,7 +182,7 @@
 
         <!-- MENU CON (HIỂN THỊ KHI HOVER) -->
         <div class="hidden group-hover:block absolute left-full top-0 ml-1 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 p-1.5 space-y-1 z-[9010]">
-          <button onclick="launchApp('HoSoHocSinh')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+          <button onclick="launchApp('quanlyhoso')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
             <i class="fa-solid fa-folder-open text-violet-500 w-4 text-center"></i>
             <span>Quản lý Hồ sơ học sinh</span>
           </button>
@@ -387,7 +387,7 @@
   // ==========================================
   // CƠ CHẾ 1: KIỂM TRA FILE CỤC BỘ CÙNG THƯ MỤC
   // ==========================================
-  const localPageFiles = ['tuyensinh10', 'quantridaucap', 'xeplop', 'hosohocsinh', 'tracuunv', 'KeHoachChamCong', 'SoChuNhiem', 'QuanLyThiDuaLop', 'CKDBCLGD'];
+  const localPageFiles = ['tuyensinh10', 'quantridaucap', 'xeplop', 'quanlyhoso', 'tracuunv', 'KeHoachChamCong', 'SoChuNhiem', 'QuanLyThiDuaLop', 'CKDBCLGD'];
   
   if (localPageFiles.includes(appId)) {
       document.getElementById(`title-${appId}`).innerText = `${appMeta.title} - [${currentSession.school ? currentSession.school.tenTruong : currentSession.maTruong}]`;
