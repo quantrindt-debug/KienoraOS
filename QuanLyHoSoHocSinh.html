@@ -143,6 +143,8 @@
         }
 
         function khoiTaoDuLieu() {
+             taiDanhSachLop();
+    kiemTraVaiTroNguoiDung();
             taiCauHinh();
           // Đảm bảo URL gọi đúng action=layDanhSachLop và kèm đủ mã trường, mã nhân sự
 fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
@@ -179,7 +181,32 @@ fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSes
                 })
                 .catch(err => console.log("Lỗi tải cấu hình:", err));
         }
-
+    function kiemTraVaiTroNguoiDung() {
+    fetch(`${API_URL}?action=checkRole&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
+        .then(response => response.json())
+        .then(res => {
+            if (res.status === "success") {
+                let vaiTro = res.vaiTro; // Ví dụ: "Admin", "Quản lý", "Giáo viên"...
+                
+                // Cập nhật hiển thị text vai trò lên giao diện nếu cần
+                let spanVaiTro = document.getElementById('hienThiVaiTro');
+                if (spanVaiTro) spanVaiTro.innerText = vaiTro;
+                
+                // Xử lý ẩn/hiện nút cấu hình (Giả sử id của nút cấu hình là 'btnCauHinh')
+                let btnCauHinh = document.getElementById('btnCauHinh');
+                if (btnCauHinh) {
+                    if (vaiTro.toLowerCase() === "admin" || vaiTro.toLowerCase() === "quản trị") {
+                        btnCauHinh.style.display = "inline-block"; // Hoặc "block"
+                    } else {
+                        btnCauHinh.style.display = "none";
+                    }
+                }
+            } else {
+                console.error("Không lấy được vai trò:", res.message);
+            }
+        })
+        .catch(err => console.error("Lỗi kết nối kiểm tra vai trò:", err));
+}
         function moModalAdmin() {
             document.getElementById('configBatBuoc').value = cauHinhCot.batBuoc.join(', ');
             document.getElementById('configNeuCo').value = cauHinhCot.neuCo.join(', ');
