@@ -94,12 +94,12 @@
       </span>
     </div>
 
-    <div onclick="launchApp('hosohocsinh')" class="flex flex-col items-center group cursor-pointer w-20">
+    <div onclick="launchApp('QuanLyHoSoHocSinh')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-violet-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
         <i class="fa-solid fa-folder-open"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
-        Hồ sơ học sinh
+        Quản Lý Hồ Sơ Học Sinh
       </span>
     </div>
 
@@ -387,7 +387,7 @@
   // ==========================================
   // CƠ CHẾ 1: KIỂM TRA FILE CỤC BỘ CÙNG THƯ MỤC
   // ==========================================
-  const localPageFiles = ['tuyensinh10', 'quantridaucap', 'xeplop', 'quanlyhoso', 'tracuunv', 'KeHoachChamCong', 'SoChuNhiem', 'QuanLyThiDuaLop', 'CKDBCLGD'];
+  const localPageFiles = ['tuyensinh10', 'quantridaucap', 'xeplop', 'QuanLyHoSoHocSinh', 'tracuunv', 'KeHoachChamCong', 'SoChuNhiem', 'QuanLyThiDuaLop', 'CKDBCLGD'];
   
   if (localPageFiles.includes(appId)) {
       document.getElementById(`title-${appId}`).innerText = `${appMeta.title} - [${currentSession.school ? currentSession.school.tenTruong : currentSession.maTruong}]`;
