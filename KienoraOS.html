@@ -324,85 +324,98 @@
     checkSessionAndInit();
 
     function launchApp(appId) {
-      if (!currentSession.maTruong) {
-        alert("Vui lòng đăng nhập hệ thống trước!");
-        return;
-      }
+  if (!currentSession.maTruong) {
+    alert("Vui lòng đăng nhập hệ thống trước!");
+    return;
+  }
 
-      const appMeta = APP_REGISTRY[appId] || { title: appId, icon: 'fa-solid fa-window-maximize text-cyan-600' };
+  const appMeta = APP_REGISTRY[appId] || { title: appId, icon: 'fa-solid fa-window-maximize text-cyan-600' };
 
-      let existingWin = document.getElementById(`win-${appId}`);
-      if (existingWin) {
-        if (existingWin.classList.contains('hidden')) {
-          existingWin.classList.remove('hidden');
-        }
-        bringToFront(appId);
-        return;
-      }
-
-      const menu = document.getElementById('startMenu');
-      if (menu) menu.classList.add('hidden');
-
-      openWindowsCount++;
-      const offset = (openWindowsCount % 5) * 25;
-      activeZIndex++;
-
-      const container = document.getElementById('desktop-windows-container');
-      const winDiv = document.createElement('div');
-      winDiv.id = `win-${appId}`;
-      winDiv.onclick = () => bringToFront(appId);
-      winDiv.style.zIndex = activeZIndex;
-      winDiv.style.top = `${48 + offset}px`;
-      winDiv.style.left = `${Math.max(20, offset)}px`;
-      winDiv.className = "fixed w-[80vw] md:w-[75vw] h-[75vh] bg-white backdrop-blur border border-slate-300 rounded-xl shadow-2xl flex flex-col overflow-hidden resize min-w-[320px] min-h-[200px] transition-all duration-100";
-
-      winDiv.innerHTML = `
-        <div class="flex items-center justify-between bg-slate-100 px-4 py-2 border-b border-slate-200 select-none cursor-move">
-          <div class="flex items-center gap-2 text-slate-700 text-sm font-semibold truncate pr-2">
-            <i class="${appMeta.icon}"></i>
-            <span id="title-${appId}" class="truncate">${appMeta.title} - Đang tải...</span>
-          </div>
-          
-          <div class="flex items-center gap-1.5">
-            <button onclick="event.stopPropagation(); minimizeApp('${appId}')" class="w-7 h-7 flex items-center justify-center hover:bg-slate-200 text-slate-500 hover:text-slate-800 rounded-lg transition" title="Thu nhỏ">
-              <i class="fa-solid fa-minus text-xs"></i>
-            </button>
-            <button onclick="event.stopPropagation(); toggleMaximizeApp('${appId}')" class="w-7 h-7 flex items-center justify-center hover:bg-slate-200 text-slate-500 hover:text-slate-800 rounded-lg transition" title="Phóng to / Khôi phục">
-              <i id="max-icon-${appId}" class="fa-regular fa-square text-xs"></i>
-            </button>
-            <button onclick="event.stopPropagation(); closeApp('${appId}')" class="w-7 h-7 flex items-center justify-center hover:bg-rose-600 text-slate-500 hover:text-white rounded-lg transition" title="Đóng">
-              <i class="fa-solid fa-xmark text-sm"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="flex-1 w-full h-full overflow-hidden bg-white relative">
-          <iframe id="iframe-${appId}" class="w-full h-full border-0"></iframe>
-        </div>
-      `;
-
-      container.appendChild(winDiv);
-      addTaskbarItem(appId, appMeta);
-
-      // Cập nhật lại request gọi sang Apps Script phù hợp với hàm handleGetAppUrl
-      const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maNhanSu)}&sessionToken=active&maTruong=${encodeURIComponent(currentSession.maTruong)}&appId=${encodeURIComponent(appId)}`;
-
-      fetch(requestUrl)
-        .then(res => res.json())
-        .then(res => {
-          if (res.status === 'success' && res.data && res.data.url) {
-            document.getElementById(`title-${appId}`).innerText = `${appMeta.title} - [${currentSession.school ? currentSession.school.tenTruong : currentSession.maTruong}]`;
-            document.getElementById(`iframe-${appId}`).src = res.data.url;
-          } else {
-            alert("🔒 Không thể truy cập: " + (res.message || "Không tìm thấy cấu hình trang web!"));
-            closeApp(appId);
-          }
-        })
-        .catch(err => {
-          alert("Lỗi truy vấn đường dẫn: " + err.message);
-          closeApp(appId);
-        });
+  let existingWin = document.getElementById(`win-${appId}`);
+  if (existingWin) {
+    if (existingWin.classList.contains('hidden')) {
+      existingWin.classList.remove('hidden');
     }
+    bringToFront(appId);
+    return;
+  }
+
+  const menu = document.getElementById('startMenu');
+  if (menu) menu.classList.add('hidden');
+
+  openWindowsCount++;
+  const offset = (openWindowsCount % 5) * 25;
+  activeZIndex++;
+
+  const container = document.getElementById('desktop-windows-container');
+  const winDiv = document.createElement('div');
+  winDiv.id = `win-${appId}`;
+  winDiv.onclick = () => bringToFront(appId);
+  winDiv.style.zIndex = activeZIndex;
+  winDiv.style.top = `${48 + offset}px`;
+  winDiv.style.left = `${Math.max(20, offset)}px`;
+  winDiv.className = "fixed w-[80vw] md:w-[75vw] h-[75vh] bg-white backdrop-blur border border-slate-300 rounded-xl shadow-2xl flex flex-col overflow-hidden resize min-w-[320px] min-h-[200px] transition-all duration-100";
+
+  winDiv.innerHTML = `
+    <div class="flex items-center justify-between bg-slate-100 px-4 py-2 border-b border-slate-200 select-none cursor-move">
+      <div class="flex items-center gap-2 text-slate-700 text-sm font-semibold truncate pr-2">
+        <i class="${appMeta.icon}"></i>
+        <span id="title-${appId}" class="truncate">${appMeta.title} - Đang tải...</span>
+      </div>
+      
+      <div class="flex items-center gap-1.5">
+        <button onclick="event.stopPropagation(); minimizeApp('${appId}')" class="w-7 h-7 flex items-center justify-center hover:bg-slate-200 text-slate-500 hover:text-slate-800 rounded-lg transition" title="Thu nhỏ">
+          <i class="fa-solid fa-minus text-xs"></i>
+        </button>
+        <button onclick="event.stopPropagation(); toggleMaximizeApp('${appId}')" class="w-7 h-7 flex items-center justify-center hover:bg-slate-200 text-slate-500 hover:text-slate-800 rounded-lg transition" title="Phóng to / Khôi phục">
+          <i id="max-icon-${appId}" class="fa-regular fa-square text-xs"></i>
+        </button>
+        <button onclick="event.stopPropagation(); closeApp('${appId}')" class="w-7 h-7 flex items-center justify-center hover:bg-rose-600 text-slate-500 hover:text-white rounded-lg transition" title="Đóng">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="flex-1 w-full h-full overflow-hidden bg-white relative">
+      <iframe id="iframe-${appId}" class="w-full h-full border-0"></iframe>
+    </div>
+  `;
+
+  container.appendChild(winDiv);
+  addTaskbarItem(appId, appMeta);
+
+  // ==========================================
+  // CƠ CHẾ 1: KIỂM TRA FILE CỤC BỘ CÙNG THƯ MỤC
+  // ==========================================
+  const localPageFiles = ['tuyensinh10', 'quantridaucap', 'xeplop', 'hosohocsinh', 'tracuunv', 'KeHoachChamCong', 'SoChuNhiem', 'QuanLyThiDuaLop', 'CKDBCLGD'];
+  
+  if (localPageFiles.includes(appId)) {
+      document.getElementById(`title-${appId}`).innerText = `${appMeta.title} - [${currentSession.school ? currentSession.school.tenTruong : currentSession.maTruong}]`;
+      document.getElementById(`iframe-${appId}`).src = `${appId}.html`;
+      return; // Dừng lại ở đây, không gọi API nữa
+  }
+
+  // ==========================================
+  // CƠ CHẾ 2: GỌI GOOGLE APPS SCRIPT LẤY LINK TỪ SHEET
+  // ==========================================
+  const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maNhanSu)}&sessionToken=active&maTruong=${encodeURIComponent(currentSession.maTruong)}&appId=${encodeURIComponent(appId)}`;
+
+  fetch(requestUrl)
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === 'success' && res.data && res.data.url) {
+        document.getElementById(`title-${appId}`).innerText = `${appMeta.title} - [${currentSession.school ? currentSession.school.tenTruong : currentSession.maTruong}]`;
+        document.getElementById(`iframe-${appId}`).src = res.data.url;
+      } else {
+        alert("🔒 Không thể truy cập: " + (res.message || "Không tìm thấy cấu hình trang web!"));
+        closeApp(appId);
+      }
+    })
+    .catch(err => {
+      alert("Lỗi truy vấn đường dẫn: " + err.message);
+      closeApp(appId);
+    });
+}
 
     function addTaskbarItem(appId, appMeta) {
       const tbContainer = document.getElementById('taskbar-apps');
