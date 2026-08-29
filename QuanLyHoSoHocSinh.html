@@ -144,20 +144,26 @@
 
         function khoiTaoDuLieu() {
             taiCauHinh();
-            fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
-                .then(res => res.json())
-                .then(data => {
-                    const select = document.getElementById('selectLop');
-                    select.innerHTML = '<option value="">-- Chọn lớp học --</option>';
-                    const dsLop = data.danhSachLop || data.dsLop;
-                    if (dsLop && Array.isArray(dsLop) && dsLop.length > 0) {
-                        dsLop.forEach(lop => {
-                            select.innerHTML += `<option value="${lop}">${lop}</option>`;
-                        });
-                    } else {
-                        select.innerHTML = '<option value="">-- Không có lớp nào được phân công --</option>';
-                    }
-                });
+            // Gọi API kiểm tra vai trò thực tế từ Google Sheets
+        fetch(`${API_URL}?action=checkRole&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
+            .then(res => res.json())
+            .then(res => {
+                let vaiTroHienThi = res.vaiTro || "Giáo viên";
+                document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu} | Vai trò: ${vaiTroHienThi}`;
+
+                // Nếu vai trò có chứa từ khóa quản lý/admin/hiệu trưởng thì bật nút cấu hình
+                let vLower = vaiTroHienThi.toLowerCase();
+                if (vLower.includes('admin') || vLower.includes('bgh') || vLower.includes('hiệu trưởng') || vLower.includes('quản trị')) {
+                    document.getElementById('adminConfigBtnContainer').innerHTML = `
+                        <button onclick="moModalAdmin()" class="text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-xl font-medium border border-emerald-100 transition">
+                            ⚙️ Cấu hình Admin
+                        </button>
+                    `;
+                }
+            })
+            .catch(err => {
+                document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu}`;
+            });
         }
 
         function taiCauHinh() {
