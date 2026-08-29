@@ -53,16 +53,14 @@
     </div>
 
     <!-- Script xử lý logic -->
+   <!-- Script xử lý logic -->
     <script>
-        
         const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec"; 
         let hocSinhDangChon = null;
 
-        // --- ĐOẠN XỬ LÝ SESSION AN TOÀN HƠN ---
+        // --- BƯỚC 1: LẤY SESSION HOẶC GÁN CỨNG ĐỂ TEST ---
         let currentSession = {};
         try {
-            // Thầy có thể thay thế hoặc thêm trực tiếp tên key mà trang login của thầy đang lưu
-            // Ví dụ trang login của thầy lưu là: sessionStorage.setItem('user', JSON.stringify({...}))
             const rawData = sessionStorage.getItem("currentSession") || 
                             sessionStorage.getItem("user") || 
                             sessionStorage.getItem("userInfo") || 
@@ -75,42 +73,46 @@
             currentSession = {};
         }
 
-        // DÒNG KIỂM TRA: In thẳng ra Console để thầy nhìn thấy ngay nó đang nhận cái gì
-        console.log("Dữ liệu currentSession hiện tại:", currentSession);
-
-        // NẾU TRƯỜNG HỢP BỊ TRỐNG DO CHƯA LOGIN QUA TRANG CHỦ (Dùng để test nhanh):
-        // Thầy có thể tạm thời gán cứng mã trường và mã nhân sự của thầy vào đây để test:
-        /*
+        // 🛑 QUAN TRỌNG: Nếu session trống (do test trực tiếp file HTML), 
+        // Thầy hãy điền MÃ TRƯỜNG và MÃ NHÂN SỰ chính xác của thầy vào 2 dòng dưới đây để chạy:
         if (!currentSession.maTruong) {
-            currentSession.maTruong = "MÃ_TRƯỜNG_CỦA_THẦY";
-            currentSession.maNhanSu = "MÃ_NHÂN_SỰ_CỦA_THẦY";
+            currentSession.maTruong = "DIỀN_MÃ_TRƯỜNG_VÀO_ĐÂY";   // Ví dụ: "THPT_CHUYEN"
+            currentSession.maNhanSu = "DIỀN_MÃ_NHÂN_SỰ_VÀO_ĐÂY"; // Ví dụ: "GV001"
         }
-        */
 
-        // Khi tải trang xong, tự động gọi API lấy danh sách lớp phân công
+        console.log("Session hiện tại đang dùng:", currentSession);
+
+        // --- BƯỚC 2: TỰ ĐỘNG GỌI API LẤY DANH SÁCH LỚP ---
         window.onload = function() {
             const maTruong = currentSession.maTruong || '';
             const maNhanSu = currentSession.maNhanSu || '';
 
+            console.log(`Đang gọi lấy lớp cho - Trường: ${maTruong} - Nhân sự: ${maNhanSu}`);
+
             fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(maTruong)}&maNhanSu=${encodeURIComponent(maNhanSu)}`)
                 .then(res => res.json())
                 .then(data => {
+                    console.log("Kết quả trả về từ Google Sheets:", data);
                     const select = document.getElementById('selectLop');
                     if(!select) return;
                     select.innerHTML = '<option value="">-- Chọn lớp học --</option>';
                     
-                    // Đồng bộ với khóa `danhSachLop` trả về từ Google Apps Script
-                    const dsLop = data.danhSachLop || data.dsLop; 
-                    if (dsLop) {
+                    // Lấy mảng danh sách lớp linh hoạt theo mọi kiểu trả về của Apps Script
+                    const dsLop = data.danhSachLop || data.dsLop || data.classes; 
+                    
+                    if (dsLop && Array.isArray(dsLop) && dsLop.length > 0) {
                         dsLop.forEach(lop => {
                             select.innerHTML += `<option value="${lop}">${lop}</option>`;
                         });
+                        console.log("Đã nạp thành công các lớp vào dropdown!");
+                    } else {
+                        console.warn("Không tìm thấy lớp nào phù hợp với mã trường và mã nhân sự này!");
                     }
                 })
-                .catch(err => console.error("Lỗi tải danh sách lớp:", err));
+                .catch(err => console.error("Lỗi kết nối API:", err));
         };
 
-        // Khi chọn một lớp cụ thể để kiểm tra thiếu thông tin
+        // --- BƯỚC 3: KHI CHỌN LỚP ĐỂ XEM HỌC SINH ---
         function taiDuLieuLop() {
             const selectLopEl = document.getElementById('selectLop');
             if (!selectLopEl) return;
@@ -203,5 +205,7 @@
             .catch(err => console.error("Lỗi lưu cột BR:", err));
         }
     </script>
+</body>
+</html>
 </body>
 </html>
