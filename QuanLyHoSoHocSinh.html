@@ -51,9 +51,9 @@
                 <div id="khungNhanTinBR" class="hidden border-t border-slate-100 pt-4 mt-auto">
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Ghi chú / Cột BR:</label>
                     <textarea id="noiDungBR" rows="3" class="w-full border border-slate-200 p-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3" placeholder="Nhập nội dung cột BR..."></textarea>
-                    <button onclick="luuNoiDungBR()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-sm">
-                        Lưu ghi chú BR
-                    </button>
+                    <button onclick="luuNoiDungBR(this)" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-sm">
+                    Lưu ghi chú BR
+                </button>
                 </div>
             </div>
 
@@ -64,17 +64,22 @@
         // Thay link Web App chuẩn của thầy vào đây
         const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec"; 
         
-        // Cấu hình mã trường và mã nhân sự (thầy có thể điều chỉnh hoặc bắt động từ URL/session)
-        const currentSession = {
-            maTruong: "c3ndtnl",  
-            maNhanSu: "hieu"
-        };
+        // Lấy thông tin tài khoản thô từ localStorage (ví dụ: "c3ndtnl.nan.hieu" hoặc đã tách sẵn)
+    const rawAccount = localStorage.getItem('maNhanSu') || localStorage.getItem('taiKhoan') || 'c3ndtnl.nan.hieu';
+    
+    // Tách mã trường và tên nhân sự dựa vào dấu chấm
+    // Ví dụ: "c3ndtnl.nan.hieu" -> maTruong: "c3ndtnl.nan", maNhanSu: "hieu"
+    let parts = rawAccount.split('.');
+    let maTruongVal = parts.length >= 2 ? parts[0] + "." + parts[1] : (localStorage.getItem('maTruong') || "c3ndtnl.nan");
+    let maNhanSuVal = parts.length >= 3 ? parts[2] : (parts.length === 2 ? parts[1] : rawAccount);
 
-        let hocSinhDangChon = null;
+    const currentSession = {
+        maTruong: maTruongVal,  // Sẽ ra chuẩn "c3ndtnl.nan"
+        maNhanSu: maNhanSuVal   // Sẽ ra tên nhân sự thực tế
+    };
 
-        // Hiển thị thông tin định danh lên giao diện
-        document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu}`;
-
+    // Hiển thị trực tiếp lên giao diện để kiểm tra ngay
+    document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu}`;
         // 1. Tải danh sách lớp khi mở trang
         function khoiTaoDuLieu() {
             console.log("Đang tải danh sách lớp...");
@@ -178,42 +183,45 @@
         }
 
         // 5. Lưu nội dung cột BR lên Google Sheets
-        function luuNoiDungBR() {
-            if (!hocSinhDangChon) return;
-            const noiDung = document.getElementById('noiDungBR').value;
+       // 5. Lưu nội dung cột BR lên Google Sheets
+function luuNoiDungBR(btnElement) { // Nhận trực tiếp phần tử nút bấm vào
+    if (!hocSinhDangChon) return;
+    const noiDung = document.getElementById('noiDungBR').value;
 
-            // Hiệu ứng chờ
-            event.target.innerText = "Đang lưu...";
-            event.target.disabled = true;
+    // Dùng btnElement thay vì event.target
+    const originalText = btnElement.innerText;
+    btnElement.innerText = "Đang lưu...";
+    btnElement.disabled = true;
 
-            fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify({ 
-                    action: 'luuBR', 
-                    rowNum: hocSinhDangChon.rowNum, 
-                    noiDung: noiDung,
-                    maTruong: currentSession.maTruong 
-                })
-            })
-            .then(res => res.json())
-            .then(res => {
-                alert(res.message || "Đã lưu ghi chú thành công!");
-                hocSinhDangChon.ghiChuBR = noiDung;
-                // Tải lại dữ liệu lớp để cập nhật trạng thái mới nhất
-                taiDuLieuLop();
-            })
-            .catch(err => {
-                console.error("Lỗi lưu cột BR:", err);
-                alert("Lỗi kết nối khi lưu ghi chú!");
-            })
-            .finally(() => {
-                event.target.innerText = "Lưu ghi chú BR";
-                event.target.disabled = false;
-            });
-        }
+    fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({ 
+            action: 'luuBR', 
+            rowNum: hocSinhDangChon.rowNum, 
+            noiDung: noiDung,
+            maTruong: currentSession.maTruong 
+        })
+    })
+    .then(res => res.json())
+    .then(res => {
+        alert(res.message || "Đã lưu ghi chú thành công!");
+        hocSinhDangChon.ghiChuBR = noiDung;
+        taiDuLieuLop();
+    })
+    .catch(err => {
+        console.error("Lỗi lưu cột BR:", err);
+        alert("Lỗi kết nối khi lưu ghi chú!");
+    })
+    .finally(() => {
+        btnElement.innerText = originalText;
+        btnElement.disabled = false;
+    });
+}
 
-        // Chạy khởi tạo dữ liệu ngay khi tải trang xong
-        khoiTaoDuLieu();
+        // Thay vì gọi trực tiếp khoiTaoDuLieu(); ở cuối file, hãy dùng:
+document.addEventListener("DOMContentLoaded", function() {
+    khoiTaoDuLieu();
+});
     </script>
 </body>
 </html>
