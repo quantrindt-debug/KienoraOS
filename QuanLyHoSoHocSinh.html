@@ -116,10 +116,10 @@
         </div>
     </div>
 
-    <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec"; 
+<script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzuPyTOGRKdBfeMQY69QcbCulFnHJE9t2VTtByv1JTl-l2v91wmtIBn5ObMgzRALqpu/exec"; 
         let hocSinhDangChon = null;
-        let cauHinhCot = { batBuoc: ["Họ đệm", "Tên", "Ngày sinh"], neuCo: [] };
+        let cauHinhCot = { batBuoc: [], neuCo: [] };
 
         const rawAccount = localStorage.getItem('maNhanSu') || localStorage.getItem('taiKhoan') || 'c3ndtnl.nan.hieu';
         let parts = rawAccount.split('.');
@@ -142,8 +142,9 @@
         }
 
         function khoiTaoDuLieu() {
-            taiCauHinh();
-            taiDanhSachLop();
+            taiCauHinh().then(() => {
+                taiDanhSachLop();
+            });
         }
 
         function taiDanhSachLop() {
@@ -168,15 +169,20 @@
         }
 
         function taiCauHinh() {
-            fetch(`${API_URL}?action=getConfig`)
+            return fetch(`${API_URL}?action=getConfig`)
                 .then(res => res.json())
                 .then(res => {
                     if (res.status === "success" && res.configs && res.configs.length > 0) {
-                        cauHinhCot.batBuoc = res.configs.filter(c => c.isMandatory).map(c => c.colName);
-                        cauHinhCot.neuCo = res.configs.filter(c => !c.isMandatory).map(c => c.colName);
+                        cauHinhCot.batBuoc = res.configs.filter(c => c.isMandatory).map(c => String(c.colName).trim());
+                        cauHinhCot.neuCo = res.configs.filter(c => !c.isMandatory).map(c => String(c.colName).trim());
                     }
+                    console.log("Cấu hình tải về:", cauHinhCot);
                 })
-                .catch(err => console.log("Lỗi tải cấu hình:", err));
+                .catch(err => {
+                    console.log("Lỗi tải cấu hình:", err);
+                    // Giá trị dự phòng nếu không fetch được
+                    cauHinhCot.batBuoc = ["Họ đệm", "Tên", "Ngày sinh"];
+                });
         }
 
         function moModalAdmin() {
@@ -197,8 +203,8 @@
             let neuCoArr = ncStr.split(',').map(s => s.trim()).filter(Boolean);
 
             let configsPayload = [];
-            batBuocArr.forEach((name, idx) => configsPayload.push({ colIndex: idx, colName: name, isMandatory: true }));
-            neuCoArr.forEach((name, idx) => configsPayload.push({ colIndex: batBuocArr.length + idx, colName: name, isMandatory: false }));
+            batBuocArr.forEach((name, idx) => configsPayload.push({ colIndex: idx + 1, colName: name, isMandatory: true }));
+            neuCoArr.forEach((name, idx) => configsPayload.push({ colIndex: batBuocArr.length + idx + 1, colName: name, isMandatory: false }));
 
             let originalText = btn.innerText;
             btn.innerText = "Đang lưu...";
@@ -216,8 +222,9 @@
             .then(res => {
                 alert(res.message || "Đã lưu cấu hình thành công!");
                 dongModalAdmin();
-                taiCauHinh();
-                if(document.getElementById('selectLop').value) taiDuLieuLop();
+                taiCauHinh().then(() => {
+                    if(document.getElementById('selectLop').value) taiDuLieuLop();
+                });
             })
             .catch(err => alert("Lỗi lưu cấu hình: " + err))
             .finally(() => {
@@ -257,12 +264,22 @@
                 });
         }
 
+        // Hàm hỗ trợ so sánh tên cột không phân biệt hoa thường và khoảng trắng
+        function kiemTraTonTaiCot(danhSachThieu, danhSachCauHinh) {
+            if (danhSachCauHinh.length === 0) return danhSachThieu;
+            return danhSachThieu.filter(cotThieu => {
+                return danhSachCauHinh.some(cotConfig => 
+                    cotThieu.toLowerCase().trim() === cotConfig.toLowerCase().trim()
+                );
+            });
+        }
+
         function capNhatThongKe(danhSach) {
             const tongHS = danhSach.length;
             let soDu = 0, soThieu = 0;
 
             danhSach.forEach(hs => {
-                let thieuBatBuoc = hs.thieu.filter(c => cauHinhCot.batBuoc.length === 0 || cauHinhCot.batBuoc.includes(c));
+                let thieuBatBuoc = kiemTraTonTaiCot(hs.thieu, cauHinhCot.batBuoc);
                 if (thieuBatBuoc.length === 0) soDu++; else soThieu++;
             });
 
@@ -276,7 +293,7 @@
             container.innerHTML = '';
             
             danhSach.forEach(hs => {
-                let thieuBB = hs.thieu.filter(c => cauHinhCot.batBuoc.length === 0 || cauHinhCot.batBuoc.includes(c));
+                let thieuBB = kiemTraTonTaiCot(hs.thieu, cauHinhCot.batBuoc);
                 const soLuongThieu = thieuBB.length;
                 const badgeColor = soLuongThieu === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
                 
@@ -303,8 +320,8 @@
             khungBR.classList.remove('hidden');
             noiDungBR.value = hs.ghiChuBR || '';
 
-            let thieuBB = hs.thieu.filter(c => cauHinhCot.batBuoc.length === 0 || cauHinhCot.batBuoc.includes(c));
-            let thieuNC = hs.thieu.filter(c => cauHinhCot.neuCo.includes(c));
+            let thieuBB = kiemTraTonTaiCot(hs.thieu, cauHinhCot.batBuoc);
+            let thieuNC = kiemTraTonTaiCot(hs.thieu, cauHinhCot.neuCo);
 
             let htmlBB = thieuBB.length > 0 
                 ? thieuBB.map(c => `<span class="bg-rose-50 text-rose-600 border border-rose-100 text-xs px-2.5 py-1 rounded-lg font-medium">${c}</span>`).join(' ')
