@@ -57,38 +57,25 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec"; 
         let hocSinhDangChon = null;
 
-        let currentSession = {};
-        try {
-            const rawData = sessionStorage.getItem("currentSession") || 
-                            sessionStorage.getItem("user") || 
-                            sessionStorage.getItem("userInfo") || 
-                            sessionStorage.getItem("nguoiDung");
-            if (rawData) {
-                currentSession = JSON.parse(rawData);
-            }
-        } catch (e) {
-            currentSession = {};
-        }
+        // Lấy mã trực tiếp từ URL (Ví dụ: file.html?maTruong=ABC&maNhanSu=123)
+        const urlParams = new URLSearchParams(window.location.search);
+        
+        let currentSession = {
+            maTruong: urlParams.get('maTruong') || "C3NDT",   // Thay mã thật vào đây nếu không truyền trên URL
+            maNhanSu: urlParams.get('maNhanSu') || "GV0001" // Thay mã thật vào đây nếu không truyền trên URL
+        };
 
-        // ĐIỀN MÃ THẬT CỦA THẦY VÀO ĐÂY ĐỂ TEST TRỰC TIẾP
-        if (!currentSession.maTruong) {
-            currentSession.maTruong = "C3NDT";   
-            currentSession.maNhanSu = "GV001"; 
-        }
+        console.log("Thông tin định danh đang sử dụng:", currentSession);
 
-        console.log("--> Script đã chạy! Session hiện tại:", currentSession);
-
-        // HÀM CHẠY TRỰC TIẾP KHÔNG CẦN CHỜ window.onload
+        // Gọi ngay hàm lấy danh sách lớp
         function khoiTaoDuLieu() {
-            const maTruong = currentSession.maTruong || '';
-            const maNhanSu = currentSession.maNhanSu || '';
-
-            console.log(`Đang gọi API lấy lớp - Trường: ${maTruong} - Nhân sự: ${maNhanSu}`);
+            const maTruong = currentSession.maTruong;
+            const maNhanSu = currentSession.maNhanSu;
 
             fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(maTruong)}&maNhanSu=${encodeURIComponent(maNhanSu)}`)
                 .then(res => res.json())
                 .then(data => {
-                    console.log("Kết quả từ Google Sheets:", data);
+                    console.log("Dữ liệu trả về:", data);
                     const select = document.getElementById('selectLop');
                     if(!select) return;
                     select.innerHTML = '<option value="">-- Chọn lớp học --</option>';
@@ -98,28 +85,21 @@
                         dsLop.forEach(lop => {
                             select.innerHTML += `<option value="${lop}">${lop}</option>`;
                         });
-                        console.log("Đã đổ dữ liệu vào ô chọn lớp thành công!");
-                    } else {
-                        console.warn("Không có lớp nào trả về!");
                     }
                 })
                 .catch(err => console.error("Lỗi kết nối API:", err));
         }
 
-        // Gọi luôn hàm khởi tạo
+        // Chạy luôn khi load trang
         khoiTaoDuLieu();
 
-        // Các hàm xử lý tiếp theo giữ nguyên...
         function taiDuLieuLop() {
             const selectLopEl = document.getElementById('selectLop');
             if (!selectLopEl) return;
             const tenLop = selectLopEl.value;
             if(!tenLop) return;
 
-            const maTruong = currentSession.maTruong || '';
-            const maNhanSu = currentSession.maNhanSu || '';
-
-            fetch(`${API_URL}?action=kiemTraLop&tenLop=${encodeURIComponent(tenLop)}&maTruong=${encodeURIComponent(maTruong)}&maNhanSu=${encodeURIComponent(maNhanSu)}`)
+            fetch(`${API_URL}?action=kiemTraLop&tenLop=${encodeURIComponent(tenLop)}&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.chiTietHS) {
@@ -190,7 +170,7 @@
                     action: 'luuBR', 
                     rowNum: hocSinhDangChon.rowNum, 
                     noiDung: noiDung,
-                    maTruong: currentSession.maTruong || '' 
+                    maTruong: currentSession.maTruong 
                 })
             })
             .then(res => res.json())
@@ -202,7 +182,5 @@
             .catch(err => console.error("Lỗi lưu cột BR:", err));
         }
     </script>
-</body>
-</html>
 </body>
 </html>
