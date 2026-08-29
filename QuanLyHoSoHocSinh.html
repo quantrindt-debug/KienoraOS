@@ -52,20 +52,17 @@
         </div>
     </div>
 
-    <!-- Script xử lý logic -->
-   <!-- Script xử lý logic -->
+<!-- Script xử lý logic -->
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec"; 
         let hocSinhDangChon = null;
 
-        // --- BƯỚC 1: LẤY SESSION HOẶC GÁN CỨNG ĐỂ TEST ---
         let currentSession = {};
         try {
             const rawData = sessionStorage.getItem("currentSession") || 
                             sessionStorage.getItem("user") || 
                             sessionStorage.getItem("userInfo") || 
                             sessionStorage.getItem("nguoiDung");
-            
             if (rawData) {
                 currentSession = JSON.parse(rawData);
             }
@@ -73,46 +70,46 @@
             currentSession = {};
         }
 
-        // 🛑 QUAN TRỌNG: Nếu session trống (do test trực tiếp file HTML), 
-        // Thầy hãy điền MÃ TRƯỜNG và MÃ NHÂN SỰ chính xác của thầy vào 2 dòng dưới đây để chạy:
+        // ĐIỀN MÃ THẬT CỦA THẦY VÀO ĐÂY ĐỂ TEST TRỰC TIẾP
         if (!currentSession.maTruong) {
-            currentSession.maTruong = "C3NDT";   // Ví dụ: "THPT_CHUYEN"
-            currentSession.maNhanSu = "GV001"; // Ví dụ: "GV001"
+            currentSession.maTruong = "C3NDT";   
+            currentSession.maNhanSu = "GV001"; 
         }
 
-        console.log("Session hiện tại đang dùng:", currentSession);
+        console.log("--> Script đã chạy! Session hiện tại:", currentSession);
 
-        // --- BƯỚC 2: TỰ ĐỘNG GỌI API LẤY DANH SÁCH LỚP ---
-        window.onload = function() {
+        // HÀM CHẠY TRỰC TIẾP KHÔNG CẦN CHỜ window.onload
+        function khoiTaoDuLieu() {
             const maTruong = currentSession.maTruong || '';
             const maNhanSu = currentSession.maNhanSu || '';
 
-            console.log(`Đang gọi lấy lớp cho - Trường: ${maTruong} - Nhân sự: ${maNhanSu}`);
+            console.log(`Đang gọi API lấy lớp - Trường: ${maTruong} - Nhân sự: ${maNhanSu}`);
 
             fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(maTruong)}&maNhanSu=${encodeURIComponent(maNhanSu)}`)
                 .then(res => res.json())
                 .then(data => {
-                    console.log("Kết quả trả về từ Google Sheets:", data);
+                    console.log("Kết quả từ Google Sheets:", data);
                     const select = document.getElementById('selectLop');
                     if(!select) return;
                     select.innerHTML = '<option value="">-- Chọn lớp học --</option>';
                     
-                    // Lấy mảng danh sách lớp linh hoạt theo mọi kiểu trả về của Apps Script
                     const dsLop = data.danhSachLop || data.dsLop || data.classes; 
-                    
                     if (dsLop && Array.isArray(dsLop) && dsLop.length > 0) {
                         dsLop.forEach(lop => {
                             select.innerHTML += `<option value="${lop}">${lop}</option>`;
                         });
-                        console.log("Đã nạp thành công các lớp vào dropdown!");
+                        console.log("Đã đổ dữ liệu vào ô chọn lớp thành công!");
                     } else {
-                        console.warn("Không tìm thấy lớp nào phù hợp với mã trường và mã nhân sự này!");
+                        console.warn("Không có lớp nào trả về!");
                     }
                 })
                 .catch(err => console.error("Lỗi kết nối API:", err));
-        };
+        }
 
-        // --- BƯỚC 3: KHI CHỌN LỚP ĐỂ XEM HỌC SINH ---
+        // Gọi luôn hàm khởi tạo
+        khoiTaoDuLieu();
+
+        // Các hàm xử lý tiếp theo giữ nguyên...
         function taiDuLieuLop() {
             const selectLopEl = document.getElementById('selectLop');
             if (!selectLopEl) return;
