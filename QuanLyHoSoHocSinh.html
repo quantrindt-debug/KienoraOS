@@ -144,16 +144,15 @@
 
         function khoiTaoDuLieu() {
             taiCauHinh();
-            // Gọi API kiểm tra vai trò thực tế từ Google Sheets
-        fetch(`${API_URL}?action=checkRole&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
+            fetch(`${API_URL}?action=checkRole&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
             .then(res => res.json())
             .then(res => {
                 let vaiTroHienThi = res.vaiTro || "Giáo viên";
                 document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu} | Vai trò: ${vaiTroHienThi}`;
 
-                // Nếu vai trò có chứa từ khóa quản lý/admin/hiệu trưởng thì bật nút cấu hình
                 let vLower = vaiTroHienThi.toLowerCase();
-                if (vLower.includes('admin') || vLower.includes('bgh') || vLower.includes('hiệu trưởng') || vLower.includes('quản trị')) {
+                // Kiểm tra nếu vai trò chứa chữ admin hoặc quản lý
+                if (vLower.includes('admin') || vLower.includes('bgh') || vLower.includes('quản lý') || vLower.includes('hiệu trưởng')) {
                     document.getElementById('adminConfigBtnContainer').innerHTML = `
                         <button onclick="moModalAdmin()" class="text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-xl font-medium border border-emerald-100 transition">
                             ⚙️ Cấu hình Admin
@@ -163,8 +162,7 @@
             })
             .catch(err => {
                 document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu}`;
-            });
-        }
+            });        }
 
         function taiCauHinh() {
             fetch(`${API_URL}?action=getConfig`)
