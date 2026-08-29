@@ -206,6 +206,7 @@
 
             fetch(API_URL, {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     action: "saveConfig",
                     configs: configsPayload
@@ -337,6 +338,7 @@
 
             fetch(API_URL, {
                 method: 'POST',
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ 
                     action: 'luuBR', 
                     rowNum: hocSinhDangChon.rowNum, 
