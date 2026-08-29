@@ -58,25 +58,20 @@
 
     const parts = rawAcc.split('.');
     if (parts.length < 2) {
-        showMsg("❌ Mẫu tài khoản chưa đúng! Phải có dấu chấm (VD: c3ndtnl.nan.ha)", "error");
+        showMsg("❌ Mẫu tài khoản chưa đúng! Phải có dấu chấm (VD: c3ndtnl.nan.hieu)", "error");
         return;
     }
 
-    // Bóc tách: Nếu có từ 3 phần trở lên (vd: c3ndtnl.nan.ha) thì 2 phần đầu là mã trường.
-    // Nếu chỉ có 2 phần (vd: C3NDT.GV001) thì lấy phần đầu.
-    let extractedMaTruong = "";
-    if (parts.length >= 3) {
-        extractedMaTruong = (parts[0] + "." + parts[1]).toUpperCase();
-    } else {
-        extractedMaTruong = parts[0].toUpperCase();
-    }
-
-    // Giữ nguyên toàn bộ chuỗi làm tên nhân sự / tên đăng nhập để khớp cột H
+    // Mã trường luôn là phần đầu tiên đứng trước dấu chấm đầu tiên (VD: C3NDTNL) để khớp với danh mục trường
+    const extractedMaTruong = parts[0].toUpperCase();
+    
+    // Tên nhân sự / tên đăng nhập lấy toàn bộ chuỗi (VD: c3ndtnl.nan.hieu) để khớp với cột H trong sheet PhanCong
     const extractedMaNS = rawAcc;
 
     btn.disabled = true;
     btn.innerHTML = '<span>Đang xác thực...</span>';
 
+    // Gửi yêu cầu lên API với mã trường gốc và tài khoản đầy đủ
     const requestUrl = `${API_URL}?action=login&account=${encodeURIComponent(rawAcc)}&password=${encodeURIComponent(pass)}&maTruong=${encodeURIComponent(extractedMaTruong)}`;
 
     fetch(requestUrl)
@@ -88,7 +83,7 @@
             if (res.status === 'success') {
                 const sessionData = {
                     maTruong: extractedMaTruong,
-                    maNhanSu: extractedMaNS, // Lưu toàn bộ c3ndtnl.nan.ha vào session để trang quản lý dùng lọc sheet PhanCong
+                    maNhanSu: extractedMaNS, 
                     token: res.token || (extractedMaTruong + "_" + new Date().getTime()),
                     ...res.user
                 };
@@ -96,7 +91,7 @@
                 localStorage.setItem('kienona_session', JSON.stringify(sessionData));
                 localStorage.setItem('kienona_school', JSON.stringify(res.school || { maTruong: extractedMaTruong }));
 
-                // Hỗ trợ thêm các key ngắn gọn để trang quản lý lớp học dễ gọi trực tiếp nếu cần
+                // Lưu khóa phụ để trang quản lý lớp gọi dữ liệu phân công chính xác
                 localStorage.setItem('maTruong', extractedMaTruong);
                 localStorage.setItem('maNhanSu', extractedMaNS);
 
@@ -116,7 +111,6 @@
             showMsg("⚠️ Lỗi kết nối Máy chủ API: " + err.message, "error");
         });
 }
-
         function showMsg(message, type) {
             let thongBao = document.getElementById('thongBaoLoi');
             if (!thongBao) return;
