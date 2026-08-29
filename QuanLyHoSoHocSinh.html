@@ -2,50 +2,218 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Test Lấy Danh Sách Lớp</title>
+    <title>Quản Lý Hồ Sơ Học Sinh & Cột BR</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="p-10 bg-slate-100">
-    <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow">
-        <h2 class="text-lg font-bold mb-4">Kiểm tra kết nối lớp học</h2>
-        <label class="block text-sm font-medium mb-1">Chọn lớp:</label>
-        <select id="selectLop" class="w-full border p-2 rounded">
-            <option value="">-- Đang tải danh sách lớp... --</option>
-        </select>
+<body class="p-6 md:p-10 bg-slate-100 min-h-screen">
+    <div class="max-w-4xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">Quản Lý Hồ Sơ Học Sinh & Cột BR</h1>
+                <p class="text-sm text-slate-500">Kiểm tra thông tin thiếu từ A đến BQ và lưu ghi chú cá nhân.</p>
+            </div>
+            <div id="userInfoBadge" class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-medium border border-blue-100">
+                Đang tải định danh...
+            </div>
+        </div>
+
+        <!-- Chọn lớp -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <label class="block text-sm font-semibold text-slate-700 mb-2">Chọn lớp quản lý:</label>
+            <select id="selectLop" onchange="taiDuLieuLop()" class="w-full border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-slate-50">
+                <option value="">-- Đang tải danh sách lớp... --</option>
+            </select>
+        </div>
+
+        <!-- Khu vực hiển thị chính -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Danh sách học sinh -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[500px]">
+                <h2 class="text-base font-bold text-slate-800 mb-3">Danh sách học sinh</h2>
+                <div id="danhSachHSContainer" class="overflow-y-auto flex-1 pr-1 space-y-2">
+                    <span class="text-sm text-slate-400 italic">Vui lòng chọn lớp học ở trên...</span>
+                </div>
+            </div>
+
+            <!-- Chi tiết thông tin thiếu & Cột BR -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[500px] justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 mb-3">Chi tiết thông tin thiếu (A đến BQ)</h2>
+                    <div id="chiTietHSCard" class="p-4 bg-slate-50 rounded-xl border border-slate-100 min-h-[120px] mb-4">
+                        <p class="text-sm text-slate-400 italic">Chọn một học sinh bên trái để xem chi tiết...</p>
+                    </div>
+                </div>
+
+                <!-- Khung chỉnh sửa cột BR -->
+                <div id="khungNhanTinBR" class="hidden border-t border-slate-100 pt-4 mt-auto">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1">Ghi chú / Cột BR:</label>
+                    <textarea id="noiDungBR" rows="3" class="w-full border border-slate-200 p-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3" placeholder="Nhập nội dung cột BR..."></textarea>
+                    <button onclick="luuNoiDungBR()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-sm">
+                        Lưu ghi chú BR
+                    </button>
+                </div>
+            </div>
+
+        </div>
     </div>
 
     <script>
-        // Thay link Web App của thầy vào đây
-        const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec";
+        // Thay link Web App chuẩn của thầy vào đây
+        const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec"; 
         
-        
-        // Thay mã trường và mã nhân sự thật của thầy vào đây
-        const maTruongTest = "C3NDT"; 
-        const maNhanSuTest = "GV001";
+        // Cấu hình mã trường và mã nhân sự (thầy có thể điều chỉnh hoặc bắt động từ URL/session)
+        const currentSession = {
+            maTruong: "C3NDT",  
+            maNhanSu: "GV001"
+        };
 
-        console.log("Bắt đầu chạy file test...");
+        let hocSinhDangChon = null;
 
-        fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(maTruongTest)}&maNhanSu=${encodeURIComponent(maNhanSuTest)}`)
-            .then(res => res.json())
-            .then(data => {
-                console.log("Kết quả trả về từ Google Sheets:", data);
-                const select = document.getElementById('selectLop');
-                select.innerHTML = '<option value="">-- Chọn lớp học --</option>';
+        // Hiển thị thông tin định danh lên giao diện
+        document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu}`;
+
+        // 1. Tải danh sách lớp khi mở trang
+        function khoiTaoDuLieu() {
+            console.log("Đang tải danh sách lớp...");
+            fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Danh sách lớp trả về:", data);
+                    const select = document.getElementById('selectLop');
+                    select.innerHTML = '<option value="">-- Chọn lớp học --</option>';
+                    
+                    const dsLop = data.danhSachLop || data.dsLop;
+                    if (dsLop && Array.isArray(dsLop) && dsLop.length > 0) {
+                        dsLop.forEach(lop => {
+                            select.innerHTML += `<option value="${lop}">${lop}</option>`;
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">-- Không có lớp nào được phân công --</option>';
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi tải lớp:", err);
+                    alert("Lỗi kết nối khi tải danh sách lớp!");
+                });
+        }
+
+        // 2. Tải danh sách học sinh của lớp được chọn
+        function taiDuLieuLop() {
+            const tenLop = document.getElementById('selectLop').value;
+            const container = document.getElementById('danhSachHSContainer');
+            
+            if (!tenLop) {
+                container.innerHTML = '<span class="text-sm text-slate-400 italic">Vui lòng chọn lớp học ở trên...</span>';
+                return;
+            }
+
+            container.innerHTML = '<span class="text-sm text-blue-500 animate-pulse">Đang tải dữ liệu học sinh...</span>';
+
+            fetch(`${API_URL}?action=kiemTraLop&tenLop=${encodeURIComponent(tenLop)}&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Dữ liệu kiểm tra lớp:", data);
+                    if (data.chiTietHS) {
+                        hienThiDanhSachHS(data.chiTietHS);
+                    } else {
+                        container.innerHTML = '<span class="text-sm text-rose-500">Không tìm thấy dữ liệu học sinh của lớp này.</span>';
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi tải dữ liệu lớp:", err);
+                    container.innerHTML = '<span class="text-sm text-rose-500">Lỗi kết nối khi tải dữ liệu học sinh.</span>';
+                });
+        }
+
+        // 3. Hiển thị danh sách học sinh ra giao diện
+        function hienThiDanhSachHS(danhSach) {
+            const container = document.getElementById('danhSachHSContainer');
+            container.innerHTML = '';
+            
+            if (!danhSach || danhSach.length === 0) {
+                container.innerHTML = '<span class="text-sm text-slate-400 italic">Lớp này không có học sinh nào.</span>';
+                return;
+            }
+            
+            danhSach.forEach(hs => {
+                const soLuongThieu = hs.thieu ? hs.thieu.length : 0;
+                const badgeColor = soLuongThieu === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
                 
-                const dsLop = data.danhSachLop || data.dsLop;
-                if (dsLop && Array.isArray(dsLop) && dsLop.length > 0) {
-                    dsLop.forEach(lop => {
-                        select.innerHTML += `<option value="${lop}">${lop}</option>`;
-                    });
-                    alert("Đã tải thành công " + dsLop.length + " lớp vào ô chọn!");
-                } else {
-                    alert("Kết nối được nhưng không tìm thấy lớp nào cho mã này!");
-                }
+                const div = document.createElement('div');
+                div.className = "p-3.5 bg-slate-50 hover:bg-blue-50 cursor-pointer rounded-xl border border-slate-100 flex justify-between items-center transition";
+                div.innerHTML = `
+                    <div>
+                        <p class="text-sm font-semibold text-slate-800">${hs.tenHS}</p>
+                        <p class="text-xs text-slate-500">Mã: ${hs.maHS}</p>
+                    </div>
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-lg ${badgeColor}">${soLuongThieu} thiếu</span>
+                `;
+                div.onclick = () => chonHocSinh(hs);
+                container.appendChild(div);
+            });
+        }
+
+        // 4. Khi bấm chọn một học sinh cụ thể
+        function chonHocSinh(hs) {
+            hocSinhDangChon = hs;
+            const card = document.getElementById('chiTietHSCard');
+            const khungBR = document.getElementById('khungNhanTinBR');
+            const noiDungBR = document.getElementById('noiDungBR');
+
+            khungBR.classList.remove('hidden');
+            noiDungBR.value = hs.ghiChuBR || '';
+
+            if (!hs.thieu || hs.thieu.length === 0) {
+                card.innerHTML = `<p class="text-sm text-emerald-600 font-semibold">Học sinh <strong>${hs.tenHS}</strong> đã hoàn thành đầy đủ thông tin từ A đến BQ!</p>`;
+            } else {
+                let htmlList = hs.thieu.map(c => `<span class="bg-rose-50 text-rose-600 border border-rose-100 text-xs px-2.5 py-1 rounded-lg font-medium">${c}</span>`).join(' ');
+                card.innerHTML = `
+                    <p class="text-sm font-semibold text-slate-800 mb-2">Học sinh: <span class="text-blue-600">${hs.tenHS}</span> còn thiếu các cột sau:</p>
+                    <div class="flex flex-wrap gap-2">${htmlList}</div>
+                `;
+            }
+        }
+
+        // 5. Lưu nội dung cột BR lên Google Sheets
+        function luuNoiDungBR() {
+            if (!hocSinhDangChon) return;
+            const noiDung = document.getElementById('noiDungBR').value;
+
+            // Hiệu ứng chờ
+            event.target.innerText = "Đang lưu...";
+            event.target.disabled = true;
+
+            fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'luuBR', 
+                    rowNum: hocSinhDangChon.rowNum, 
+                    noiDung: noiDung,
+                    maTruong: currentSession.maTruong 
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                alert(res.message || "Đã lưu ghi chú thành công!");
+                hocSinhDangChon.ghiChuBR = noiDung;
+                // Tải lại dữ liệu lớp để cập nhật trạng thái mới nhất
+                taiDuLieuLop();
             })
             .catch(err => {
-                console.error("Lỗi kết nối:", err);
-                alert("Lỗi kết nối: " + err);
+                console.error("Lỗi lưu cột BR:", err);
+                alert("Lỗi kết nối khi lưu ghi chú!");
+            })
+            .finally(() => {
+                event.target.innerText = "Lưu ghi chú BR";
+                event.target.disabled = false;
             });
+        }
+
+        // Chạy khởi tạo dữ liệu ngay khi tải trang xong
+        khoiTaoDuLieu();
     </script>
 </body>
 </html>
