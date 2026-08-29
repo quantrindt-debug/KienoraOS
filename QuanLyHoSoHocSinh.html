@@ -161,11 +161,15 @@
         }
 
         function taiCauHinh() {
-            // Có thể load cấu hình từ localStorage hoặc API
-            let savedBB = localStorage.getItem('cfg_batBuoc');
-            let savedNC = localStorage.getItem('cfg_neuCo');
-            if (savedBB) cauHinhCot.batBuoc = savedBB.split(',').map(s => s.trim());
-            if (savedNC) cauHinhCot.neuCo = savedNC.split(',').map(s => s.trim());
+            fetch(`${API_URL}?action=getConfig`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === "success" && res.configs && res.configs.length > 0) {
+                        cauHinhCot.batBuoc = res.configs.filter(c => c.isMandatory).map(c => c.colName);
+                        cauHinhCot.neuCo = res.configs.filter(c => !c.isMandatory).map(c => c.colName);
+                    }
+                })
+                .catch(err => console.log("Lỗi tải cấu hình:", err));
         }
 
         function moModalAdmin() {
@@ -178,19 +182,39 @@
             document.getElementById('adminModal').classList.add('hidden');
         }
 
-        function luuCauHinhAdmin(btn) {
+       function luuCauHinhAdmin(btn) {
             let bbStr = document.getElementById('configBatBuoc').value;
             let ncStr = document.getElementById('configNeuCo').value;
             
-            localStorage.setItem('cfg_batBuoc', bbStr);
-            localStorage.setItem('cfg_neuCo', ncStr);
-            
-            cauHinhCot.batBuoc = bbStr.split(',').map(s => s.trim()).filter(Boolean);
-            cauHinhCot.neuCo = ncStr.split(',').map(s => s.trim()).filter(Boolean);
+            let batBuocArr = bbStr.split(',').map(s => s.trim()).filter(Boolean);
+            let neuCoArr = ncStr.split(',').map(s => s.trim()).filter(Boolean);
 
-            alert("Đã lưu cấu hình nhóm cột thành công!");
-            dongModalAdmin();
-            if(document.getElementById('selectLop').value) taiDuLieuLop();
+            let configsPayload = [];
+            batBuocArr.forEach((name, idx) => configsPayload.push({ colIndex: idx, colName: name, isMandatory: true }));
+            neuCoArr.forEach((name, idx) => configsPayload.push({ colIndex: batBuocArr.length + idx, colName: name, isMandatory: false }));
+
+            let originalText = btn.innerText;
+            btn.innerText = "Đang lưu...";
+            btn.disabled = true;
+
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "saveConfig",
+                    configs: configsPayload
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                alert(res.message || "Đã lưu cấu hình thành công!");
+                dongModalAdmin();
+                taiCauHinh();
+                if(document.getElementById('selectLop').value) taiDuLieuLop();
+            })
+            .finally(() => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+            });
         }
 
         function taiDuLieuLop() {
