@@ -54,29 +54,38 @@
 
     <!-- Script xử lý logic -->
     <script>
+        
         const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec"; 
         let hocSinhDangChon = null;
 
-        // Kiểm tra phân quyền đăng nhập KienonaOS
-        if (sessionStorage.getItem("kienora_auth") !== "authenticated_true") {
-            alert("Cảnh báo: Bạn chưa đăng nhập vào hệ thống KienonaOS!");
-            window.location.href = "login.html";
-        }
-
-        // Tự động tìm kiếm session từ các tên khóa phổ biến nếu currentSession bị rỗng
+        // --- ĐOẠN XỬ LÝ SESSION AN TOÀN HƠN ---
         let currentSession = {};
         try {
-            const possibleKeys = ["currentSession", "user", "userInfo", "nguoiDung", "session"];
-            for (let key of possibleKeys) {
-                const data = sessionStorage.getItem(key);
-                if (data) {
-                    currentSession = JSON.parse(data);
-                    break;
-                }
+            // Thầy có thể thay thế hoặc thêm trực tiếp tên key mà trang login của thầy đang lưu
+            // Ví dụ trang login của thầy lưu là: sessionStorage.setItem('user', JSON.stringify({...}))
+            const rawData = sessionStorage.getItem("currentSession") || 
+                            sessionStorage.getItem("user") || 
+                            sessionStorage.getItem("userInfo") || 
+                            sessionStorage.getItem("nguoiDung");
+            
+            if (rawData) {
+                currentSession = JSON.parse(rawData);
             }
         } catch (e) {
             currentSession = {};
         }
+
+        // DÒNG KIỂM TRA: In thẳng ra Console để thầy nhìn thấy ngay nó đang nhận cái gì
+        console.log("Dữ liệu currentSession hiện tại:", currentSession);
+
+        // NẾU TRƯỜNG HỢP BỊ TRỐNG DO CHƯA LOGIN QUA TRANG CHỦ (Dùng để test nhanh):
+        // Thầy có thể tạm thời gán cứng mã trường và mã nhân sự của thầy vào đây để test:
+        /*
+        if (!currentSession.maTruong) {
+            currentSession.maTruong = "MÃ_TRƯỜNG_CỦA_THẦY";
+            currentSession.maNhanSu = "MÃ_NHÂN_SỰ_CỦA_THẦY";
+        }
+        */
 
         // Khi tải trang xong, tự động gọi API lấy danh sách lớp phân công
         window.onload = function() {
