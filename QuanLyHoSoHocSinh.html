@@ -6,7 +6,6 @@
     <title>Quản lý Hồ sơ & Thông tin Thiếu</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased p-6">
     <div class="max-w-6xl mx-auto space-y-6">
@@ -57,26 +56,28 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec"; 
         let hocSinhDangChon = null;
-// Kiểm tra phân quyền đăng nhập KienonaOS
-    if (sessionStorage.getItem("kienora_auth") !== "authenticated_true") {
-        alert("Cảnh báo: Bạn chưa đăng nhập vào hệ thống KienonaOS!");
-        window.location.href = "login.html";
-    }
 
-    // Tự động tìm kiếm session từ các tên khóa phổ biến nếu currentSession bị rỗng
-    let currentSession = {};
-    try {
-        const possibleKeys = ["currentSession", "user", "userInfo", "nguoiDung", "session"];
-        for (let key of possibleKeys) {
-            const data = sessionStorage.getItem(key);
-            if (data) {
-                currentSession = JSON.parse(data);
-                break;
-            }
+        // Kiểm tra phân quyền đăng nhập KienonaOS
+        if (sessionStorage.getItem("kienora_auth") !== "authenticated_true") {
+            alert("Cảnh báo: Bạn chưa đăng nhập vào hệ thống KienonaOS!");
+            window.location.href = "login.html";
         }
-    } catch (e) {
-        currentSession = {};
-    }
+
+        // Tự động tìm kiếm session từ các tên khóa phổ biến nếu currentSession bị rỗng
+        let currentSession = {};
+        try {
+            const possibleKeys = ["currentSession", "user", "userInfo", "nguoiDung", "session"];
+            for (let key of possibleKeys) {
+                const data = sessionStorage.getItem(key);
+                if (data) {
+                    currentSession = JSON.parse(data);
+                    break;
+                }
+            }
+        } catch (e) {
+            currentSession = {};
+        }
+
         // Khi tải trang xong, tự động gọi API lấy danh sách lớp phân công
         window.onload = function() {
             const maTruong = currentSession.maTruong || '';
@@ -192,9 +193,6 @@
             })
             .catch(err => console.error("Lỗi lưu cột BR:", err));
         }
-    </script>
-</body>
-</html>
     </script>
 </body>
 </html>
