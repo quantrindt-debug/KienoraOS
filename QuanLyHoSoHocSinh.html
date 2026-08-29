@@ -21,7 +21,7 @@
                 </div>
             </div>
         </div>
-
+        
         <!-- Chọn lớp -->
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <label class="block text-sm font-semibold text-slate-700 mb-2">Chọn lớp quản lý:</label>
@@ -29,7 +29,16 @@
                 <option value="">-- Đang tải danh sách lớp... --</option>
             </select>
         </div>
-
+        <!-- =========================================================
+             THÊM MỚI: NÚT XEM DANH SÁCH HỌC SINH
+             ========================================================= -->
+        <button
+            type="button"
+            onclick="moDanhSachHocSinh()"
+            class="px-4 py-2 rounded-xl bg-indigo-600 text-white
+                   hover:bg-indigo-700 transition shadow-sm">
+            📋 Danh sách học sinh
+        </button>
         <!-- Thống kê tổng quan lớp -->
         <div id="thongKeContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4 hidden">
             <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
@@ -204,6 +213,190 @@
 
                 💾 Lưu cấu hình
 
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+    <!-- =========================================================
+     THÊM MỚI: MODAL DANH SÁCH HỌC SINH
+     Không ảnh hưởng dữ liệu cũ
+     ========================================================= -->
+<div
+    id="modalDanhSachHocSinh"
+    class="fixed inset-0 z-[9999] hidden bg-black/50
+           flex items-center justify-center p-4"
+>
+
+    <div
+        class="bg-white w-full max-w-7xl max-h-[92vh]
+               rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+    >
+
+        <!-- ================= HEADER ================= -->
+        <div
+            class="flex items-center justify-between
+                   px-5 py-4 border-b bg-slate-50"
+        >
+
+            <div>
+                <h2
+                    class="text-lg font-bold text-slate-800"
+                >
+                    📋 Danh sách học sinh
+                </h2>
+
+                <p
+                    id="tenLopDanhSach"
+                    class="text-sm text-slate-500 mt-1"
+                >
+                    Chưa chọn lớp
+                </p>
+            </div>
+
+            <button
+                type="button"
+                onclick="dongDanhSachHocSinh()"
+                class="w-9 h-9 rounded-full
+                       hover:bg-slate-200 text-slate-600
+                       text-xl"
+            >
+                ×
+            </button>
+
+        </div>
+
+
+        <!-- ================= CHỌN CỘT ================= -->
+        <div
+            class="px-5 py-4 border-b bg-white"
+        >
+
+            <div
+                class="flex flex-wrap items-center
+                       justify-between gap-3 mb-3"
+            >
+
+                <div>
+                    <div
+                        class="font-semibold text-slate-700"
+                    >
+                        Thông tin muốn xem
+                    </div>
+
+                    <div
+                        class="text-xs text-slate-400 mt-1"
+                    >
+                        Tích chọn các cột muốn hiển thị.
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+
+                    <button
+                        type="button"
+                        onclick="chonTatCaCotDanhSach()"
+                        class="px-3 py-1.5 text-sm rounded-lg
+                               border border-slate-300
+                               hover:bg-slate-50"
+                    >
+                        ☑ Chọn tất cả
+                    </button>
+
+                    <button
+                        type="button"
+                        onclick="boChonTatCaCotDanhSach()"
+                        class="px-3 py-1.5 text-sm rounded-lg
+                               border border-slate-300
+                               hover:bg-slate-50"
+                    >
+                        ☐ Bỏ chọn
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- DANH SÁCH CHECKBOX CỘT -->
+            <div
+                id="danhSachCotContainer"
+                class="grid grid-cols-2 sm:grid-cols-3
+                       md:grid-cols-4 lg:grid-cols-5
+                       gap-2 max-h-36 overflow-y-auto
+                       p-3 rounded-xl bg-slate-50
+                       border border-slate-200"
+            >
+
+                <span
+                    class="text-sm text-slate-400 italic"
+                >
+                    Đang tải danh sách tiêu đề...
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- ================= THỐNG KÊ ================= -->
+        <div
+            class="px-5 py-3 border-b bg-slate-50
+                   flex items-center justify-between"
+        >
+
+            <div
+                id="tongSoHocSinhDanhSach"
+                class="text-sm font-medium text-slate-600"
+            >
+                Tổng số: 0 học sinh
+            </div>
+
+            <div
+                id="trangThaiDanhSach"
+                class="text-sm text-slate-400"
+            >
+            </div>
+
+        </div>
+
+
+        <!-- ================= BẢNG ================= -->
+        <div
+            class="flex-1 overflow-auto p-5"
+        >
+
+            <div
+                id="bangDanhSachHocSinh"
+                class="min-w-max"
+            >
+
+                <div
+                    class="text-center py-10
+                           text-slate-400 text-sm"
+                >
+                    Chưa có dữ liệu.
+                </div>
+
+            
+
+
+        <!-- ================= FOOTER ================= -->
+        <div
+            class="px-5 py-3 border-t bg-slate-50
+                   flex justify-end"
+        >
+
+            <button
+                type="button"
+                onclick="dongDanhSachHocSinh()"
+                class="px-5 py-2 rounded-xl
+                       border border-slate-300
+                       bg-white hover:bg-slate-50"
+            >
+                Đóng
             </button>
 
         </div>
@@ -1563,7 +1756,711 @@ function escapeAttribute(value) {
 
     return escapeHtml(value);
 }
+//=================================================================================
+//=========== CÁC HÀM LIÊN XEM=
+//=================================================================
+    // ============================================================
+// THÊM MỚI: CHỨC NĂNG DANH SÁCH HỌC SINH
+// GVCN + ADMIN
+// Không ghi / không sửa dữ liệu cũ
+// ============================================================
 
+// ------------------------------------------------------------
+// Biến dữ liệu riêng cho chức năng danh sách
+// ------------------------------------------------------------
+let dsHocSinhData = [];
+let dsHocSinhHeaders = [];
+let dsHocSinhSelectedColumns = [];
+
+
+// ============================================================
+// 1. MỞ DANH SÁCH HỌC SINH
+// ============================================================
+async function moDanhSachHocSinh() {
+
+    const modal =
+        document.getElementById("modalDanhSachHocSinh");
+
+    if (!modal) {
+        alert("Không tìm thấy giao diện Danh sách học sinh.");
+        return;
+    }
+
+    modal.classList.remove("hidden");
+
+    const tenLopElement =
+        document.getElementById("tenLopDanhSach");
+
+    const selectLop =
+        document.getElementById("lopSelect");
+
+    let tenLop = "";
+
+    // --------------------------------------------------------
+    // Lấy lớp đang được chọn từ giao diện cũ
+    // --------------------------------------------------------
+    if (selectLop) {
+        tenLop = String(selectLop.value || "").trim();
+    }
+
+    // Một số giao diện có thể dùng id khác
+    if (!tenLop) {
+
+        const lopElement =
+            document.getElementById("lopHoc");
+
+        if (lopElement) {
+            tenLop =
+                String(lopElement.value || lopElement.textContent || "")
+                    .trim();
+        }
+    }
+
+    if (tenLopElement) {
+        tenLopElement.textContent =
+            tenLop
+                ? "Lớp: " + tenLop
+                : "Chưa chọn lớp";
+    }
+
+    if (!tenLop) {
+
+        document.getElementById("danhSachCotContainer").innerHTML =
+            '<span class="text-sm text-red-500">' +
+            'Vui lòng chọn lớp trước khi xem danh sách.' +
+            '</span>';
+
+        document.getElementById("bangDanhSachHocSinh").innerHTML =
+            '<div class="text-center py-10 text-red-500">' +
+            'Chưa chọn lớp.' +
+            '</div>';
+
+        return;
+    }
+
+    await taiDanhSachHocSinh(tenLop);
+}
+
+
+// ============================================================
+// 2. GỌI API LẤY DANH SÁCH HỌC SINH
+// ============================================================
+async function taiDanhSachHocSinh(tenLop) {
+
+    const cotContainer =
+        document.getElementById("danhSachCotContainer");
+
+    const bangContainer =
+        document.getElementById("bangDanhSachHocSinh");
+
+    const trangThai =
+        document.getElementById("trangThaiDanhSach");
+
+    const tongSo =
+        document.getElementById("tongSoHocSinhDanhSach");
+
+
+    if (cotContainer) {
+        cotContainer.innerHTML =
+            '<span class="text-sm text-slate-400 italic">' +
+            'Đang tải danh sách thông tin...' +
+            '</span>';
+    }
+
+    if (bangContainer) {
+        bangContainer.innerHTML =
+            '<div class="text-center py-10 text-slate-400">' +
+            'Đang tải dữ liệu...' +
+            '</div>';
+    }
+
+    if (trangThai) {
+        trangThai.textContent = "Đang tải...";
+    }
+
+
+    try {
+
+        // ----------------------------------------------------
+        // Kiểm tra session hiện tại
+        // ----------------------------------------------------
+        if (
+            typeof currentSession === "undefined" ||
+            !currentSession
+        ) {
+            throw new Error(
+                "Không tìm thấy phiên đăng nhập từ trang cha."
+            );
+        }
+
+
+        const maTruong =
+            String(currentSession.maTruong || "").trim();
+
+        const maNhanSu =
+            String(currentSession.maNhanSu || "").trim();
+
+
+        if (!maTruong || !maNhanSu) {
+            throw new Error(
+                "Không xác định được mã trường hoặc tài khoản."
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // URL API
+        //
+        // Nếu HTML hiện tại của bạn đã có biến API_URL
+        // thì sử dụng lại biến đó.
+        // ----------------------------------------------------
+        const url =
+            API_URL +
+            "?action=xemDanhSachHocSinh" +
+            "&maTruong=" +
+            encodeURIComponent(maTruong) +
+            "&maNhanSu=" +
+            encodeURIComponent(maNhanSu) +
+            "&tenLop=" +
+            encodeURIComponent(tenLop);
+
+
+        const response =
+            await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(
+                "API trả về HTTP " + response.status
+            );
+        }
+
+
+        const result =
+            await response.json();
+
+
+        // ----------------------------------------------------
+        // Kiểm tra kết quả API
+        // ----------------------------------------------------
+        if (
+            !result ||
+            result.status !== "success"
+        ) {
+            throw new Error(
+                result && result.message
+                    ? result.message
+                    : "Không lấy được danh sách học sinh."
+            );
+        }
+
+
+        // ----------------------------------------------------
+        // Lưu dữ liệu riêng
+        // ----------------------------------------------------
+        dsHocSinhHeaders =
+            Array.isArray(result.headers)
+                ? result.headers
+                : [];
+
+        dsHocSinhData =
+            Array.isArray(result.rows)
+                ? result.rows
+                : [];
+
+
+        // ----------------------------------------------------
+        // Cập nhật tổng số
+        // ----------------------------------------------------
+        if (tongSo) {
+            tongSo.textContent =
+                "Tổng số: " +
+                dsHocSinhData.length +
+                " học sinh";
+        }
+
+        if (trangThai) {
+            trangThai.textContent =
+                result.role
+                    ? "Quyền: " + result.role
+                    : "";
+        }
+
+
+        // ----------------------------------------------------
+        // Tạo checkbox chọn cột
+        // ----------------------------------------------------
+        taoCheckboxCotDanhSach();
+
+
+        // ----------------------------------------------------
+        // Hiển thị bảng
+        // ----------------------------------------------------
+        hienThiBangDanhSachHocSinh();
+
+
+    } catch (error) {
+
+        console.error(
+            "Lỗi taiDanhSachHocSinh:",
+            error
+        );
+
+
+        if (cotContainer) {
+            cotContainer.innerHTML =
+                '<span class="text-sm text-red-500">' +
+                escapeHtmlDanhSach(
+                    error.message || "Có lỗi xảy ra."
+                ) +
+                '</span>';
+        }
+
+
+        if (bangContainer) {
+            bangContainer.innerHTML =
+                '<div class="text-center py-10 text-red-500">' +
+                escapeHtmlDanhSach(
+                    error.message || "Không tải được dữ liệu."
+                ) +
+                '</div>';
+        }
+
+
+        if (tongSo) {
+            tongSo.textContent =
+                "Tổng số: 0 học sinh";
+        }
+
+
+        if (trangThai) {
+            trangThai.textContent =
+                "Có lỗi";
+        }
+    }
+}
+
+
+// ============================================================
+// 3. TẠO CHECKBOX CÁC CỘT
+// ============================================================
+function taoCheckboxCotDanhSach() {
+
+    const container =
+        document.getElementById(
+            "danhSachCotContainer"
+        );
+
+    if (!container) return;
+
+
+    if (!dsHocSinhHeaders.length) {
+
+        container.innerHTML =
+            '<span class="text-sm text-slate-400">' +
+            'Không có tiêu đề dữ liệu.' +
+            '</span>';
+
+        dsHocSinhSelectedColumns = [];
+
+        return;
+    }
+
+
+    container.innerHTML = "";
+
+
+    // --------------------------------------------------------
+    // Mặc định chọn một số cột đầu tiên
+    // để bảng không quá rộng khi vừa mở.
+    // --------------------------------------------------------
+    dsHocSinhSelectedColumns = [];
+
+
+    dsHocSinhHeaders.forEach(
+        function(header, index) {
+
+            const colName =
+                String(
+                    header.colName || ""
+                ).trim();
+
+
+            if (!colName) return;
+
+
+            const checkboxId =
+                "dsCot_" + index;
+
+
+            const wrapper =
+                document.createElement("label");
+
+            wrapper.className =
+                "flex items-center gap-2 " +
+                "p-2 rounded-lg cursor-pointer " +
+                "hover:bg-white border border-transparent " +
+                "hover:border-slate-200";
+
+
+            const checkbox =
+                document.createElement("input");
+
+            checkbox.type = "checkbox";
+            checkbox.id = checkboxId;
+
+            checkbox.dataset.index = index;
+
+            checkbox.className =
+                "w-4 h-4 rounded";
+
+
+            // ------------------------------------------------
+            // Mặc định chọn:
+            // - 5 cột đầu tiên có tiêu đề
+            // ------------------------------------------------
+            if (
+                dsHocSinhSelectedColumns.length < 5
+            ) {
+                checkbox.checked = true;
+
+                dsHocSinhSelectedColumns.push(index);
+            }
+
+
+            checkbox.addEventListener(
+                "change",
+                function() {
+
+                    capNhatCotDanhSach();
+
+                }
+            );
+
+
+            const text =
+                document.createElement("span");
+
+            text.className =
+                "text-sm text-slate-700";
+
+            text.textContent =
+                colName;
+
+
+            wrapper.appendChild(checkbox);
+            wrapper.appendChild(text);
+
+            container.appendChild(wrapper);
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // Nếu có ít cột hơn 5 thì tự chọn hết
+    // --------------------------------------------------------
+    capNhatCotDanhSach();
+}
+
+
+// ============================================================
+// 4. CẬP NHẬT CÁC CỘT ĐƯỢC CHỌN
+// ============================================================
+function capNhatCotDanhSach() {
+
+    dsHocSinhSelectedColumns = [];
+
+
+    dsHocSinhHeaders.forEach(
+        function(header, index) {
+
+            const checkbox =
+                document.getElementById(
+                    "dsCot_" + index
+                );
+
+            if (
+                checkbox &&
+                checkbox.checked
+            ) {
+                dsHocSinhSelectedColumns.push(index);
+            }
+        }
+    );
+
+
+    hienThiBangDanhSachHocSinh();
+}
+
+
+// ============================================================
+// 5. HIỂN THỊ BẢNG
+// ============================================================
+function hienThiBangDanhSachHocSinh() {
+
+    const container =
+        document.getElementById(
+            "bangDanhSachHocSinh"
+        );
+
+    if (!container) return;
+
+
+    if (!dsHocSinhSelectedColumns.length) {
+
+        container.innerHTML =
+            '<div class="text-center py-10 ' +
+            'text-slate-400">' +
+            'Vui lòng chọn ít nhất một thông tin để xem.' +
+            '</div>';
+
+        return;
+    }
+
+
+    if (!dsHocSinhData.length) {
+
+        container.innerHTML =
+            '<div class="text-center py-10 ' +
+            'text-slate-400">' +
+            'Lớp này chưa có dữ liệu học sinh.' +
+            '</div>';
+
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // Tạo bảng
+    // --------------------------------------------------------
+    const table =
+        document.createElement("table");
+
+    table.className =
+        "border-collapse text-sm min-w-max";
+
+
+    // ========================================================
+    // THEAD
+    // ========================================================
+    const thead =
+        document.createElement("thead");
+
+
+    const headerRow =
+        document.createElement("tr");
+
+
+    // Cột STT
+    const sttHeader =
+        document.createElement("th");
+
+    sttHeader.textContent = "STT";
+
+    sttHeader.className =
+        "sticky top-0 bg-slate-100 " +
+        "border border-slate-300 px-3 py-2 " +
+        "font-semibold text-center";
+
+    headerRow.appendChild(sttHeader);
+
+
+    dsHocSinhSelectedColumns.forEach(
+        function(index) {
+
+            const header =
+                dsHocSinhHeaders[index];
+
+            const th =
+                document.createElement("th");
+
+            th.textContent =
+                String(
+                    header.colName || ""
+                ).trim();
+
+            th.className =
+                "sticky top-0 bg-slate-100 " +
+                "border border-slate-300 px-3 py-2 " +
+                "font-semibold text-left whitespace-nowrap";
+
+            headerRow.appendChild(th);
+        }
+    );
+
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+
+    // ========================================================
+    // TBODY
+    // ========================================================
+    const tbody =
+        document.createElement("tbody");
+
+
+    dsHocSinhData.forEach(
+        function(item, rowIndex) {
+
+            const tr =
+                document.createElement("tr");
+
+
+            tr.className =
+                rowIndex % 2 === 0
+                    ? "bg-white hover:bg-slate-50"
+                    : "bg-slate-50 hover:bg-slate-100";
+
+
+            // ------------------------------------------------
+            // STT
+            // ------------------------------------------------
+            const stt =
+                document.createElement("td");
+
+            stt.textContent =
+                rowIndex + 1;
+
+            stt.className =
+                "border border-slate-300 " +
+                "px-3 py-2 text-center " +
+                "font-medium";
+
+            tr.appendChild(stt);
+
+
+            // ------------------------------------------------
+            // Các cột được chọn
+            // ------------------------------------------------
+            dsHocSinhSelectedColumns.forEach(
+                function(index) {
+
+                    const td =
+                        document.createElement("td");
+
+                    const value =
+                        item.values
+                            ? item.values[index]
+                            : "";
+
+
+                    td.textContent =
+                        formatGiaTriDanhSach(value);
+
+
+                    td.className =
+                        "border border-slate-300 " +
+                        "px-3 py-2 whitespace-nowrap";
+
+
+                    tr.appendChild(td);
+                }
+            );
+
+
+            tbody.appendChild(tr);
+        }
+    );
+
+
+    table.appendChild(tbody);
+
+
+    container.innerHTML = "";
+    container.appendChild(table);
+}
+
+
+// ============================================================
+// 6. CHỌN TẤT CẢ CỘT
+// ============================================================
+function chonTatCaCotDanhSach() {
+
+    dsHocSinhHeaders.forEach(
+        function(header, index) {
+
+            const checkbox =
+                document.getElementById(
+                    "dsCot_" + index
+                );
+
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        }
+    );
+
+
+    capNhatCotDanhSach();
+}
+
+
+// ============================================================
+// 7. BỎ CHỌN TẤT CẢ
+// ============================================================
+function boChonTatCaCotDanhSach() {
+
+    dsHocSinhHeaders.forEach(
+        function(header, index) {
+
+            const checkbox =
+                document.getElementById(
+                    "dsCot_" + index
+                );
+
+            if (checkbox) {
+                checkbox.checked = false;
+            }
+        }
+    );
+
+
+    capNhatCotDanhSach();
+}
+
+
+// ============================================================
+// 8. ĐÓNG MODAL
+// ============================================================
+function dongDanhSachHocSinh() {
+
+    const modal =
+        document.getElementById(
+            "modalDanhSachHocSinh"
+        );
+
+    if (modal) {
+        modal.classList.add("hidden");
+    }
+}
+
+
+// ============================================================
+// 9. ĐỊNH DẠNG GIÁ TRỊ
+// ============================================================
+function formatGiaTriDanhSach(value) {
+
+    if (
+        value === null ||
+        value === undefined
+    ) {
+        return "";
+    }
+
+    return String(value);
+}
+// ============================================================
+// 10. ESCAPE HTML CHO THÔNG BÁO LỖI
+// ============================================================
+function escapeHtmlDanhSach(value) {
+
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
 </script>
 </body>
 </html>
