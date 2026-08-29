@@ -3,11 +3,12 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxw9_IwDZqka0NzwFKX9Kih
 
 let hocSinhDangChon = null;
 
+// Khi tải danh sách lớp ban đầu
 window.onload = function() {
-    // Lấy mã trường từ biến toàn cục currentSession (đã được khởi tạo ở đầu trang)
     const maTruong = currentSession.maTruong || '';
+    const maNhanSu = currentSession.maNhanSu || '';
 
-    fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(maTruong)}`)
+    fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(maTruong)}&maNhanSu=${encodeURIComponent(maNhanSu)}`)
         .then(res => res.json())
         .then(data => {
             const select = document.getElementById('selectLop');
@@ -22,6 +23,7 @@ window.onload = function() {
         .catch(err => console.error("Lỗi tải danh sách lớp:", err));
 };
 
+// Khi chọn một lớp cụ thể
 function taiDuLieuLop() {
     const selectLopEl = document.getElementById('selectLop');
     if (!selectLopEl) return;
@@ -29,8 +31,9 @@ function taiDuLieuLop() {
     if(!tenLop) return;
 
     const maTruong = currentSession.maTruong || '';
+    const maNhanSu = currentSession.maNhanSu || '';
 
-    fetch(`${API_URL}?action=kiemTraLop&tenLop=${encodeURIComponent(tenLop)}&maTruong=${encodeURIComponent(maTruong)}`)
+    fetch(`${API_URL}?action=kiemTraLop&tenLop=${encodeURIComponent(tenLop)}&maTruong=${encodeURIComponent(maTruong)}&maNhanSu=${encodeURIComponent(maNhanSu)}`)
         .then(res => res.json())
         .then(data => {
             if (data.chiTietHS) {
