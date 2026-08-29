@@ -144,25 +144,29 @@
 
         function khoiTaoDuLieu() {
             taiCauHinh();
-            fetch(`${API_URL}?action=checkRole&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
-            .then(res => res.json())
-            .then(res => {
-                let vaiTroHienThi = res.vaiTro || "Giáo viên";
-                document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu} | Vai trò: ${vaiTroHienThi}`;
-
-                let vLower = vaiTroHienThi.toLowerCase();
-                // Kiểm tra nếu vai trò chứa chữ admin hoặc quản lý
-                if (vLower.includes('admin') || vLower.includes('bgh') || vLower.includes('quản lý') || vLower.includes('hiệu trưởng')) {
-                    document.getElementById('adminConfigBtnContainer').innerHTML = `
-                        <button onclick="moModalAdmin()" class="text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-xl font-medium border border-emerald-100 transition">
-                            ⚙️ Cấu hình Admin
-                        </button>
-                    `;
-                }
-            })
-            .catch(err => {
-                document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu}`;
-            });        }
+          // Đảm bảo URL gọi đúng action=layDanhSachLop và kèm đủ mã trường, mã nhân sự
+fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
+    .then(response => response.json())
+    .then(res => {
+        if (res.status === "success") {
+            let selectLop = document.getElementById('selectLop');
+            selectLop.innerHTML = '<option value="">-- Chọn lớp quản lý --</option>';
+            
+            if (res.danhSachLop && res.danhSachLop.length > 0) {
+                res.danhSachLop.forEach(lop => {
+                    let opt = document.createElement('option');
+                    opt.value = lop;
+                    opt.innerText = lop;
+                    selectLop.appendChild(opt);
+                });
+            } else {
+                selectLop.innerHTML = '<option value="">-- Không tìm thấy lớp được phân công --</option>';
+            }
+        } else {
+            console.error("Lỗi từ server GAS:", res.message);
+        }
+    })
+    .catch(err => console.error("Lỗi kết nối:", err)); }
 
         function taiCauHinh() {
             fetch(`${API_URL}?action=getConfig`)
