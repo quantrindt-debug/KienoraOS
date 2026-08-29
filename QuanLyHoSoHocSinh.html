@@ -119,7 +119,7 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec"; 
         let hocSinhDangChon = null;
-        let cauHinhCot = { batBuoc: ["Họ đệm", "Tên", "Ngày sinh"], neuCo: [] }; // Mặc định mẫu
+        let cauHinhCot = { batBuoc: ["Họ đệm", "Tên", "Ngày sinh"], neuCo: [] };
 
         const rawAccount = localStorage.getItem('maNhanSu') || localStorage.getItem('taiKhoan') || 'c3ndtnl.nan.hieu';
         let parts = rawAccount.split('.');
@@ -133,7 +133,6 @@
 
         document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu}`;
 
-        // Kiểm tra quyền Admin (Ví dụ tài khoản có chứa chữ admin hoặc tuỳ chỉnh theo ý thầy)
         if (currentSession.maNhanSu.toLowerCase().includes('admin') || currentSession.maNhanSu.toLowerCase().includes('hieu')) {
             document.getElementById('adminConfigBtnContainer').innerHTML = `
                 <button onclick="moModalAdmin()" class="text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-xl font-medium border border-emerald-100 transition">
@@ -143,32 +142,30 @@
         }
 
         function khoiTaoDuLieu() {
-             taiDanhSachLop();
-    kiemTraVaiTroNguoiDung();
             taiCauHinh();
-          // Đảm bảo URL gọi đúng action=layDanhSachLop và kèm đủ mã trường, mã nhân sự
-fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
-    .then(response => response.json())
-    .then(res => {
-        if (res.status === "success") {
-            let selectLop = document.getElementById('selectLop');
-            selectLop.innerHTML = '<option value="">-- Chọn lớp quản lý --</option>';
-            
-            if (res.danhSachLop && res.danhSachLop.length > 0) {
-                res.danhSachLop.forEach(lop => {
-                    let opt = document.createElement('option');
-                    opt.value = lop;
-                    opt.innerText = lop;
-                    selectLop.appendChild(opt);
-                });
-            } else {
-                selectLop.innerHTML = '<option value="">-- Không tìm thấy lớp được phân công --</option>';
-            }
-        } else {
-            console.error("Lỗi từ server GAS:", res.message);
+            taiDanhSachLop();
         }
-    })
-    .catch(err => console.error("Lỗi kết nối:", err)); }
+
+        function taiDanhSachLop() {
+            fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
+                .then(response => response.json())
+                .then(res => {
+                    let selectLop = document.getElementById('selectLop');
+                    selectLop.innerHTML = '<option value="">-- Chọn lớp quản lý --</option>';
+                    
+                    if (res.status === "success" && res.danhSachLop && res.danhSachLop.length > 0) {
+                        res.danhSachLop.forEach(lop => {
+                            let opt = document.createElement('option');
+                            opt.value = lop;
+                            opt.innerText = lop;
+                            selectLop.appendChild(opt);
+                        });
+                    } else {
+                        selectLop.innerHTML = '<option value="">-- Không tìm thấy lớp được phân công --</option>';
+                    }
+                })
+                .catch(err => console.error("Lỗi kết nối danh sách lớp:", err));
+        }
 
         function taiCauHinh() {
             fetch(`${API_URL}?action=getConfig`)
@@ -181,32 +178,7 @@ fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSes
                 })
                 .catch(err => console.log("Lỗi tải cấu hình:", err));
         }
-    function kiemTraVaiTroNguoiDung() {
-    fetch(`${API_URL}?action=checkRole&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
-        .then(response => response.json())
-        .then(res => {
-            if (res.status === "success") {
-                let vaiTro = res.vaiTro; // Ví dụ: "Admin", "Quản lý", "Giáo viên"...
-                
-                // Cập nhật hiển thị text vai trò lên giao diện nếu cần
-                let spanVaiTro = document.getElementById('hienThiVaiTro');
-                if (spanVaiTro) spanVaiTro.innerText = vaiTro;
-                
-                // Xử lý ẩn/hiện nút cấu hình (Giả sử id của nút cấu hình là 'btnCauHinh')
-                let btnCauHinh = document.getElementById('btnCauHinh');
-                if (btnCauHinh) {
-                    if (vaiTro.toLowerCase() === "admin" || vaiTro.toLowerCase() === "quản trị") {
-                        btnCauHinh.style.display = "inline-block"; // Hoặc "block"
-                    } else {
-                        btnCauHinh.style.display = "none";
-                    }
-                }
-            } else {
-                console.error("Không lấy được vai trò:", res.message);
-            }
-        })
-        .catch(err => console.error("Lỗi kết nối kiểm tra vai trò:", err));
-}
+
         function moModalAdmin() {
             document.getElementById('configBatBuoc').value = cauHinhCot.batBuoc.join(', ');
             document.getElementById('configNeuCo').value = cauHinhCot.neuCo.join(', ');
@@ -217,7 +189,7 @@ fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSes
             document.getElementById('adminModal').classList.add('hidden');
         }
 
-       function luuCauHinhAdmin(btn) {
+        function luuCauHinhAdmin(btn) {
             let bbStr = document.getElementById('configBatBuoc').value;
             let ncStr = document.getElementById('configNeuCo').value;
             
@@ -246,6 +218,7 @@ fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSes
                 taiCauHinh();
                 if(document.getElementById('selectLop').value) taiDuLieuLop();
             })
+            .catch(err => alert("Lỗi lưu cấu hình: " + err))
             .finally(() => {
                 btn.innerText = originalText;
                 btn.disabled = false;
@@ -276,6 +249,10 @@ fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSes
                         container.innerHTML = '<span class="text-sm text-rose-500">Không tìm thấy dữ liệu học sinh.</span>';
                         thongKeContainer.classList.add('hidden');
                     }
+                })
+                .catch(err => {
+                    container.innerHTML = '<span class="text-sm text-rose-500">Lỗi kết nối khi tải dữ liệu lớp.</span>';
+                    console.error(err);
                 });
         }
 
@@ -325,7 +302,6 @@ fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSes
             khungBR.classList.remove('hidden');
             noiDungBR.value = hs.ghiChuBR || '';
 
-            // Phân loại thành 2 nhóm từ danh sách thiếu của học sinh
             let thieuBB = hs.thieu.filter(c => cauHinhCot.batBuoc.length === 0 || cauHinhCot.batBuoc.includes(c));
             let thieuNC = hs.thieu.filter(c => cauHinhCot.neuCo.includes(c));
 
@@ -351,20 +327,8 @@ fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSes
                 </div>
             `;
         }
-        fetch("https://script.google.com/macros/s/AKfycbzuPyTOGRKdBfeMQY69QcbCulFnHJE9t2VTtByv1JTl-l2v91wmtIBn5ObMgzRALqpu/exec", {
-  method: "POST",
-  body: JSON.stringify({
-    action: "saveConfig",
-    configs: [
-      { colIndex: 27, colName: "Số CCCD", isMandatory: true },
-      { colIndex: 6, colName: "Họ và tên", isMandatory: true }
-      // ... các cột khác
-    ]
-  })
-})
-.then(res => res.json())
-.then(data => console.log(data));
-        function luuNoiDungBR(btnElement) { 
+
+        function luuNoiDungBR(btnElement) {  
             if (!hocSinhDangChon) return;
             const noiDung = document.getElementById('noiDungBR').value;
             const originalText = btnElement.innerText;
@@ -386,6 +350,7 @@ fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSes
                 hocSinhDangChon.ghiChuBR = noiDung;
                 taiDuLieuLop();
             })
+            .catch(err => alert("Lỗi khi lưu ghi chú: " + err))
             .finally(() => {
                 btnElement.innerText = originalText;
                 btnElement.disabled = false;
