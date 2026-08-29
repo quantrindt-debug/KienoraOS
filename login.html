@@ -44,65 +44,78 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbxw9_IwDZqka0NzwFKX9KihjvTP2-EEBsNGzxVBrPn4vQJMXMfwFQtsQTsliPA0xaRa/exec";
 
-        function doLogin(event) {
-            if (event) event.preventDefault();
+      function doLogin(event) {
+    if (event) event.preventDefault();
 
-            const rawAcc = document.getElementById('accInput').value.trim();
-            const pass = document.getElementById('passInput').value.trim();
-            const btn = document.getElementById('btnLogin');
+    const rawAcc = document.getElementById('accInput').value.trim();
+    const pass = document.getElementById('passInput').value.trim();
+    const btn = document.getElementById('btnLogin');
 
-            if (!rawAcc || !pass) {
-                showMsg("❌ Vui lòng nhập đầy đủ Mã Tài Khoản và Mật Khẩu!", "error");
-                return;
+    if (!rawAcc || !pass) {
+        showMsg("❌ Vui lòng nhập đầy đủ Mã Tài Khoản và Mật Khẩu!", "error");
+        return;
+    }
+
+    const parts = rawAcc.split('.');
+    if (parts.length < 2) {
+        showMsg("❌ Mẫu tài khoản chưa đúng! Phải có dấu chấm (VD: c3ndtnl.nan.ha)", "error");
+        return;
+    }
+
+    // Bóc tách: Nếu có từ 3 phần trở lên (vd: c3ndtnl.nan.ha) thì 2 phần đầu là mã trường.
+    // Nếu chỉ có 2 phần (vd: C3NDT.GV001) thì lấy phần đầu.
+    let extractedMaTruong = "";
+    if (parts.length >= 3) {
+        extractedMaTruong = (parts[0] + "." + parts[1]).toUpperCase();
+    } else {
+        extractedMaTruong = parts[0].toUpperCase();
+    }
+
+    // Giữ nguyên toàn bộ chuỗi làm tên nhân sự / tên đăng nhập để khớp cột H
+    const extractedMaNS = rawAcc;
+
+    btn.disabled = true;
+    btn.innerHTML = '<span>Đang xác thực...</span>';
+
+    const requestUrl = `${API_URL}?action=login&account=${encodeURIComponent(rawAcc)}&password=${encodeURIComponent(pass)}&maTruong=${encodeURIComponent(extractedMaTruong)}`;
+
+    fetch(requestUrl)
+        .then(response => response.json())
+        .then(res => {
+            btn.disabled = false;
+            btn.innerHTML = '<span>XÁC THỰC & ĐĂNG NHẬP</span>';
+
+            if (res.status === 'success') {
+                const sessionData = {
+                    maTruong: extractedMaTruong,
+                    maNhanSu: extractedMaNS, // Lưu toàn bộ c3ndtnl.nan.ha vào session để trang quản lý dùng lọc sheet PhanCong
+                    token: res.token || (extractedMaTruong + "_" + new Date().getTime()),
+                    ...res.user
+                };
+
+                localStorage.setItem('kienona_session', JSON.stringify(sessionData));
+                localStorage.setItem('kienona_school', JSON.stringify(res.school || { maTruong: extractedMaTruong }));
+
+                // Hỗ trợ thêm các key ngắn gọn để trang quản lý lớp học dễ gọi trực tiếp nếu cần
+                localStorage.setItem('maTruong', extractedMaTruong);
+                localStorage.setItem('maNhanSu', extractedMaNS);
+
+                showMsg("✅ Đăng nhập thành công! Đang chuyển hướng...", "success");
+
+                setTimeout(() => {
+                    window.location.href = "KienoraOS.html";
+                }, 500);
+
+            } else {
+                showMsg("❌ " + (res.message || "Tài khoản hoặc mật khẩu không chính xác!"), "error");
             }
-
-            const dotIndex = rawAcc.indexOf('.');
-            if (dotIndex === -1) {
-                showMsg("❌ Mẫu tài khoản chưa đúng! Phải có dấu chấm (VD: C3NDT.GV001)", "error");
-                return;
-            }
-
-            const extractedMaTruong = rawAcc.substring(0, dotIndex).toUpperCase();
-            const extractedMaNS = rawAcc.substring(dotIndex + 1);
-
-            btn.disabled = true;
-            btn.innerHTML = '<span>Đang xác thực...</span>';
-
-            const requestUrl = `${API_URL}?action=login&account=${encodeURIComponent(rawAcc)}&password=${encodeURIComponent(pass)}&maTruong=${encodeURIComponent(extractedMaTruong)}`;
-
-            fetch(requestUrl)
-                .then(response => response.json())
-                .then(res => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>XÁC THỰC & ĐĂNG NHẬP</span>';
-
-                    if (res.status === 'success') {
-                        const sessionData = {
-                            maTruong: extractedMaTruong,
-                            maNhanSu: extractedMaNS,
-                            token: res.token || (extractedMaTruong + "_" + new Date().getTime()),
-                            ...res.user
-                        };
-
-                        localStorage.setItem('kienona_session', JSON.stringify(sessionData));
-                        localStorage.setItem('kienona_school', JSON.stringify(res.school || { maTruong: extractedMaTruong }));
-
-                        showMsg("✅ Đăng nhập thành công! Đang chuyển hướng...", "success");
-
-                        setTimeout(() => {
-                            window.location.href = "KienoraOS.html";
-                        }, 500);
-
-                    } else {
-                        showMsg("❌ " + (res.message || "Tài khoản hoặc mật khẩu không chính xác!"), "error");
-                    }
-                })
-                .catch(err => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>XÁC THỰC & ĐĂNG NHẬP</span>';
-                    showMsg("⚠️ Lỗi kết nối Máy chủ API: " + err.message, "error");
-                });
-        }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = '<span>XÁC THỰC & ĐĂNG NHẬP</span>';
+            showMsg("⚠️ Lỗi kết nối Máy chủ API: " + err.message, "error");
+        });
+}
 
         function showMsg(message, type) {
             let thongBao = document.getElementById('thongBaoLoi');
