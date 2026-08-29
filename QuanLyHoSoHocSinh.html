@@ -12,10 +12,13 @@
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
                 <h1 class="text-xl font-bold text-slate-800">Quản Lý Hồ Sơ Học Sinh & Cột BR</h1>
-                <p class="text-sm text-slate-500">Kiểm tra thông tin thiếu từ A đến BQ và lưu ghi chú cá nhân.</p>
+                <p class="text-sm text-slate-500">Kiểm tra thông tin hồ sơ học sinh và lưu ghi chú cá nhân.</p>
             </div>
-            <div id="userInfoBadge" class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-medium border border-blue-100">
-                Đang tải định danh...
+            <div class="flex items-center gap-3">
+                <div id="adminConfigBtnContainer"></div>
+                <div id="userInfoBadge" class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-medium border border-blue-100">
+                    Đang tải định danh...
+                </div>
             </div>
         </div>
 
@@ -25,6 +28,37 @@
             <select id="selectLop" onchange="taiDuLieuLop()" class="w-full border border-slate-200 p-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm bg-slate-50">
                 <option value="">-- Đang tải danh sách lớp... --</option>
             </select>
+        </div>
+
+        <!-- Thống kê tổng quan lớp -->
+        <div id="thongKeContainer" class="grid grid-cols-1 md:grid-cols-3 gap-4 hidden">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-400">Tổng số học sinh</p>
+                    <h3 id="statTongHS" class="text-lg font-bold text-slate-800">0</h3>
+                </div>
+                <div class="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-400">Đã đủ thông tin</p>
+                    <h3 id="statDuHS" class="text-lg font-bold text-emerald-600">0</h3>
+                </div>
+                <div class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-slate-400">Còn thiếu thông tin</p>
+                    <h3 id="statThieuHS" class="text-lg font-bold text-amber-600">0</h3>
+                </div>
+                <div class="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+            </div>
         </div>
 
         <!-- Khu vực hiển thị chính -->
@@ -40,56 +74,81 @@
 
             <!-- Chi tiết thông tin thiếu & Cột BR -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-[500px] justify-between">
-                <div>
-                    <h2 class="text-base font-bold text-slate-800 mb-3">Chi tiết thông tin thiếu (A đến BQ)</h2>
-                    <div id="chiTietHSCard" class="p-4 bg-slate-50 rounded-xl border border-slate-100 min-h-[120px] mb-4">
+                <div class="overflow-y-auto flex-1 pr-1">
+                    <h2 class="text-base font-bold text-slate-800 mb-3">Chi tiết thông tin hồ sơ</h2>
+                    <div id="chiTietHSCard" class="p-4 bg-slate-50 rounded-xl border border-slate-100 min-h-[140px] mb-4 space-y-3">
                         <p class="text-sm text-slate-400 italic">Chọn một học sinh bên trái để xem chi tiết...</p>
                     </div>
                 </div>
 
                 <!-- Khung chỉnh sửa cột BR -->
-                <div id="khungNhanTinBR" class="hidden border-t border-slate-100 pt-4 mt-auto">
+                <div id="khungNhanTinBR" class="hidden border-t border-slate-100 pt-4 mt-2">
                     <label class="block text-sm font-semibold text-slate-700 mb-1">Ghi chú / Cột BR:</label>
-                    <textarea id="noiDungBR" rows="3" class="w-full border border-slate-200 p-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3" placeholder="Nhập nội dung cột BR..."></textarea>
+                    <textarea id="noiDungBR" rows="2" class="w-full border border-slate-200 p-3 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2" placeholder="Nhập nội dung cột BR..."></textarea>
                     <button onclick="luuNoiDungBR(this)" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-xl text-sm transition shadow-sm">
-                    Lưu ghi chú BR
-                </button>
+                        Lưu ghi chú BR
+                    </button>
                 </div>
             </div>
+        </div>
+    </div>
 
+    <!-- Modal Cấu hình Admin -->
+    <div id="adminModal" class="fixed inset-0 bg-slate-900/50 hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-lg p-6 rounded-2xl shadow-xl space-y-4">
+            <h3 class="text-lg font-bold text-slate-800">Cấu hình nhóm cột thông tin</h3>
+            <p class="text-xs text-slate-500">Nhập danh sách tên các cột (cách nhau bởi dấu phẩy) hoặc chọn cấu hình phân loại bắt buộc / nếu có.</p>
+            
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Các cột BẮT BUỘC NHẬP (Tên cột cách nhau dấu phẩy):</label>
+                <textarea id="configBatBuoc" rows="3" class="w-full border border-slate-200 p-2.5 rounded-xl text-xs focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Các cột NẾU CÓ (Tên cột cách nhau dấu phẩy):</label>
+                <textarea id="configNeuCo" rows="3" class="w-full border border-slate-200 p-2.5 rounded-xl text-xs focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="dongModalAdmin()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-xs transition">Đóng</button>
+                <button onclick="luuCauHinhAdmin(this)" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl text-xs transition">Lưu cấu hình</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Thay link Web App chuẩn của thầy vào đây
         const API_URL = "https://script.google.com/macros/s/AKfycbx_JrmXio35cXobgk6TRrsRYCrfmCH2Lz7mjswM-mV-bPuObRu_smGR9ZrG2T-_qNsT/exec"; 
-        
-        // Lấy thông tin tài khoản thô từ localStorage (ví dụ: "c3ndtnl.nan.hieu" hoặc đã tách sẵn)
-    const rawAccount = localStorage.getItem('maNhanSu') || localStorage.getItem('taiKhoan') || 'c3ndtnl.nan.hieu';
-    
-    // Tách mã trường và tên nhân sự dựa vào dấu chấm
-    // Ví dụ: "c3ndtnl.nan.hieu" -> maTruong: "c3ndtnl.nan", maNhanSu: "hieu"
-    let parts = rawAccount.split('.');
-    let maTruongVal = parts.length >= 2 ? parts[0] + "." + parts[1] : (localStorage.getItem('maTruong') || "c3ndtnl.nan");
-    let maNhanSuVal = parts.length >= 3 ? parts[2] : (parts.length === 2 ? parts[1] : rawAccount);
+        let hocSinhDangChon = null;
+        let cauHinhCot = { batBuoc: ["Họ đệm", "Tên", "Ngày sinh"], neuCo: [] }; // Mặc định mẫu
 
-    const currentSession = {
-        maTruong: maTruongVal,  // Sẽ ra chuẩn "c3ndtnl.nan"
-        maNhanSu: maNhanSuVal   // Sẽ ra tên nhân sự thực tế
-    };
+        const rawAccount = localStorage.getItem('maNhanSu') || localStorage.getItem('taiKhoan') || 'c3ndtnl.nan.hieu';
+        let parts = rawAccount.split('.');
+        let maTruongVal = parts.length >= 2 ? parts[0] + "." + parts[1] : (localStorage.getItem('maTruong') || "c3ndtnl.nan");
+        let maNhanSuVal = parts.length >= 3 ? parts[2] : (parts.length === 2 ? parts[1] : rawAccount);
 
-    // Hiển thị trực tiếp lên giao diện để kiểm tra ngay
-    document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu}`;
-        // 1. Tải danh sách lớp khi mở trang
+        const currentSession = {
+            maTruong: maTruongVal, 
+            maNhanSu: maNhanSuVal 
+        };
+
+        document.getElementById('userInfoBadge').innerText = `Trường: ${currentSession.maTruong} | Nhân sự: ${currentSession.maNhanSu}`;
+
+        // Kiểm tra quyền Admin (Ví dụ tài khoản có chứa chữ admin hoặc tuỳ chỉnh theo ý thầy)
+        if (currentSession.maNhanSu.toLowerCase().includes('admin') || currentSession.maNhanSu.toLowerCase().includes('hieu')) {
+            document.getElementById('adminConfigBtnContainer').innerHTML = `
+                <button onclick="moModalAdmin()" class="text-xs bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-3 py-1.5 rounded-xl font-medium border border-emerald-100 transition">
+                    ⚙️ Cấu hình Admin
+                </button>
+            `;
+        }
+
         function khoiTaoDuLieu() {
-            console.log("Đang tải danh sách lớp...");
+            taiCauHinh();
             fetch(`${API_URL}?action=layDanhSachLop&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
                 .then(res => res.json())
                 .then(data => {
-                    console.log("Danh sách lớp trả về:", data);
                     const select = document.getElementById('selectLop');
                     select.innerHTML = '<option value="">-- Chọn lớp học --</option>';
-                    
                     const dsLop = data.danhSachLop || data.dsLop;
                     if (dsLop && Array.isArray(dsLop) && dsLop.length > 0) {
                         dsLop.forEach(lop => {
@@ -98,20 +157,50 @@
                     } else {
                         select.innerHTML = '<option value="">-- Không có lớp nào được phân công --</option>';
                     }
-                })
-                .catch(err => {
-                    console.error("Lỗi tải lớp:", err);
-                    alert("Lỗi kết nối khi tải danh sách lớp!");
                 });
         }
 
-        // 2. Tải danh sách học sinh của lớp được chọn
+        function taiCauHinh() {
+            // Có thể load cấu hình từ localStorage hoặc API
+            let savedBB = localStorage.getItem('cfg_batBuoc');
+            let savedNC = localStorage.getItem('cfg_neuCo');
+            if (savedBB) cauHinhCot.batBuoc = savedBB.split(',').map(s => s.trim());
+            if (savedNC) cauHinhCot.neuCo = savedNC.split(',').map(s => s.trim());
+        }
+
+        function moModalAdmin() {
+            document.getElementById('configBatBuoc').value = cauHinhCot.batBuoc.join(', ');
+            document.getElementById('configNeuCo').value = cauHinhCot.neuCo.join(', ');
+            document.getElementById('adminModal').classList.remove('hidden');
+        }
+
+        function dongModalAdmin() {
+            document.getElementById('adminModal').classList.add('hidden');
+        }
+
+        function luuCauHinhAdmin(btn) {
+            let bbStr = document.getElementById('configBatBuoc').value;
+            let ncStr = document.getElementById('configNeuCo').value;
+            
+            localStorage.setItem('cfg_batBuoc', bbStr);
+            localStorage.setItem('cfg_neuCo', ncStr);
+            
+            cauHinhCot.batBuoc = bbStr.split(',').map(s => s.trim()).filter(Boolean);
+            cauHinhCot.neuCo = ncStr.split(',').map(s => s.trim()).filter(Boolean);
+
+            alert("Đã lưu cấu hình nhóm cột thành công!");
+            dongModalAdmin();
+            if(document.getElementById('selectLop').value) taiDuLieuLop();
+        }
+
         function taiDuLieuLop() {
             const tenLop = document.getElementById('selectLop').value;
             const container = document.getElementById('danhSachHSContainer');
+            const thongKeContainer = document.getElementById('thongKeContainer');
             
             if (!tenLop) {
                 container.innerHTML = '<span class="text-sm text-slate-400 italic">Vui lòng chọn lớp học ở trên...</span>';
+                thongKeContainer.classList.add('hidden');
                 return;
             }
 
@@ -120,31 +209,38 @@
             fetch(`${API_URL}?action=kiemTraLop&tenLop=${encodeURIComponent(tenLop)}&maTruong=${encodeURIComponent(currentSession.maTruong)}&maNhanSu=${encodeURIComponent(currentSession.maNhanSu)}`)
                 .then(res => res.json())
                 .then(data => {
-                    console.log("Dữ liệu kiểm tra lớp:", data);
                     if (data.chiTietHS) {
+                        capNhatThongKe(data.chiTietHS);
                         hienThiDanhSachHS(data.chiTietHS);
+                        thongKeContainer.classList.remove('hidden');
                     } else {
-                        container.innerHTML = '<span class="text-sm text-rose-500">Không tìm thấy dữ liệu học sinh của lớp này.</span>';
+                        container.innerHTML = '<span class="text-sm text-rose-500">Không tìm thấy dữ liệu học sinh.</span>';
+                        thongKeContainer.classList.add('hidden');
                     }
-                })
-                .catch(err => {
-                    console.error("Lỗi tải dữ liệu lớp:", err);
-                    container.innerHTML = '<span class="text-sm text-rose-500">Lỗi kết nối khi tải dữ liệu học sinh.</span>';
                 });
         }
 
-        // 3. Hiển thị danh sách học sinh ra giao diện
+        function capNhatThongKe(danhSach) {
+            const tongHS = danhSach.length;
+            let soDu = 0, soThieu = 0;
+
+            danhSach.forEach(hs => {
+                let thieuBatBuoc = hs.thieu.filter(c => cauHinhCot.batBuoc.length === 0 || cauHinhCot.batBuoc.includes(c));
+                if (thieuBatBuoc.length === 0) soDu++; else soThieu++;
+            });
+
+            document.getElementById('statTongHS').innerText = tongHS;
+            document.getElementById('statDuHS').innerText = soDu;
+            document.getElementById('statThieuHS').innerText = soThieu;
+        }
+
         function hienThiDanhSachHS(danhSach) {
             const container = document.getElementById('danhSachHSContainer');
             container.innerHTML = '';
             
-            if (!danhSach || danhSach.length === 0) {
-                container.innerHTML = '<span class="text-sm text-slate-400 italic">Lớp này không có học sinh nào.</span>';
-                return;
-            }
-            
             danhSach.forEach(hs => {
-                const soLuongThieu = hs.thieu ? hs.thieu.length : 0;
+                let thieuBB = hs.thieu.filter(c => cauHinhCot.batBuoc.length === 0 || cauHinhCot.batBuoc.includes(c));
+                const soLuongThieu = thieuBB.length;
                 const badgeColor = soLuongThieu === 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
                 
                 const div = document.createElement('div');
@@ -154,14 +250,13 @@
                         <p class="text-sm font-semibold text-slate-800">${hs.tenHS}</p>
                         <p class="text-xs text-slate-500">Mã: ${hs.maHS}</p>
                     </div>
-                    <span class="text-xs font-bold px-2.5 py-1 rounded-lg ${badgeColor}">${soLuongThieu} thiếu</span>
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-lg ${badgeColor}">${soLuongThieu} thiếu (BB)</span>
                 `;
                 div.onclick = () => chonHocSinh(hs);
                 container.appendChild(div);
             });
         }
 
-        // 4. Khi bấm chọn một học sinh cụ thể
         function chonHocSinh(hs) {
             hocSinhDangChon = hs;
             const card = document.getElementById('chiTietHSCard');
@@ -171,57 +266,76 @@
             khungBR.classList.remove('hidden');
             noiDungBR.value = hs.ghiChuBR || '';
 
-            if (!hs.thieu || hs.thieu.length === 0) {
-                card.innerHTML = `<p class="text-sm text-emerald-600 font-semibold">Học sinh <strong>${hs.tenHS}</strong> đã hoàn thành đầy đủ thông tin từ A đến BQ!</p>`;
-            } else {
-                let htmlList = hs.thieu.map(c => `<span class="bg-rose-50 text-rose-600 border border-rose-100 text-xs px-2.5 py-1 rounded-lg font-medium">${c}</span>`).join(' ');
-                card.innerHTML = `
-                    <p class="text-sm font-semibold text-slate-800 mb-2">Học sinh: <span class="text-blue-600">${hs.tenHS}</span> còn thiếu các cột sau:</p>
-                    <div class="flex flex-wrap gap-2">${htmlList}</div>
-                `;
-            }
+            // Phân loại thành 2 nhóm từ danh sách thiếu của học sinh
+            let thieuBB = hs.thieu.filter(c => cauHinhCot.batBuoc.length === 0 || cauHinhCot.batBuoc.includes(c));
+            let thieuNC = hs.thieu.filter(c => cauHinhCot.neuCo.includes(c));
+
+            let htmlBB = thieuBB.length > 0 
+                ? thieuBB.map(c => `<span class="bg-rose-50 text-rose-600 border border-rose-100 text-xs px-2.5 py-1 rounded-lg font-medium">${c}</span>`).join(' ')
+                : `<span class="text-xs text-emerald-600 font-medium">Đã đủ tất cả thông tin bắt buộc!</span>`;
+
+            let htmlNC = thieuNC.length > 0 
+                ? thieuNC.map(c => `<span class="bg-amber-50 text-amber-600 border border-amber-100 text-xs px-2.5 py-1 rounded-lg font-medium">${c}</span>`).join(' ')
+                : `<span class="text-xs text-slate-400 italic">Không thiếu thông tin tùy chọn nào.</span>`;
+
+            card.innerHTML = `
+                <div>
+                    <p class="text-sm font-semibold text-slate-800 mb-1">Học sinh: <span class="text-blue-600">${hs.tenHS}</span></p>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-rose-600 mb-1.5 uppercase tracking-wider">🔴 Nhóm Bắt Buộc Nhập:</p>
+                    <div class="flex flex-wrap gap-1.5">${htmlBB}</div>
+                </div>
+                <div class="border-t border-slate-200 pt-2">
+                    <p class="text-xs font-bold text-amber-600 mb-1.5 uppercase tracking-wider">🟡 Nhóm Thông Tin Nếu Có:</p>
+                    <div class="flex flex-wrap gap-1.5">${htmlNC}</div>
+                </div>
+            `;
+        }
+        fetch("https://script.google.com/macros/s/AKfycbzuPyTOGRKdBfeMQY69QcbCulFnHJE9t2VTtByv1JTl-l2v91wmtIBn5ObMgzRALqpu/exec", {
+  method: "POST",
+  body: JSON.stringify({
+    action: "saveConfig",
+    configs: [
+      { colIndex: 27, colName: "Số CCCD", isMandatory: true },
+      { colIndex: 6, colName: "Họ và tên", isMandatory: true }
+      // ... các cột khác
+    ]
+  })
+})
+.then(res => res.json())
+.then(data => console.log(data));
+        function luuNoiDungBR(btnElement) { 
+            if (!hocSinhDangChon) return;
+            const noiDung = document.getElementById('noiDungBR').value;
+            const originalText = btnElement.innerText;
+            btnElement.innerText = "Đang lưu...";
+            btnElement.disabled = true;
+
+            fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'luuBR', 
+                    rowNum: hocSinhDangChon.rowNum, 
+                    noiDung: noiDung,
+                    maTruong: currentSession.maTruong 
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                alert(res.message || "Đã lưu ghi chú thành công!");
+                hocSinhDangChon.ghiChuBR = noiDung;
+                taiDuLieuLop();
+            })
+            .finally(() => {
+                btnElement.innerText = originalText;
+                btnElement.disabled = false;
+            });
         }
 
-        // 5. Lưu nội dung cột BR lên Google Sheets
-       // 5. Lưu nội dung cột BR lên Google Sheets
-function luuNoiDungBR(btnElement) { // Nhận trực tiếp phần tử nút bấm vào
-    if (!hocSinhDangChon) return;
-    const noiDung = document.getElementById('noiDungBR').value;
-
-    // Dùng btnElement thay vì event.target
-    const originalText = btnElement.innerText;
-    btnElement.innerText = "Đang lưu...";
-    btnElement.disabled = true;
-
-    fetch(API_URL, {
-        method: 'POST',
-        body: JSON.stringify({ 
-            action: 'luuBR', 
-            rowNum: hocSinhDangChon.rowNum, 
-            noiDung: noiDung,
-            maTruong: currentSession.maTruong 
-        })
-    })
-    .then(res => res.json())
-    .then(res => {
-        alert(res.message || "Đã lưu ghi chú thành công!");
-        hocSinhDangChon.ghiChuBR = noiDung;
-        taiDuLieuLop();
-    })
-    .catch(err => {
-        console.error("Lỗi lưu cột BR:", err);
-        alert("Lỗi kết nối khi lưu ghi chú!");
-    })
-    .finally(() => {
-        btnElement.innerText = originalText;
-        btnElement.disabled = false;
-    });
-}
-
-        // Thay vì gọi trực tiếp khoiTaoDuLieu(); ở cuối file, hãy dùng:
-document.addEventListener("DOMContentLoaded", function() {
-    khoiTaoDuLieu();
-});
+        document.addEventListener("DOMContentLoaded", function() {
+            khoiTaoDuLieu();
+        });
     </script>
 </body>
 </html>
