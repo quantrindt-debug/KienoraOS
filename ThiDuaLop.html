@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <!-- Thư viện hỗ trợ đọc và tạo file Excel -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Các thẻ style/css ở đây -->
+  <style>
+    /* CSS của bạn */
+    .card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+/* Tối ưu hóa bảng sẵn có cho đẹp và gọn gàng hơn */
+#tableViPham {
+  width: 100%;
+  margin-top: 10px;
+  background-color: #fff;
+}
+/* Đổi màu nền tiêu đề bảng thành xanh nhạt, chữ đậm dễ nhìn */
+#tableViPham th {
+  background-color: #e2f0d9 !important; /* Xanh lá nhạt dịu mắt (hoặc dùng #d1ecf1 nếu thích xanh dương nhạt) */
+  color: #0c3c60;
+  font-weight: bold;
+  text-align: center; /* Căn giữa tiêu đề cho cân đối */
+  vertical-align: middle;
+}
+
+
+#tableViPham td {
+  vertical-align: middle;
+  padding: 10px;
+}
+
+/* Biến bảng thành dạng có thể cuộn ngang trên màn hình điện thoại nhỏ mà không bị vỡ giao diện */
+.tab-content#tabTheoDoiViPham {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Tinh chỉnh lại ô chọn lớp cho đẹp hơn */
+#selectLopViPham {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #ced4da;
+  font-size: 14px;
+  min-width: 200px;
+}
+/* Tinh chỉnh xếp lớp */
+#danhSachHocSinhCho {
+    max-height: 70vh; /* Giới hạn chiều cao */
+    overflow-y: auto;
+    border-radius: 8px;
+    background: #f8f9fa;
+    padding: 10px;
+}
+
+.student-badge {
+    background: white;
+    margin-bottom: 5px;
+    padding: 8px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    transition: 0.3s;
+}
+
+.student-badge.assigned {
+    opacity: 0.5; /* Làm mờ học sinh đã có chỗ */
+    text-decoration: line-through;
+}
+  </style>
+  <!-- Cấu hình GitHub Pages: API thật sẽ được dùng ở Part 2 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Kienora - Quản lý nề nếp và thi đua">
+</head>
+<body>
+<!-- KHÔNG CÓ MÀN HÌNH ĐĂNG NHẬP RIÊNG.
+     Tài khoản/phiên đăng nhập sẽ được nhận từ Kienora OS ở Part 2. -->
+<!-- THÔNG TIN NGƯỜI DÙNG & CHỌN LỚP TRÊN HEADER BAR -->
+<div id="userHeaderBar" style="display: none; background: #1e293b; color: #fff; padding: 12px 20px; justify-content: space-between; align-items: center; border-bottom: 3px solid #2563eb; flex-wrap: wrap; gap: 10px;">
+  <div style="font-size: 14px; display: flex; align-items: center; gap: 10px;">
+    <span>Xin chào: <b id="lblUserFullName" style="color: #60a5fa;">---</b> (<span id="lblUserRole">---</span>)</span>
+    <span style="color: #94a3b8;">|</span>
+    <span>Lớp làm việc: </span>
+    
+    <!-- Cố định cho GVCN -->
+    <b id="lblUserClass" style="color: #facc15; display: inline-block;">---</b>
+    
+    <!-- Chọn lớp dùng chung cho BGH / CỜ ĐỎ / ADMIN -->
+    <select id="selGlobalClassSelector" onchange="onGlobalClassChange()" style="display: none; padding: 4px 8px; border-radius: 4px; border: 1px solid #cbd5e1; font-weight: bold; background: #fff; color: #0f172a;">
+      <option value="">-- Chọn Lớp --</option>
+    </select>
+  </div>
+  
+</div>
+
+<!-- THANH MENU CHUYỂN TAB -->
+<div id="navBar" style="display: none; background: #334155; padding: 10px 20px; gap: 10px; border-bottom: 1px solid #475569;">
+  <button onclick="switchTab('tabAdmin')" id="btnTabAdmin" style="padding: 8px 16px; background: #475569; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🛠️ Quản trị</button>
+   <!-- Nút chuyển sang Tab  sơ đồ chỗ ngồi -->
+  <button class="btn btn-info text-white me-2" onclick="switchTab('nav-sodo')">🗺️ Sơ đồ chỗ ngồi</button>
+   <!-- Nút chuyển sang Tab Cờ Đỏ/GVCN nhập điểm theo dõi tuần -->
+  <button onclick="switchTab('tabTheoDoiTuan')" id="btnTabTheoDoi" style="padding: 8px 16px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">📊 Theo dõi Tuần (G, H)</button>
+  <button onclick="switchTab('tabNhatKyBienBan')" id="btnTabNhatKy" style="padding: 8px 16px; background: #16a34a; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">📖 Nhật ký & Biên bản (J, K, L, M)</button>
+  
+   <!-- Nút chuyển sang Tab Cờ Đỏ nhập lỗi -->
+  <button onclick="switchTab('tabCoDoNhapLoi')" id="btnTabCoDoNhapLoi" style="padding: 8px 16px; background: #dc2626; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🚩 Cờ Đỏ Nhập Lỗi</button>
+   <!-- Nút chuyển sang Tab theo dõi lỗi phát sinh hàng ngày -->
+  <button onclick="switchTab('tabTheoDoiViPham')" id="btnTabTheoDoiViPham" style="padding: 8px 16px; background: #dc2626; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🚩 Theo dõi cờ đõ</button>
+  <!-- Nút chuyển sang Tab Báo cáo tổng hợp -->
+   <button onclick="switchTab('tabBaoCao')" id="btnabBaoCao" style="padding: 8px 16px; background: #16a34a; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">📖 Báo cáo tổng hợp</button>
+</div>
+
+<!-- TAB QUẢN TRỊ DÀNH CHO ADMIN (ĐÃ TÍCH HỢP QUẢN LÝ TUẦN HỌC) -->
+<div id="tabAdmin" class="tab-content" style="display: none; padding: 20px; max-width: 1200px; margin: 0 auto;">
+  <h2 style="color: #0f172a; margin-bottom: 20px;">🛠️ Quản trị Hệ thống, Tuần học & Phân quyền</h2>
+  
+  <!-- Khối 1: Cập nhật biến động học sinh -->
+  <div class="card" style="margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <h3 style="margin-top:0; color: #1e293b; margin-bottom: 15px;">1. Tiếp nhận / Chuyển lớp / Chuyển đi</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+      <select id="selTransferType" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+        <option value="CHUYEN_DEN">Học sinh Chuyển Đến</option>
+        <option value="CHUYEN_LOP">Chuyển Lớp Nội Bộ</option>
+        <option value="CHUYEN_DI">Học sinh Chuyển Đi</option>
+      </select>
+
+      <!-- Dropdown Chọn Lớp cũ trước để lọc nhanh -->
+      <select id="admOldClass" onchange="onAdminClassChange()" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold;">
+        <option value="">-- Chọn Lớp cũ --</option>
+      </select>
+
+      <!-- Dropdown Chọn Học sinh -->
+      <select id="admSelectStudent" onchange="onAdminStudentSelect()" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold;">
+        <option value="">-- Chọn Học sinh --</option>
+      </select>
+
+      <!-- Tự động hiển thị Mã HS và Họ Tên HS -->
+      <input type="text" id="trfMaHS" placeholder="Mã học sinh" readonly style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; background: #f1f5f9;">
+      <input type="text" id="trfHoTen" placeholder="Họ và tên học sinh" readonly style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; background: #f1f5f9;">
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 15px;">
+      <!-- Dropdown Chọn Lớp mới -->
+      <select id="admNewClass" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold;">
+        <option value="">-- Chọn Lớp mới --</option>
+      </select>
+
+      <input type="text" id="trfLyDo" placeholder="Lý do chuyển / Chi tiết..." style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; grid-column: span 2;">
+    </div>
+    
+    <button class="btn btn-primary" onclick="submitStudentTransfer()" style="padding: 9px 18px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Lưu Giao Dịch Luân Chuyển</button>
+  </div>
+
+  <!-- Khối 2: Quản lý Cấu hình Tuần học & Khóa sổ -->
+  <div class="card" style="margin-bottom: 25px; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <h3 style="margin-top:0; color: #1e293b; margin-bottom: 15px;">2. Quản lý Cấu hình Tuần học & Khóa sổ</h3>
+
+    
+    <!-- KHỐI TỰ ĐỘNG SINH TUẦN HỌC -->
+    <div class="card" style="margin-bottom: 25px; background: #f0f9ff; padding: 20px; border-radius: 8px; border: 1px dashed #bae6fd;">
+      <h3 style="margin-top:0; color: #0369a1; font-size: 16px;">⚡ Tự động khởi tạo lịch tuần</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; align-items: end;">
+        <div>
+          <label style="font-size: 12px; font-weight: bold;">Ngày bắt đầu năm học:</label>
+          <input type="date" id="txtNgayBatDauNamHoc" lang="vi" style="width: 100%; padding: 8px; border: 1px solid #bae6fd; border-radius: 4px;">
+        </div>
+        <div>
+          <label style="font-size: 12px; font-weight: bold;">Tổng số tuần:</label>
+          <input type="number" id="txtTongSoTuan" value="37" style="width: 100%; padding: 8px; border: 1px solid #bae6fd; border-radius: 4px;">
+        </div>
+        <div>
+          <label style="font-size: 12px; font-weight: bold;">Tuần kết thúc HK1:</label>
+          <input type="number" id="txtTuanKetThucHK1" value="18" style="width: 100%; padding: 8px; border: 1px solid #bae6fd; border-radius: 4px;">
+        </div>
+        <button onclick="tuDongSinhTuan()" style="padding: 8px; background: #0284c7; color: white; border: none; border-radius: 4px; cursor: pointer;">Sinh Lịch Tuần</button>
+      </div>
+    </div>
+    <!-- CẤU HÌNH RANH GIỚI HỌC KỲ (MỚI BỔ SUNG) -->
+    <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+      <h4 style="margin-top: 0; margin-bottom: 10px; color: #334155; font-size: 14px;">⚙️ Cấu hình Tuần Kết Thúc Học Kỳ</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; align-items: center;">
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: bold; color: #475569; margin-bottom: 5px;">Tuần kết thúc Học kỳ 1:</label>
+          <select id="selTuanCuoiHK1" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold; background: #fff;">
+            <option value="">-- Chọn tuần kết thúc HK1 --</option>
+          </select>
+        </div>
+        <div>
+          <label style="display: block; font-size: 12px; font-weight: bold; color: #475569; margin-bottom: 5px;">Tuần kết thúc Học kỳ 2:</label>
+          <select id="selTuanCuoiHK2" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold; background: #fff;">
+            <option value="">-- Chọn tuần kết thúc HK2 --</option>
+          </select>
+        </div>
+        <div style="display: flex; align-items: flex-end;">
+          <button class="btn btn-primary" onclick="luuCauHinhHocKy()" style="padding: 8px 16px; background: #0284c7; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; height: 37px;">Lưu Cấu Hình HK</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+      <h4 style="margin:0; color: #334155; font-size: 14px;">📋 Danh sách trạng thái các tuần học</h4>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <label style="font-size: 13px; font-weight: bold; color: #475569;">Lọc Học Kỳ:</label>
+        <select id="filterHocKy" onchange="renderBangTuan()" style="padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; background: #f8fafc; font-weight: bold;">
+          <option value="ALL">Tất cả</option>
+          <option value="HK1">Học Kỳ 1</option>
+          <option value="HK2">Học Kỳ 2</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Bảng danh sách tuần -->
+    <div style="overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 6px;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
+        <thead>
+          <tr style="background: #f1f5f9; color: #334155; font-weight: bold; border-bottom: 2px solid #cbd5e1;">
+            <th style="padding: 10px; text-align: center; width: 60px;">STT</th>
+            <th style="padding: 10px; width: 120px;">Tên Tuần</th>
+            <th style="padding: 10px;">Thời Gian</th>
+            <th style="padding: 10px; text-align: center; width: 90px;">Học Kỳ</th>
+            <th style="padding: 10px;">Ghi Chú</th>
+            <th style="padding: 10px; text-align: center; width: 110px;">Trạng Thái</th>
+            <th style="padding: 10px; text-align: center; width: 120px;">Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody id="tableTuanBody" style="color: #475569;">
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 20px; color: #94a3b8;">Đang tải dữ liệu cấu hình tuần...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Khối 3: Thêm/Sửa Tài khoản Người dùng -->
+  <div class="card" style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <h3 style="margin-top:0; color: #1e293b; margin-bottom: 15px;">3. Quản lý Tài khoản & Phân quyền Giáo viên</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px;">
+      <!-- Dropdown Chọn Giáo viên có sẵn trong hệ thống (Tự động lọc bỏ học sinh) -->
+      <select id="admSelectTeacher" onchange="onAdminTeacherSelect()" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold;">
+        <option value="">-- Chọn Giáo viên / Tài khoản --</option>
+      </select>
+
+      <input type="text" id="admUsername" placeholder="Tên đăng nhập" readonly style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; background: #f1f5f9;">
+      <input type="password" id="uadmPassword" placeholder="Mật khẩu mới (Bỏ trống nếu không đổi)" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+      <input type="text" id="admFullName" placeholder="Họ và tên GV" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+      
+      <select id="usrRole" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+        <option value="GVCN">Giáo viên chủ nhiệm (GVCN)</option>
+        <option value="BGH">Ban Giám Hiệu (BGH)</option>
+        <option value="CO_DO">Đội Cờ Đỏ</option>
+        <option value="ADMIN">Quản trị hệ thống (ADMIN)</option>
+      </select>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 15px;">
+      <!-- Dropdown Lớp Phân công -->
+      <select id="admAssignClass" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold;">
+        <option value="">-- Chọn Lớp phân công --</option>
+      </select>
+
+      <select id="usrStatus" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+        <option value="ACTIVE">Hoạt động (ACTIVE)</option>
+        <option value="LOCKED">Khóa tài khoản (LOCKED)</option>
+      </select>
+    </div>
+
+    <button class="btn btn-success" onclick="submitUserAccount()" style="padding: 9px 18px; background: #16a34a; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Lưu Tài Khoản</button>
+  </div>
+</div>
+
+<!-- TAB THEO DÕI CHUYÊN CẦN VÀ THI ĐƯA TUẦN (MỤC G & H) -->
+<div id="tabTheoDoiTuan" class="tab-content" style="display: none; padding: 20px; max-width: 1200px; margin: 0 auto;">
+  <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+   <label for="selectWeek"><strong>Chọn Tuần:</strong></label>
+    <select id="selectWeek" style="padding: 5px; min-width: 120px;" onchange="loadWeeklyData(); loadWeeklyStatusOverview();">
+      <!-- Các option tên tuần sẽ được hàm loadWeeksDropdown() tự động đổ vào đây -->
+    </select>
+    
+   <label><b>Lớp:</b></label>
+    <input type="text" id="txtClassAssigned" readonly style="display: none; width: 80px; padding: 6px; background: #e2e8f0; font-weight: bold; border: 1px solid #cbd5e1; border-radius: 4px; text-align: center;">
+
+    <select id="selClassSelector" onchange="onClassSelectChange()" style="display: none; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold; color: #1e293b;">
+      <option value="">-- Chọn Lớp --</option>
+    </select>
+    
+    <label><b>Từ ngày - Đến ngày:</b></label>
+    <input type="text" id="txtDateRange" placeholder="VD: 05/09 - 10/09" style="padding: 6px; width: 150px; border: 1px solid #cbd5e1; border-radius: 4px;">
+    
+    <button class="btn btn-primary" onclick="loadWeeklyData()" style="padding: 7px 15px; background: #2563eb; color: #fff; border: none; border-radius: 4px; cursor: pointer;">🔍 Tải dữ liệu</button>
+
+    <button type="button" id="btnChotThiDua" class="btn btn-warning ms-2" style="display: none;" onclick="chotThiDuaTuan()">
+      <i class="bi bi-award-fill"></i> Chốt thi đua & Xếp vị thứ
+    </button>
+
+    <button type="button" id="btnMoKhoaTuan" class="btn btn-secondary ms-2" style="display: none;" onclick="moKhoaTuan()">
+      <i class="bi bi-unlock-fill"></i> Mở khóa Tuần
+    </button>
+  </div>
+
+<!-- BẢNG TỔNG HỢP TRẠNG THÁI NHẬP ĐIỂM TUẦN -->
+<div id="boxStatusWeek" style="margin-bottom: 20px; padding: 15px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+    <h4 style="margin: 0; color: #1e293b; font-size: 16px;"><i class="bi bi-list-check"></i> Tiến độ nhập điểm Tuần <span id="lblWeekNum">1</span></h4>
+    <span id="lblSummaryProgress" class="badge bg-info text-dark" style="padding: 6px 12px;">Đang tải...</span>
+  </div>
+  
+  <div style="font-size: 13px; margin-bottom: 10px; color: #64748b;">
+    <span class="badge bg-success">🟢 GVCN & Cờ đỏ đã nhập</span>
+    <span class="badge bg-warning text-dark ms-1">🟡 Mới nhập 1 bên</span>
+    <span class="badge bg-danger ms-1">🔴 Chưa nhập</span>
+  </div>
+
+  <div id="gridClassStatus" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;"></div>
+</div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+    <!-- KHỐI G: THEO DÕI SĨ SỐ - CHUYÊN CẦN -->
+    <div class="card">
+      <h3 style="color: #0f172a; margin-top: 0; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">G. Theo dõi sĩ số – Chuyên cần tuần</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+        <div>
+          <label style="font-size: 13px; font-weight: 600;">Sĩ số lớp:</label>
+          <input type="number" id="ccSiSo" class="form-control" readonly style="background-color: #e2e8f0; font-weight: bold; color: #1e293b;" placeholder="Tự động đếm...">  
+        </div>
+        <div>
+          <label style="font-size: 13px; font-weight: 600;">Vắng có phép:</label>
+          <input type="number" id="ccVangCoPhep" value="0" style="width: 100%; padding: 6px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+        <div>
+          <label style="font-size: 13px; font-weight: 600;">Vắng không phép:</label>
+          <input type="number" id="ccVangKhongPhep" value="0" style="width: 100%; padding: 6px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+        </div>
+        <div>
+          <label style="font-size: 13px; font-weight: 600;">Đi muộn:</label>
+          <input type="number" id="ccDiMuon" value="0" style="width: 100%; padding: 6px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+        </div>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label style="font-size: 13px; font-weight: 600;">Ghi chú chuyên cần:</label>
+        <textarea id="ccGhiChu" rows="3" style="width: 100%; padding: 6px; margin-top: 4px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;" placeholder="Ghi rõ tên học sinh vắng / đi muộn..."></textarea>
+      </div>
+    </div>
+
+    <!-- KHỐI H: THEO DÕI THI ĐƯA - NỀ NẾP -->
+    <div class="card">
+      <h3>H. Theo dõi thi đua – Nề nếp tuần</h3>
+      <div style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-radius: 6px; background-color: #f8fafc;">
+        <strong>GVCN nhập (Thang điểm 10):</strong>
+        <div style="display: flex; gap: 10px; margin-top: 5px;">
+          <div>
+            <label>Sổ đầu bài (x3):</label>
+            <input type="number" id="tdSDB" min="0" max="10" step="0.1" oninput="calculateTotalEmulation()" disabled />
+          </div>
+          <div>
+            <label>Các cuộc thi (x1):</label>
+            <input type="number" id="tdCuocThi" min="0" max="10" step="0.1" oninput="calculateTotalEmulation()" disabled />
+          </div>
+        </div>
+      </div>
+
+      <div style="border: 1px solid #e2e8f0; padding: 10px; margin-bottom: 10px; border-radius: 6px; background-color: #f8fafc;">
+        <strong>Cờ Đỏ / Đoàn Trường nhập (Thang điểm 10):</strong>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
+          <div>
+            <label>Vệ sinh (x1):</label>
+            <input type="number" id="tdVeSinh" min="0" max="10" step="0.1" oninput="calculateTotalEmulation()" disabled />
+          </div>
+          <div>
+            <label>CSVC (x1):</label>
+            <input type="number" id="tdCSVC" min="0" max="10" step="0.1" oninput="calculateTotalEmulation()" disabled />
+          </div>
+          <div>
+            <label>Xếp xe (x1):</label>
+            <input type="number" id="tdXepXe" min="0" max="10" step="0.1" oninput="calculateTotalEmulation()" disabled />
+          </div>
+          <div>
+            <label>Quy định khác (x3):</label>
+            <input type="number" id="tdQDKhac" min="0" max="10" step="0.1" oninput="calculateTotalEmulation()" disabled />
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+        <div style="display: flex; flex-direction: column;">
+          <label style="font-weight: bold; font-size: 14px; color: #1e293b; margin-bottom: 5px; white-space: nowrap;">
+            Tổng điểm thi đua:
+          </label>
+          <input type="text" id="txtTongDiemThiDua" readonly value="" 
+                style="width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-weight: bold; font-size: 16px; color: #1d4ed8; background: #f8fafc;">
+        </div>
+
+        <!-- Ô 2: Vị thứ trong trường -->
+        <div style="display: flex; flex-direction: column;">
+          <label style="font-weight: bold; font-size: 14px; color: #1e293b; margin-bottom: 5px; white-space: nowrap;">
+            Vị thứ trong trường:
+          </label>
+          <input type="text" id="txtViThuTrongTruong" readonly value="" 
+                style="width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-weight: bold; font-size: 16px; color: #15803d; background: #f8fafc; text-align: center;">
+        </div>
+      </div>
+
+      <div>
+        <label>Nhận xét & Biện pháp xử lý:</label>
+        <textarea id="tdNhanXet" rows="2" style="width: 100%;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; text-align: right;">
+    <button class="btn btn-success" id="btnSaveWeekly" onclick="submitWeeklyData()" style="padding: 10px 24px; background: #16a34a; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">💾 Lưu Theo Dõi Tuần</button>
+  </div>
+</div>
+
+<!-- BÁO CÁO -->
+<div id="tabBaoCaoThiDua" class="tab-content" style="display:none;">
+  <h2>📊 Báo cáo Tổng hợp Thi đua - BGH</h2>
+  <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+    <div>
+      <label>Xem theo:</label>
+      <select id="selReportType" onchange="loadReportData()">
+        <option value="TUAN">Theo Tuần</option>
+        <option value="THANG">Theo Tháng</option>
+        <option value="HK">Theo Học Kỳ</option>
+        <option value="NAM">Cả Năm Học</option>
+      </select>
+    </div>
+    <div>
+      <label>Phạm vi:</label>
+      <select id="selReportScope" onchange="loadReportData()">
+        <option value="ALL">Toàn trường</option>
+        <option value="KHOI_10">Khối 10</option>
+        <option value="KHOI_11">Khối 11</option>
+        <option value="KHOI_12">Khối 12</option>
+      </select>
+    </div>
+  </div>
+
+  <table border="1" style="width: 100%; border-collapse: collapse; text-align: center;">
+    <thead>
+      <tr style="background-color: #f1f5f9;">
+        <th>STT</th>
+        <th>Lớp</th>
+        <th>Khối</th>
+        <th>Điểm Thi Đua</th>
+        <th>Xếp Loại</th>
+        <th>Hạng / Vị Thứ</th>
+      </tr>
+    </thead>
+    <tbody id="tblReportBody"></tbody>
+  </table>
+</div>
+
+<!-- TAB 3: NHẬT KÝ & BIÊN BẢN GVCN (MỤC J, K, L, M) -->
+<div id="tabNhatKyBienBan" class="tab-content" style="display: none; padding: 20px; max-width: 1200px; margin: 0 auto;">
+  <h2 style="color: #0f172a; margin-bottom: 20px;">📖 Nhật ký Chủ nhiệm & Biên bản Hoạt động</h2>
+
+  <!-- MỤC J: THEO DÕI HỌC SINH CẦN QUAN TÂM -->
+    <!-- Hàng 1: Chọn học sinh + Biểu hiện -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 12px;">
+        <div>
+          <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 4px;">Chọn Học sinh:</label>
+          <select id="jSelectStudent" onchange="onCareStudentSelectChange()" style="width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: bold; font-size: 13px; background: #fff;">
+            <option value="">-- Chọn học sinh --</option>
+          </select>
+          <input type="hidden" id="jMaHS">
+          <input type="hidden" id="jHoTen">
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 4px;">Biểu hiện / Hoàn cảnh:</label>
+          <input type="text" id="jBieuHien" placeholder="Ví dụ: Thường xuyên đi trễ, nghỉ học không lý do..." style="width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+        </div>
+      </div>
+
+      <!-- Hàng 2: Biện pháp + Kết quả -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 15px;">
+        <div>
+          <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 4px;">Biện pháp giúp đỡ:</label>
+          <textarea id="jBienPhap" rows="2" placeholder="Nhập biện pháp hỗ trợ..." style="width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
+        </div>
+
+        <div>
+          <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 4px;">Kết quả / Tiến bộ:</label>
+          <textarea id="jKetQua" rows="2" placeholder="Nhập kết quả theo dõi..." style="width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
+        </div>
+      </div>
+
+      <!-- Nút Lưu -->
+      <button class="btn btn-primary" onclick="submitCareStudentLog()" style="padding: 8px 18px; background: #2563eb; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s;">
+        💾 Lưu Nhật Ký Theo Dõi
+      </button>
+  <!-- MỤC K: TRAO ĐỔI & PHỐI HỢP PHỤ HUYNH -->
+<div class="card" style="width: 100%; box-sizing: border-box; margin-bottom: 20px; padding: 18px; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
+  <h3 style="margin-top: 0; margin-bottom: 15px; color: #1e293b; font-size: 16px; font-weight: bold;">
+    K. Trao đổi & Phối hợp với Phụ huynh Học sinh
+  </h3>
+
+  <!-- Hàng 1: Chọn học sinh + Ngày + Hình thức (Tự co dãn linh hoạt) -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px;">
+    <div>
+      <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 4px;">Chọn Học sinh:</label>
+      <select id="kSelectStudent" onchange="onParentStudentSelectChange()" style="width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: bold; font-size: 13px; background: #fff;">
+        <option value="">-- Chọn học sinh --</option>
+      </select>
+      <input type="hidden" id="kMaHS">
+      <input type="hidden" id="kHoTen">
+    </div>
+
+    <div>
+      <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 4px;">Ngày liên lạc:</label>
+      <input type="date" id="kNgay" style="width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;">
+    </div>
+
+    <div>
+      <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 4px;">Hình thức liên lạc:</label>
+      <select id="kHinhThuc" style="width: 100%; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff;">
+        <option value="Điện thoại / Zalo">Điện thoại / Zalo</option>
+        <option value="Gặp trực tiếp">Gặp trực tiếp</option>
+        <option value="Thư ngỏ / Sổ liên lạc">Thư ngỏ / Sổ liên lạc</option>
+        <option value="Họp PHHS">Họp PHHS</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Hàng 2: Nội dung + Kết quả -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-bottom: 15px;">
+    <div>
+      <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 4px;">Nội dung trao đổi:</label>
+      <textarea id="kNoiDung" rows="2" placeholder="Nhập nội dung đã trao đổi với PHHS..." style="width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
+    </div>
+
+    <div>
+      <label style="font-size: 12px; font-weight: bold; color: #334155; display: block; margin-bottom: 4px;">Kết quả / Thỏa thuận:</label>
+      <textarea id="kKetQua" rows="2" placeholder="Nhập kết quả hoặc thống nhất ý kiến..." style="width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-family: inherit;"></textarea>
+    </div>
+  </div>
+
+  <!-- Nút Lưu -->
+  <button class="btn btn-primary" onclick="submitParentContactLog()" style="padding: 8px 18px; background: #2563eb; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s;">
+    💾 Lưu Nhật Ký Trao Đổi
+  </button>
+</div>
+
+  <!-- MỤC L: BIÊN BẢN SINH HOẠT LỚP TUẦN -->
+  <div class="card" style="margin-bottom: 25px;">
+    <h3 style="margin-top:0; color: #1e293b;">L. Biên bản Sinh hoạt Lớp Hàng tuần</h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+      <div>
+        <label style="font-size: 12px; font-weight: bold;">Chọn Tuần:</label>
+        <select id="bbWeek" onchange="loadClassMeetingData()" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box; background-color: #fff;">
+          <!-- Danh sách tuần sẽ được tự động đổ vào đây -->
+        </select>
+      </div>
+      <div>
+        <label style="font-size: 12px; font-weight: bold;">Ngày sinh hoạt:</label>
+        <input type="date" id="bbNgay" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+      </div>
+      <div>
+        <label style="font-size: 12px; font-weight: bold;">Chủ trì (Lớp trưởng):</label>
+        <input type="text" id="bbChuTri" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+      </div>
+      <div>
+        <label style="font-size: 12px; font-weight: bold;">Thư ký:</label>
+        <input type="text" id="bbThuKy" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;">
+      </div>
+    </div>
+
+    <div style="margin-bottom: 10px;">
+      <label style="font-size: 12px; font-weight: bold;">Đánh giá tuần qua (Ưu điểm, tồn tại):</label>
+      <textarea id="bbDanhGia" rows="3" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;"></textarea>
+    </div>
+    <div style="margin-bottom: 10px;">
+      <label style="font-size: 12px; font-weight: bold;">Kế hoạch tuần tới:</label>
+      <textarea id="bbKeHoach" rows="3" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;"></textarea>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <label style="font-size: 12px; font-weight: bold;">Ý kiến của học sinh / GVCN:</label>
+      <textarea id="bbYKien" rows="2" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;"></textarea>
+    </div>
+
+    <div style="margin-bottom: 15px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+      <h4 style="margin: 0 0 10px 0; color: #334155;">📋 Danh sách Học sinh Lớp</h4>
+      <div style="max-height: 200px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 4px; padding: 10px; background: #f8fafc;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: #e2e8f0; text-align: left;">
+              <th style="padding: 6px; border: 1px solid #cbd5e1;">STT</th>
+              <th style="padding: 6px; border: 1px solid #cbd5e1;">Mã HS</th>
+              <th style="padding: 6px; border: 1px solid #cbd5e1;">Họ và Tên</th>
+              <th style="padding: 6px; border: 1px solid #cbd5e1;">Chức vụ</th>
+            </tr>
+          </thead>
+          <tbody id="tblStudentRosterBody">
+            <tr><td colspan="4" style="text-align: center; padding: 10px; color: #64748b;">Đang tải danh sách học sinh...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <button class="btn btn-success" onclick="submitClassMeeting()" style="padding: 8px 18px; background: #16a34a; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">💾 Lưu Biên Bản Sinh Hoạt</button>
+  </div>
+
+  <!-- MỤC M: NHẬN XÉT CỦA GVCN THEO THÁNG -->
+  <div class="card">
+    <h3 style="margin-top:0; color: #1e293b;">M. Nhận xét & Đánh giá của GVCN theo Tháng</h3>
+    <div style="margin-bottom: 12px; width: 200px;">
+      <label style="font-size: 12px; font-weight: bold;">Chọn Tháng:</label>
+      <select id="selMonth" onchange="loadMonthlyAssessmentData()" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px;">
+        <option value="Tháng 8">Tháng 8</option>
+        <option value="Tháng 9">Tháng 9</option>
+        <option value="Tháng 10">Tháng 10</option>
+        <option value="Tháng 11">Tháng 11</option>
+        <option value="Tháng 12">Tháng 12</option>
+        <option value="Tháng 1">Tháng 1</option>
+        <option value="Tháng 2">Tháng 2</option>
+        <option value="Tháng 3">Tháng 3</option>
+        <option value="Tháng 4">Tháng 4</option>
+        <option value="Tháng 5">Tháng 5</option>
+      </select>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+      <div>
+        <label style="font-size: 12px; font-weight: bold;">Ưu điểm nổi bật trong tháng:</label>
+        <textarea id="mUuDiem" rows="4" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;"></textarea>
+      </div>
+      <div>
+        <label style="font-size: 12px; font-weight: bold;">Tồn tại / Hạn chế:</label>
+        <textarea id="mTonTai" rows="4" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;"></textarea>
+      </div>
+      <div>
+        <label style="font-size: 12px; font-weight: bold;">Biện pháp thực hiện tháng sau:</label>
+        <textarea id="mBienPhap" rows="4" style="width: 100%; padding: 7px; border: 1px solid #cbd5e1; border-radius: 4px; box-sizing: border-box;"></textarea>
+      </div>
+    </div>
+    <button class="btn btn-success" onclick="submitMonthlyAssessment()" style="padding: 8px 18px; background: #16a34a; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">💾 Lưu Nhận Xét Tháng</button>
+  </div>
+</div>
+<!-- TAB BÁO CÁO & THỐNG KÊ -->
+<!-- KHUNG CHỨA TOÀN BỘ TAB BÁO CÁO (Đã bọc trong container căn giữa khớp với các mục trên) -->
+<div id="tabBaoCao" class="tab-content" style="display: block; width: 100%; box-sizing: border-box;">
+  
+  <div style="max-width: 1350px; margin: 0 auto; padding: 0 10px; width: 100%; box-sizing: border-box;">
+
+    <!-- TẦNG 1: THANH TIÊU ĐỀ & BỘ LỌC ĐIỀU KIỆN -->
+    <div class="card" style="width: 100%; box-sizing: border-box; margin-bottom: 20px; padding: 15px 20px; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+        
+        <h3 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: bold;">
+          📊 Báo Cáo Tổng Hợp Nề Nếp & Thi Đua
+        </h3>
+        
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <!-- Lọc Lớp -->
+          <select id="rptSelectClass" onchange="loadReportData()" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: bold; background: #fff;">
+            <option value="ALL">-- Tất cả các Lớp --</option>
+          </select>
+
+          <!-- Ô CHỌN THỜI GIAN -->
+          <select id="rptSelectWeek" onchange="loadReportData()" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: bold; background: #fff; color: #1e293b;">
+            <option value="">Đang tải danh sách tuần...</option>
+          </select>
+          
+          <button onclick="loadReportData()" style="padding: 6px 14px; background: #2563eb; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold;">
+            🔄 Tải Lại
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TẦNG 2: THẺ KPI THỐNG KÊ NHANH (Co gọn vừa khít khung) -->
+    <div style="width: 100%; box-sizing: border-box; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;">
+      
+      <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="font-size: 11px; color: #1d4ed8; font-weight: bold; text-transform: uppercase;">TỔNG HỌC SINH</div>
+        <div id="kpiTotalStudents" style="font-size: 22px; font-weight: bold; color: #1e3a8a; margin-top: 2px;">0</div>
+      </div>
+      
+      <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 12px 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="font-size: 11px; color: #15803d; font-weight: bold; text-transform: uppercase;">TỔNG SỐ LỚP</div>
+        <div id="kpiTotalClasses" style="font-size: 22px; font-weight: bold; color: #14532d; margin-top: 2px;">0</div>
+      </div>
+
+      <div style="background: #fefce8; border-left: 4px solid #eab308; padding: 12px 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="font-size: 11px; color: #a16207; font-weight: bold; text-transform: uppercase;">CHUYỂN ĐẾN</div>
+        <div id="kpiChuyenDen" style="font-size: 22px; font-weight: bold; color: #713f12; margin-top: 2px;">0</div>
+      </div>
+
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 15px; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+        <div style="font-size: 11px; color: #b91c1c; font-weight: bold; text-transform: uppercase;">CHUYỂN ĐI</div>
+        <div id="kpiChuyenDi" style="font-size: 22px; font-weight: bold; color: #7f1d1d; margin-top: 2px;">0</div>
+      </div>
+
+    </div>
+
+    <!-- TẦNG 3: BẢNG BÁO CÁO (Đã nằm gọn trong Card bằng kích thước mục M) -->
+    <div class="card" style="width: 100%; box-sizing: border-box; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; overflow-x: auto;">
+      
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h4 style="margin: 0; color: #1e293b; font-size: 15px; font-weight: bold;">
+          📋 Bảng Điểm Thi Đua Chi Tiết
+        </h4>
+        <span style="font-size: 11px; color: #64748b; font-weight: normal;">(Thang điểm chuẩn: 100 điểm)</span>
+      </div>
+      
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap;">
+        <thead>
+          <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; text-align: center; font-size: 11px;">
+            <th style="padding: 10px 4px; text-align: left;">Lớp</th>
+            <th style="padding: 10px 4px;">Sĩ số</th>
+            <th style="padding: 10px 4px; color: #b91c1c;">SĐB</th>          
+            <th style="padding: 10px 4px; color: #b91c1c;">VS</th>
+            <th style="padding: 10px 4px; color: #b91c1c;">CSVC</th>
+            <th style="padding: 10px 4px; color: #b91c1c;">Xe</th>
+            <th style="padding: 10px 4px; color: #b91c1c;">QĐ khác</th>
+            <th style="padding: 10px 4px; color: #b91c1c;">C.Thi</th>
+            <th style="padding: 10px 4px; background: #dcfce7; color: #166534; font-weight: bold;">Đ.Thi đua</th>
+            <th style="padding: 10px 4px;">Hạng</th>
+          </tr>
+        </thead>
+        <tbody id="rptEmuTableBody">
+          <tr>
+            <td colspan="10" style="text-align: center; padding: 20px; color: #64748b;">
+              Đang tải dữ liệu thi đua...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+
+  </div>
+
+</div>
+<!-- TAB 5: DÀNH CHO CỜ ĐỎ / BÍ THƯ ĐOÀN CẬP NHẬT LỖI VÀ ĐIỂM THI ĐUA -->
+<div id="tabCoDoNhapLoi" class="tab-content" style="display: none; max-width: 1000px; margin: 0 auto; padding: 20px; font-family: system-ui, -apple-system, sans-serif;">
+  
+  <!-- PHẦN 1: HỆ THỐNG CỜ ĐỎ - CẬP NHẬT LỖI HÀNG NGÀY (CÓ Ô CHỌN TUẦN RIÊNG) -->
+  <div class="card shadow border-danger" style="background: #fff; border-radius: 8px; border: 1px solid #dc2626; overflow: hidden; margin-bottom: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+    <div class="card-header bg-danger text-white" style="background: #dc2626; color: white; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      <h4 class="mb-0" style="margin: 0; font-size: 15px; font-weight: bold; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-flag"></i> HỆ THỐNG CỜ ĐỎ - CẬP NHẬT LỖI HÀNG NGÀY
+      </h4>
+      <!-- Ô chọn tuần riêng cho phần Cờ đỏ nhập lỗi -->
+      <div style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 6px;">
+        <label style="font-size: 12px; font-weight: bold; color: #fff;">Tuần:</label>
+        <select id="cdSelectWeek" onchange="onCoDoWeekChange()" style="padding: 4px 8px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; font-weight: bold; font-size: 12px; color: #0f172a; cursor: pointer;">
+          <option value="Tuan_1">Tuần 1</option>
+          <option value="Tuan_2">Tuần 2</option>
+          <option value="Tuan_3">Tuần 3</option>
+          <option value="Tuan_4">Tuần 4</option>
+        </select>
+      </div>
+    </div>
+    
+    <div class="card-body" style="padding: 16px;">
+      <form id="formCoDoNhapLoi" onsubmit="submitLoiCoDo(event)">
+        <!-- Dòng 1: Ngày, lớp -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label class="form-label fw-bold" style="font-size: 13px; font-weight: bold; color: #1e293b; display: block; margin-bottom: 4px;">Ngày ghi nhận:</label>
+            <input type="date" class="form-control" id="cdNgay" required style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
+            <small id="cdDateNote" style="color: #64748b; font-size: 11px; display: block; margin-top: 2px;"></small>
+          </div>
+          <div>
+            <label class="form-label fw-bold" style="font-size: 13px; font-weight: bold; color: #1e293b; display: block; margin-bottom: 4px;">Lớp vi phạm:</label>
+            <select class="form-select" id="cdLop" required onchange="taiDanhSachHocSinhTheoLop(this.value)" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; font-weight: bold; font-size: 13px; box-sizing: border-box;">
+              <option value="">-- Đang tải danh sách lớp... --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dòng 2: Học sinh, Nội dung lỗi -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label class="form-label fw-bold" style="font-size: 13px; font-weight: bold; color: #1e293b; display: block; margin-bottom: 4px;">Học sinh vi phạm:</label>
+            <select class="form-select" id="cdHoTen" required style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; font-weight: bold; font-size: 13px; box-sizing: border-box;">
+              <option value="">-- Chọn học sinh --</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label fw-bold" style="font-size: 13px; font-weight: bold; color: #1e293b; display: block; margin-bottom: 4px;">Nội dung lỗi vi phạm:</label>
+            <input type="text" class="form-control" id="cdTenLoi" placeholder="VD: Đi học muộn, không đồng phục..." required style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
+          </div>
+        </div>
+
+        <!-- Dòng 3: Xử lý, Ghi chú -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 12px;">
+          <div>
+            <label class="form-label fw-bold" style="font-size: 13px; font-weight: bold; color: #1e293b; display: block; margin-bottom: 4px;">Hình thức xử lý / Trừ điểm:</label>
+            <input type="text" class="form-control" id="cdMucDo" placeholder="VD: Nhắc nhở, trừ 2 điểm thi đua..." style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
+          </div>
+          <div>
+            <label class="form-label fw-bold" style="font-size: 13px; font-weight: bold; color: #1e293b; display: block; margin-bottom: 4px;">Ghi chú thêm:</label>
+            <input type="text" class="form-control" id="cdGhiChu" placeholder="Chi tiết thêm..." style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; box-sizing: border-box;">
+          </div>
+        </div>
+
+        <!-- Dòng 4: Minh chứng -->
+        <div style="margin-bottom: 16px;">
+          <label class="form-label fw-bold" style="font-size: 13px; font-weight: bold; color: #1e293b; display: block; margin-bottom: 4px;">📸 Tải lên minh chứng (Hình ảnh/Tài liệu):</label>
+          <input type="file" class="form-control" id="cdFileMinhChung" accept="image/*,.pdf" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; font-size: 13px; box-sizing: border-box;">
+          <small style="color: #64748b; font-size: 11px; display: block; margin-top: 2px;">Hỗ trợ định dạng ảnh (JPG, PNG) hoặc PDF dung lượng nhẹ.</small>
+        </div>
+
+        <div style="text-align: right;">
+          <button type="submit" class="btn btn-danger px-4" id="btnLuuCoDo" style="padding: 8px 20px; background: #dc2626; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">
+            💾 Gửi báo cáo lỗi
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PHẦN 2: CẬP NHẬT ĐIỂM THI ĐUA THEO LÔ (CỜ ĐỎ / BGH) - CÓ Ô CHỌN TUẦN VÀ NÚT TẢI MẪU RIÊNG -->
+  <div style="background: #fff; border-radius: 8px; border: 1px solid #cbd5e1; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    
+    <!-- Tiêu đề phần 2 -->
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+      <h4 style="margin: 0; font-size: 15px; font-weight: bold; color: #0f172a; text-transform: uppercase;">
+        <i class="fas fa-file-excel" style="color: #059669; margin-right: 6px;"></i> Cập nhật điểm thi đua theo lô (Cờ đỏ / BGH)
+      </h4>
+      <span style="font-size: 12px; color: #0369a1; background: #e0f2fe; padding: 4px 10px; border-radius: 12px; font-weight: 600;">
+        * Quyền thao tác: Cờ Đỏ / Bí thư Đoàn / BGH
+      </span>
+    </div>
+ <!-- Thanh điều khiển Phần 2 (Tách biệt quyền BGH và Cờ đỏ gọn gàng) -->
+<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+      
+      <!-- Nhóm 1: Chọn tuần + Nút Chốt/Mở khóa (Dành chung hoặc BGH) -->
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <select id="selectWeekBatch" onchange="onWeekSelectionChange(this)" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: bold;">
+          <!-- JS tự động điền danh sách tuần -->
+        </select> 
+        <span id="displayDateRange" style="color: #0d6efd; font-style: italic; margin-left: 5px;"></span>
+
+        <button type="button" id="btnChotThiDuaTab5" class="btn btn-warning" style="padding: 6px 12px; background: #d97706; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="chotThiDuaTuan()">
+          <i class="fas fa-award"></i> Chốt thi đua & Xếp vị thứ
+        </button>
+
+        <button type="button" id="btnMoKhoaTuanTab5" class="btn btn-secondary" style="padding: 6px 12px; background: #64748b; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;" onclick="moKhoaTuan()">
+          <i class="fas fa-unlock"></i> Mở khóa Tuần
+        </button>
+      </div>
+
+      <!-- Nhóm 2: Các nút Excel (Được phân tách theo vai trò BGH hoặc Cờ đỏ) -->
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        
+        <!-- KHU VỰC DÀNH CHO BGH (Hiển thị khi tài khoản là BGH/Admin) -->
+        <div id="bghUploadSection" style="display: none; gap: 8px; align-items: center;">
+          <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;" onchange="handleBghExcelUpload(event)">
+          
+          <button type="button" onclick="downloadBghExcelTemplate()" style="padding: 7px 12px; background: #475569; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Tải file mẫu Excel dùng riêng cho BGH">
+            <i class="fas fa-file-download"></i> Tải Mẫu (BGH)
+          </button>
+
+          <button type="button" onclick="document.getElementById('excelFileInput').click()" style="padding: 7px 14px; background: #1e293b; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fas.fa-upload"></i> Tải Lên Excel (BGH)
+          </button>
+        </div>
+
+        <!-- KHU VỰC DÀNH CHO CỜ ĐỎ / ĐOÀN TRƯỜNG (Hiển thị khi tài khoản là Cờ đỏ) -->
+        <div id="coDoUploadSection" style="display: none; gap: 8px; align-items: center;">
+          <input type="file" id="coDoExcelFile" accept=".xlsx, .xls" style="display: none;" onchange="handleCoDoExcelUpload(event)">
+
+          <button type="button" onclick="downloadCoDoTemplate()" style="padding: 7px 12px; background: #0ea5e9; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;" title="Tải file mẫu Excel dùng riêng cho Cờ đỏ">
+            <i class="fas fa-download"></i> Tải Mẫu (Cờ Đỏ)
+          </button>
+
+          <button type="button" onclick="document.getElementById('coDoExcelFile').click()" style="padding: 7px 14px; background: #10b981; color: white; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fas fa-upload"></i> Tải Lên Excel (Cờ Đỏ)
+          </button>
+        </div>
+
+      </div>
+</div>
+   <!-- Khung Bảng Điểm Chi Tiết -->
+    <div style="border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; margin-bottom: 16px;">
+      <div style="background: #f1f5f9; padding: 10px 14px; font-size: 12px; font-weight: bold; color: #334155; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between;">
+        <span>📋 BẢNG ĐIỂM THI ĐUA CHI TIẾT</span>
+        <span style="font-weight: normal; color: #64748b;">(Thang điểm chuẩn: 100 điểm)</span>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: center;">
+          <thead>
+            <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #334155; font-weight: bold;">
+              <th style="padding: 10px; text-align: left;">Lớp</th>
+              <th style="padding: 10px; color: #2563eb;">Sĩ số</th>             
+              <th style="padding: 10px; color: #dc2626;">VS</th>
+              <th style="padding: 10px; color: #dc2626;">CSVC</th>
+              <th style="padding: 10px; color: #dc2626;">Xe</th>              
+              <th style="padding: 10px; color: #dc2626; background: #fffbeb;">C.Thi</th>
+              <th style="padding: 10px; color: #dc2626;">QĐ khác</th>
+               <th style="padding: 10px; color: #dc2626; background: #fff1f2;">SĐB</th>
+              <th style="padding: 10px; color: #047857; background: #ecfdf5;">Đ.Thi đua</th>
+              <th style="padding: 10px;">Hạng</th>
+            </tr>
+          </thead>
+          <tbody id="coDoTableBody" style="background: #fff;">
+            <!-- JS tự động đổ dữ liệu các dòng ở đây -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Nút Lưu dữ liệu -->
+    <div style="text-align: right;">
+      <button type="button" onclick="saveBatchCoDoData()" style="padding: 9px 20px; background: #059669; color: white; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fas fa-save"></i> Lưu & Cập Nhật Lên Google Sheet
+      </button>
+    </div>
+
+  </div>
+
+</div>
+<!-- Tab 6: Theo dõi vi phạm -->
+<div class="tab-content" id="tabTheoDoiViPham"> <!-- Hoặc id="tab6" tùy bạn cấu hình switchTab -->
+  <h3 style="font-size: 1.25rem; font-weight: bold; margin-bottom: 15px; color: #333;">Theo dõi học sinh vi phạm</h3>
+  
+  <div class="mb-3">
+    <select id="selectLopViPham" onchange="loadLoiViPham()">
+      <option value="">-- Chọn lớp --</option>
+      <!-- Danh sách lớp sẽ được load từ script -->
+    </select>
+  </div>
+  <!-- THANH BỘ LỌC TRONG TAB THEO DÕI CỜ ĐỎ -->
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+  <h3 style="margin: 0; color: #1e293b;">🚩 Theo dõi học sinh vi phạm</h3>
+  
+  <!-- Nhóm chọn Tuần và nút Tải lại (Đã bỏ chọn lớp vì dùng chung header trên cùng) -->
+  <div style="display: flex; gap: 10px; align-items: center;">
+      <select id="selectTuanViPham" onchange="loadLoiViPham()" style="padding: 6px 12px; border-radius: 4px; border: 1px solid #cbd5e1; font-weight: bold; background: #fff; color: #0f172a;">
+        <option value="ALL">-- Tất cả các tuần --</option>
+        <!-- Dữ liệu tuần sẽ được JS tự động nạp vào đây -->
+      </select>
+    
+    <button onclick="loadLoiViPham()" style="background: #2563eb; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+      🔄 Tải Lại
+    </button>
+  </div>
+</div>
+  <!-- Khung bọc responsive cho smartphone -->
+  <div class="table-responsive">
+    <table class="table-vi-pham" id="tableViPham">
+      <thead>
+        <tr>
+          <th>Ngày</th>
+          <th>Tuần</th>
+          <th>Lớp</th>
+          <th>Họ tên</th>
+          <th>Lỗi vi phạm</th>
+          <th>Mức độ</th>
+          <th>Minh chứng</th>
+        </tr>
+      </thead>
+      <tbody id="bodyViPham">
+        <!-- Dữ liệu được load vào đây -->
+      </tbody>
+    </table>
+  </div>
+</div>
+<!-- -------------------------------------------------------------------------------------------- -->
+<!-- Tab Sơ đồ chỗ ngồi -->
+<div class="tab-pane fade" id="nav-sodo" role="tabpanel">
+  <div class="container-fluid py-3 position-relative">
+    
+    <!-- THANH CÔNG CỤ DÙNG CSS THUẦN (KHÔNG SỢ LỖI BOOTSTRAP DROPDOWN) -->
+    <div style="background: #f8f9fa; padding: 10px 15px; border-radius: 6px; border: 1px solid #dee2e6; margin-bottom: 15px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;">
+      
+      <!-- Nhóm 1: Tên lớp & Cấu hình -->
+      <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+        <span style="font-weight: bold; font-size: 15px;">Lớp: <span id="sodoHienThiLop" style="color: #0d6efd;">---</span></span>
+        
+        <div style="display: flex; align-items: center; gap: 5px; background: #fff; padding: 3px 8px; border: 1px solid #ced4da; border-radius: 4px;">
+          <span style="font-size: 13px; color: #6c757d;">Cấu hình:</span>
+          <label style="font-size: 13px; margin: 0;">Dãy</label>
+          <input type="number" id="inputSoDay" value="2" style="width: 45px; text-align: center; border: 1px solid #ced4da; border-radius: 3px;" onchange="SoDoModule.renderGrid()">
+          <label style="font-size: 13px; margin: 0;">Bàn</label>
+          <input type="number" id="inputSoBan" value="6" style="width: 45px; text-align: center; border: 1px solid #ced4da; border-radius: 3px;" onchange="SoDoModule.renderGrid()">
+          <label style="font-size: 13px; margin: 0;">HS/Bàn</label>
+          <input type="number" id="inputHSBan" value="4" style="width: 45px; text-align: center; border: 1px solid #ced4da; border-radius: 3px;" onchange="SoDoModule.renderGrid()">
+        </div>
+      </div>
+
+      <!-- Nhóm 2: Các nút chức năng & Thuật toán -->
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        
+        <!-- Select box chọn thuật toán thay cho Dropdown để gọn gàng 100% -->
+        <select id="selectThuatToan" class="form-select form-select-sm" style="width: 200px; font-weight: bold; color: #0dcaf0; background-color: #055160;" onchange="SoDoModule.autoArrange(this.value); this.selectedIndex=0;">
+          <option value="" selected disabled>⚡ Chọn thuật toán xếp chỗ...</option>
+          <optgroup label="Xếp mới">
+            <option value="to">🔀 Ngẫu nhiên theo Tổ</option>
+            <option value="chieucao">📏 Xếp theo Chiều cao</option>
+          </optgroup>
+          <optgroup label="Dịch chuyển đổi chỗ">
+            <option value="xoayTo">🔄 Xoay vòng theo Tổ</option>
+            <option value="xoayBan">🪑 Đổi chỗ theo Bàn</option>
+          </optgroup>
+        </select>
+
+        <button id="btnLuuSoDo" class="btn btn-sm btn-success fw-bold" onclick="SoDoModule.save()">💾 Lưu</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="SoDoModule.resetGrid()">🗑️ Xóa</button>
+        <button class="btn btn-sm btn-outline-primary position-relative fw-bold" onclick="SoDoModule.toggleSidebar()">
+          👥 Chờ 
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="countChuaXep">0</span>
+        </button>
+      </div>
+
+    </div>
+     <!-- KHU VỰC HIỂN BỤC GIẢNG -->
+    <div><h1 ><p style="text-align: center;">BỤC GIẢNG
+    <div class="row">
+      <div class="col-md-12">
+        <div id="gridSoDoContainer" class="bg-white p-3 border rounded shadow-sm">
+          <!-- Sơ đồ bàn ghế render ở đây -->
+        </div>
+      </div>
+    </div>
+
+    <!-- FLOATING SIDEBAR (DANH SÁCH CHỜ NỔI) -->
+    <div id="floatingSidebar" class="card shadow-lg position-absolute top-0 end-0 bg-white border" style="width: 280px; display: none; z-index: 1050; margin-right: 15px; margin-top: 70px;">
+      <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-2">
+        <span class="fw-bold">Danh sách chưa xếp chỗ</span>
+        <button type="button" class="btn-close btn-close-white" onclick="SoDoModule.toggleSidebar()"></button>
+      </div>
+      <div class="card-body p-2">
+        <input type="text" id="searchSidebarHS" class="form-control form-control-sm mb-2" placeholder="🔍 Tìm kiếm học sinh..." onkeyup="SoDoModule.filterSidebar()">
+        <div id="danhSachHocSinhCho" class="list-group list-group-flush overflow-auto" style="max-height: 450px; font-size: 13px;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PART 2: session.js / api.js sẽ được gắn sau -->
+<!-- PART 3: thi-dua.js và các xử lý giao diện sẽ được gắn sau -->
+</body>
+</html>
