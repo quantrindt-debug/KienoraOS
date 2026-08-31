@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <title>Sổ Chủ Nhiệm - KienoraOS</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 13pt;
+      line-height: 1.4;
+      color: #000;
+      background-color: #f8fafc;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .paper-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 40px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      border-radius: 4px;
+    }
+
+    .header-title {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 25px;
+    }
+
+    .school-name {
+      font-size: 13pt;
+      font-weight: bold;
+    }
+
+    .doc-title {
+      font-size: 18pt;
+      font-weight: bold;
+      text-transform: uppercase;
+      margin: 10px 0 5px 0;
+    }
+
+    .doc-subtitle {
+      font-size: 11pt;
+      font-style: italic;
+      margin-bottom: 15px;
+    }
+
+    .info-line {
+      font-size: 12pt;
+      margin: 4px 0;
+    }
+
+    .section-header {
+      font-weight: bold;
+      font-size: 13pt;
+      text-transform: uppercase;
+      margin-top: 25px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #000;
+      padding-bottom: 3px;
+    }
+
+    .sub-section-header {
+      font-weight: bold;
+      font-size: 12pt;
+      margin-top: 12px;
+      margin-bottom: 6px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      margin-bottom: 15px;
+      page-break-inside: avoid;
+    }
+
+    table, th, td {
+      border: 1px solid #000;
+    }
+
+    th, td {
+      padding: 6px 8px;
+      font-size: 11pt;
+      vertical-align: middle;
+    }
+
+    th {
+      text-align: center;
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+
+    .text-center { text-align: center; }
+    .text-bold { font-weight: bold; }
+
+    .filter-bar {
+      max-width: 900px;
+      margin: 0 auto 20px auto;
+      background: #1e293b;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .filter-bar select {
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: bold;
+      border-radius: 4px;
+      border: none;
+    }
+
+    .btn-print {
+      padding: 8px 16px;
+      background: #22c55e;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 13px;
+    }
+
+    .btn-print:hover { background: #16a34a; }
+
+    .cover-page {
+      page-break-after: always;
+      break-after: page;
+      min-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    @media print {
+      .no-print, .filter-bar { 
+        display: none !important; 
+        visibility: hidden !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      body { 
+        background: #fff; 
+        padding: 0; 
+        margin: 0; 
+      }
+
+      .paper-container { 
+        box-shadow: none; 
+        padding: 0; 
+        margin: 0;
+        max-width: 100%; 
+      }
+
+      .cover-page {
+        height: 100vh;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        page-break-after: always;
+        break-after: page;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- THANH LỌC LỚP VÀ IN BÁO CÁO -->
+  <div class="filter-bar no-print">
+    <div>
+      <label style="margin-right: 8px;"><b>Chọn Lớp Chủ Nhiệm:</b></label>
+      <select id="selectClass" onchange="loadReportData()">
+        <option value="">-- Đang tải danh sách lớp --</option>
+      </select>
+    </div>
+
+    <button class="btn-print" onclick="window.print()">
+      🖨️ In / Xuất PDF Sổ Chủ Nhiệm
+    </button>
+  </div>
+
+  <!-- NỘI DUNG SỔ CHỦ NHIỆM -->
+  <div class="paper-container" id="reportContainer">
+    <div class="header-title cover-page">
+      <div class="school-name">SỞ GIÁO DỤC VÀ ĐÀO TẠO NGHỆ AN</div>
+      <div class="school-name" style="text-decoration: underline;">TRƯỜNG THPT NGUYỄN DUY TRINH</div>
+      
+      <div style="margin-top: 120px; margin-bottom: 120px;">
+        <div class="doc-title" style="font-size: 26pt; letter-spacing: 2px;">SỔ CHỦ NHIỆM</div>
+        <div class="doc-subtitle" style="font-size: 13pt;">(Dùng cho giáo viên chủ nhiệm cấp THPT)</div>
+      </div>
+      
+      <div class="info-line" style="font-size: 14pt; margin-bottom: 10px;">
+        <b>LỚP:</b> <span id="lblClass">..........</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+        <b>NĂM HỌC:</b> <span id="lblNamHoc">2025 – 2026</span>
+      </div>
+      <div class="info-line" style="font-size: 14pt;">
+        <b>GIÁO VIÊN CHỦ NHIỆM:</b> <span id="lblTeacher">..................................................</span>
+      </div>
+    </div>
+
+    <!-- A. THÔNG TIN GVCN -->
+    <div class="section-header">A. THÔNG TIN GIÁO VIÊN CHỦ NHIỆM</div>
+    <div style="font-size: 11pt; line-height: 1.8;">
+      <b>Họ và tên:</b> <span id="gvHoTen">..................................................</span> &nbsp;&nbsp;&nbsp;&nbsp;
+      <b>Ngày sinh:</b> <span id="gvNgaySinh">..../..../........</span> &nbsp;&nbsp;&nbsp;&nbsp;
+      <b>Giới tính:</b> <span id="gvGioiTinh">........</span> &nbsp;&nbsp;&nbsp;&nbsp;
+      <b>Dân tộc:</b> <span id="gvDanToc">Kinh</span><br>
+      <b>Trình độ chuyên môn:</b> <span id="gvTrinhDo">Đại học Sư phạm</span> &nbsp;&nbsp;&nbsp;&nbsp;
+      <b>Môn giảng dạy:</b> <span id="gvMonGiangDay">....................</span> &nbsp;&nbsp;&nbsp;&nbsp;
+      <b>Số năm công tác:</b> <span id="gvThamNien">......</span><br>
+      <b>Điện thoại:</b> <span id="gvDienThoai">........................</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+      <b>Email:</b> <span id="gvEmail">..................................................</span>
+    </div>
+
+    <!-- B. ĐẶC ĐIỂM TÌNH HÌNH LỚP -->
+    <div class="section-header">B. ĐẶC ĐIỂM TÌNH HÌNH LỚP</div>
+    <div class="sub-section-header">I. Thống kê đầu năm học</div>
+    <table>
+      <tr>
+        <td style="width: 35%;">Tổng số học sinh</td>
+        <td class="text-center text-bold" style="width: 15%;" id="statTongHS">0</td>
+        <td style="width: 35%;">Đoàn viên</td>
+        <td class="text-center text-bold" style="width: 15%;" id="statDoanVien">0</td>
+      </tr>
+      <tr>
+        <td>Trong đó nữ</td>
+        <td class="text-center" id="statNu">0</td>
+        <td>Học sinh dân tộc thiểu số</td>
+        <td class="text-center" id="statDTTS">0</td>
+      </tr>
+      <tr>
+        <td>Con thương binh, liệt sĩ</td>
+        <td class="text-center" id="statThuongBinh">0</td>
+        <td>Hộ nghèo / cận nghèo</td>
+        <td class="text-center" id="statHoNgheo">0</td>
+      </tr>
+      <tr>
+        <td>Học sinh khuyết tật</td>
+        <td class="text-center" id="statKhuyetTat">0</td>
+        <td>Ở xa (trên 5 km)</td>
+        <td class="text-center" id="statOXa">0</td>
+      </tr>
+      <tr>
+        <td>Học sinh có hoàn cảnh đặc biệt</td>
+        <td class="text-center" id="statDacBiet">0</td>
+        <td>Học sinh chuyển đến / đi</td>
+        <td class="text-center" id="statChuyenDenDi">0 / 0</td>
+      </tr>
+    </table>
+
+    <div class="sub-section-header">II. Thuận lợi</div>
+    <div id="txtThuanLoi" style="font-size: 11pt; font-style: italic; min-height: 40px; padding: 5px; border: 1px dashed #ccc;">
+      (Chưa cập nhật nội dung thuận lợi)
+    </div>
+
+    <div class="sub-section-header">III. Khó khăn</div>
+    <div id="txtKhoKhan" style="font-size: 11pt; font-style: italic; min-height: 40px; padding: 5px; border: 1px dashed #ccc;">
+      (Chưa cập nhật nội dung khó khăn)
+    </div>
+
+    <!-- C. DANH SÁCH HỌC SINH -->
+    <div class="section-header">C. DANH SÁCH HỌC SINH</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 5%;">TT</th>
+          <th style="width: 25%;">Họ và tên</th>
+          <th style="width: 12%;">Ngày sinh</th>
+          <th style="width: 8%;">Nam/Nữ</th>
+          <th style="width: 10%;">Dân tộc</th>
+          <th style="width: 25%;">Họ tên cha/mẹ – SĐT</th>
+          <th>Ghi chú</th>
+        </tr>
+      </thead>
+      <tbody id="tbHocSinh">
+        <tr><td colspan="7" class="text-center">Vui lòng chọn Lớp để tải danh sách học sinh...</td></tr>
+      </tbody>
+    </table>
+
+    <!-- D. TỔ CHỨC LỚP -->
+    <div class="section-header">D. TỔ CHỨC LỚP</div>
+    <div class="sub-section-header">I. Ban cán sự lớp</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 8%;">TT</th>
+          <th style="width: 25%;">Chức vụ</th>
+          <th style="width: 30%;">Họ và tên</th>
+          <th>Nhiệm vụ phụ trách</th>
+        </tr>
+      </thead>
+      <tbody id="tbBanCanSu">
+        <tr><td class="text-center">1</td><td>Lớp trưởng</td><td id="bcsLopTruong">-</td><td>Quản lý chung tập thể lớp</td></tr>
+        <tr><td class="text-center">2</td><td>Lớp phó học tập</td><td id="bcsLopPhoHT">-</td><td>Theo dõi học tập, truy bài</td></tr>
+        <tr><td class="text-center">3</td><td>Lớp phó lao động</td><td id="bcsLopPhoLD">-</td><td>Phụ trách vệ sinh, lao động</td></tr>
+        <tr><td class="text-center">4</td><td>Lớp phó văn – thể – mỹ</td><td id="bcsLopPhoVTM">-</td><td>Phong trào văn nghệ, thể thao</td></tr>
+        <tr><td class="text-center">5</td><td>Thủ quỹ</td><td id="bcsThuQuy">-</td><td>Quản lý quỹ lớp</td></tr>
+      </tbody>
+    </table>
+
+    <!-- E. CHỈ TIÊU PHẤN ĐẤU -->
+    <div class="section-header">E. CHỈ TIÊU PHẤN ĐẤU NĂM HỌC</div>
+    <div style="font-size: 11pt; margin-bottom: 8px;">
+      <b>Danh hiệu tập thể lớp phấn đấu:</b> <span id="ctDanhHieu">Lớp Tiên Tiến Xuất Sắc</span><br>
+      <b>Xếp loại thi đua nề nếp bình quân:</b> <span id="ctNeNep">Top 5 Toàn trường</span>
+    </div>
+
+    <!-- J. HỌC SINH CẦN QUAN TÂM -->
+    <div class="section-header">J. THEO DÕI HỌC SINH CẦN QUAN TÂM</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 50px;">TT</th>
+          <th style="width: 200px;">Họ và tên</th>
+          <th>Biểu hiện / Hoàn cảnh</th>
+          <th>Biện pháp giúp đỡ</th>
+          <th style="width: 150px;">Kết quả</th>
+        </tr>
+      </thead>
+      <tbody id="tbHocSinhQuanTam">
+        <tr><td colspan="5" class="text-center">Đang tải dữ liệu...</td></tr>
+      </tbody>
+    </table>
+
+    <!-- K. TRAO ĐỔI PHỤ HUYNH -->
+    <div class="section-header">K. TRAO ĐỔI VỚI CHA MẸ HỌC SINH</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 110px;">Ngày</th>
+          <th style="width: 180px;">Họ tên học sinh</th>
+          <th style="width: 120px;">Hình thức</th>
+          <th>Nội dung trao đổi</th>
+          <th style="width: 160px;">Kết quả</th>
+        </tr>
+      </thead>
+      <tbody id="tbTraoDoiPhuHuynh">
+        <tr><td colspan="5" class="text-center">Chưa có nhật ký trao đổi phụ huynh</td></tr>
+      </tbody>
+    </table>
+
+    <!-- M. NHẬN XÉT THÁNG -->
+    <div class="section-header">M. NHẬN XÉT, ĐÁNH GIÁ CỦA GVCN THEO THÁNG</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 15%;">Tháng</th>
+          <th style="width: 28%;">Ưu điểm</th>
+          <th style="width: 28%;">Tồn tại / Hạn chế</th>
+          <th>Biện pháp tháng tới</th>
+        </tr>
+      </thead>
+      <tbody id="tbThang">
+        <tr><td colspan="4" class="text-center">Đang tải dữ liệu nhận xét tháng...</td></tr>
+      </tbody>
+    </table>
+
+    <!-- KÝ TÊN -->
+    <br><br>
+    <table style="border: none; width: 100%;">
+      <tr style="border: none;">
+        <td style="border: none; text-align: center; width: 50%; vertical-align: top;">
+          <b>BAN GIÁM HIỆU DUYỆT</b><br>
+          <i>(Ký, ghi rõ họ tên)</i>
+          <br><br><br><br>
+        </td>
+        <td style="border: none; text-align: center; width: 50%; vertical-align: top;">
+          <i>Nghệ An, ngày ..... tháng ..... năm 20....</i><br>
+          <b>GIÁO VIÊN CHỦ NHIỆM</b><br>
+          <i>(Ký, ghi rõ họ tên)</i>
+          <br><br><br><br>
+          <b id="lblSignTeacher">Lê Duy Hải</b>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <script>
+    // Cấu hình URL API Backend (Thay thế bằng URL Web App Google Apps Script thực tế của bạn)
+    const API_BASE_URL = "https://script.google.com/macros/s/AKfycbyQO3cCXn5aZhAg6W2kQ82z-iMqXmcPl28J_otL7g3xXkRJj8A1wwUGjZm61cJ6_KqLzA/exec";
+
+    // 1. Kiểm tra xác thực KienoraOS khi tải trang
+    window.onload = function() {
+      const sessionToken = sessionStorage.getItem("kienora_token") || localStorage.getItem("kienora_token");
+      
+      // Nếu không có token đăng nhập từ KienoraOS, ép buộc chuyển hướng về trang đăng nhập
+      if (!sessionToken) {
+        alert("Phiên làm việc không hợp lệ hoặc bạn chưa đăng nhập hệ thống KienoraOS!");
+        window.location.href = "https://kienoraos.github.io/login.html"; // Thay đổi URL trang login thực tế nếu cần
+        return;
+      }
+
+      // Tải thông tin phân quyền và danh sách lớp
+      fetchTeacherAssignment(sessionToken);
+    };
+
+    function fetchTeacherAssignment(token) {
+      fetch(`${API_BASE_URL}?action=getTeacherClassAssignment&token=${encodeURIComponent(token)}`)
+        .then(response => response.json())
+        .then(user => {
+          const select = document.getElementById('selectClass');
+          if (!select) return;
+
+          if (!user.isAdmin && user.assignedClass) {
+            select.innerHTML = `<option value="${user.assignedClass}">${user.assignedClass}</option>`;
+            select.disabled = true;
+            loadReportData();
+          } else if (user.allClasses && user.allClasses.length > 0) {
+            let optionsHtml = '<option value="">-- Chọn lớp xem báo cáo --</option>';
+            user.allClasses.forEach(function(cls) {
+              optionsHtml += `<option value="${cls}">${cls}</option>`;
+            });
+            select.innerHTML = optionsHtml;
+          } else {
+            select.innerHTML = '<option value="">-- Chưa có danh sách lớp --</option>';
+          }
+        })
+        .catch(error => {
+          console.error("Lỗi kết nối phân quyền:", error);
+        });
+    }
+
+    // 2. Nạp dữ liệu báo cáo theo lớp được chọn qua Fetch API
+    function loadReportData() {
+      const selectedClass = document.getElementById('selectClass').value;
+      if (!selectedClass) return;
+
+      document.getElementById('lblClass').innerText = selectedClass;
+      const token = sessionStorage.getItem("kienora_token") || localStorage.getItem("kienora_token");
+
+      fetch(`${API_BASE_URL}?action=getSoChuNhiemData&class=${encodeURIComponent(selectedClass)}&token=${encodeURIComponent(token)}`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data) return;
+
+          // Mục A: Thông tin GVCN
+          if (data.teacherInfo) {
+            const gv = data.teacherInfo;
+            document.getElementById('lblTeacher').innerText = gv.hoTen || '..................................................';
+            document.getElementById('lblSignTeacher').innerText = gv.hoTen || '';
+            document.getElementById('gvHoTen').innerText = gv.hoTen || '..................................................';
+            document.getElementById('gvNgaySinh').innerText = gv.ngaySinh || '..../..../........';
+            document.getElementById('gvGioiTinh').innerText = gv.gioiTinh || '........';
+            document.getElementById('gvDanToc').innerText = gv.danToc || 'Kinh';
+            document.getElementById('gvTrinhDo').innerText = gv.trinhDo || '..................................................';
+            document.getElementById('gvMonGiangDay').innerText = gv.monGiangDay || '....................';
+            document.getElementById('gvThamNien').innerText = gv.soNamCongTac || '......';
+            document.getElementById('gvDienThoai').innerText = gv.soDienThoai || '........................';
+            document.getElementById('gvEmail').innerText = gv.email || '..................................................';
+          }
+
+          // Mục B: Thống kê lớp
+          if (data.thongKeB) {
+            const tk = data.thongKeB;
+            document.getElementById('statTongHS').innerText = tk.tongHS;
+            document.getElementById('statNu').innerText = tk.nu;
+            document.getElementById('statDoanVien').innerText = tk.doanVien;
+            document.getElementById('statDTTS').innerText = tk.danTocTS;
+            document.getElementById('statThuongBinh').innerText = tk.thuongBinh;
+            document.getElementById('statHoNgheo').innerText = tk.hoNgheo;
+            document.getElementById('statKhuyetTat').innerText = tk.khuyetTat;
+            document.getElementById('statOXa').innerText = tk.oXa;
+            document.getElementById('statDacBiet').innerText = tk.dacBiet;
+            document.getElementById('statChuyenDenDi').innerText = tk.chuyenDen + ' / ' + tk.chuyenDi;
+          }
+
+          document.getElementById('txtThuanLoi').innerText = data.thuanLoi || '(Chưa cập nhật nội dung thuận lợi)';
+          document.getElementById('txtKhoKhan').innerText = data.khoKhan || '(Chưa cập nhật nội dung khó khăn)';
+
+          // Mục C: Danh sách học sinh
+          const tbodyHS = document.getElementById('tbHocSinh');
+          if (data.dsHocSinh && data.dsHocSinh.length > 0) {
+            let htmlHS = '';
+            data.dsHocSinh.forEach(function(hs) {
+              htmlHS += `
+                <tr>
+                  <td class="text-center">${hs.stt}</td>
+                  <td style="text-align: left; padding-left: 8px;"><b>${hs.hoTen}</b></td>
+                  <td class="text-center">${hs.ngaySinh}</td>
+                  <td class="text-center">${hs.gioiTinh}</td>
+                  <td class="text-center">${hs.danToc}</td>
+                  <td style="text-align: left; padding-left: 8px;">${hs.phuHuynhSDT}</td>
+                  <td class="text-center">${hs.ghiChu}</td>
+                </tr>
+              `;
+            });
+            tbodyHS.innerHTML = htmlHS;
+          } else {
+            tbodyHS.innerHTML = '<tr><td colspan="7" class="text-center">Chưa có dữ liệu học sinh</td></tr>';
+          }
+
+          // Mục D: Ban cán sự
+          if (data.dsBanCanSu && data.dsBanCanSu.length > 0) {
+            let htmlBCS = '';
+            data.dsBanCanSu.forEach((bcs, idx) => {
+              htmlBCS += `<tr>
+                <td class="text-center">${idx + 1}</td>
+                <td style="text-align: left; padding-left: 8px;"><b>${bcs.chucVu}</b></td>
+                <td style="text-align: left; padding-left: 8px;">${bcs.hoTen}</td>
+                <td style="text-align: left; padding-left: 8px;">${bcs.nhiemVu}</td>
+              </tr>`;
+            });
+            document.getElementById('tbBanCanSu').innerHTML = htmlBCS;
+          }
+
+          // Mục E: Chỉ tiêu
+          if (data.chiTieu) {
+            document.getElementById('ctDanhHieu').innerText = data.chiTieu.danhHieu || 'Lớp Tiên Tiến Xuất Sắc';
+            document.getElementById('ctNeNep').innerText = data.chiTieu.neNep || 'Top 5 Toàn trường';
+          }
+
+          // Mục J: Học sinh cần quan tâm
+          const tbodyCare = document.getElementById('tbHocSinhQuanTam');
+          if (data.dsQuanTam && data.dsQuanTam.length > 0) {
+            let htmlCare = '';
+            data.dsQuanTam.forEach(function(item) {
+              htmlCare += `
+                <tr>
+                  <td class="text-center">${item.stt}</td>
+                  <td style="text-align: left; padding-left: 8px;"><b>${item.hoTen}</b></td>
+                  <td style="text-align: left; padding-left: 8px;">${item.bieuHien}</td>
+                  <td style="text-align: left; padding-left: 8px;">${item.bienPhap}</td>
+                  <td style="text-align: left; padding-left: 8px;">${item.ketQua}</td>
+                </tr>
+              `;
+            });
+            tbodyCare.innerHTML = htmlCare;
+          } else {
+            tbodyCare.innerHTML = `<tr><td colspan="5" class="text-center" style="color: #666; font-style: italic; padding: 10px;">Chưa có dữ liệu theo dõi học sinh cần quan tâm</td></tr>`;
+          }
+
+          // Mục K: Trao đổi phụ huynh
+          const tbPhuHuynh = document.getElementById('tbTraoDoiPhuHuynh');
+          if (data.dsTraoDoiPhuHuynh && data.dsTraoDoiPhuHuynh.length > 0) {
+            let html = '';
+            data.dsTraoDoiPhuHuynh.forEach(item => {
+              html += `
+                <tr>
+                  <td class="text-center">${item.ngay}</td>
+                  <td>${item.hoTen}</td>
+                  <td class="text-center">${item.hinhThuc}</td>
+                  <td>${item.noiDung}</td>
+                  <td>${item.ketQua}</td>
+                </tr>
+              `;
+            });
+            tbPhuHuynh.innerHTML = html;
+          } else {
+            tbPhuHuynh.innerHTML = `<tr><td colspan="5" class="text-center">Chưa có nhật ký trao đổi phụ huynh</td></tr>`;
+          }
+
+          // Mục M: Nhận xét tháng
+          const tbThang = document.getElementById('tbThang');
+          if (data.dsNhanXetThang && data.dsNhanXetThang.length > 0) {
+            let htmlNX = '';
+            data.dsNhanXetThang.forEach(item => {
+              htmlNX += `
+                <tr>
+                  <td class="text-center"><b>${item.thang}</b></td>
+                  <td style="text-align: left; padding-left: 8px;">${item.uuDiem}</td>
+                  <td style="text-align: left; padding-left: 8px;">${item.tonTai}</td>
+                  <td style="text-align: left; padding-left: 8px;">${item.bienPhap}</td>
+                </tr>
+              `;
+            });
+            tbThang.innerHTML = htmlNX;
+          } else {
+            tbThang.innerHTML = `<tr><td colspan="4" class="text-center" style="color: #666; font-style: italic; padding: 10px;">Chưa có dữ liệu nhận xét đánh giá tháng</td></tr>`;
+          }
+        })
+        .catch(error => {
+          console.error("Lỗi tải dữ liệu sổ chủ nhiệm:", error);
+        });
+    }
+  </script>
+</body>
+</html>
