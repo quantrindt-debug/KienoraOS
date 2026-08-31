@@ -6,7 +6,6 @@
 
 let hocSinhDangChon = null;
 let cauHinh = [];
-let currentRole = "";
 let isAdmin = false;
 
 
