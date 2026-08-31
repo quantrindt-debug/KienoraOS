@@ -384,26 +384,26 @@
   container.appendChild(winDiv);
   addTaskbarItem(appId, appMeta);
 
-  // ==========================================
-  // CƠ CHẾ 1: KIỂM TRA FILE CỤC BỘ CÙNG THƯ MỤC
+// ==========================================
+  // CƠ CHẾ 1: KIỂM TRA FILE CỤC BỘ CÙNG THƯ MỤC / THƯ MỤC CON
   // ==========================================
   const localPageFiles = {
-  tuyensinh10: "tuyensinh10.html",
-  quantridaucap: "quantridaucap.html",
-  xeplop: "xeplop.html",
-  QuanLyHoSoHocSinh: "QuanLyHoSoHocSinh.html",
-  tracuunv: "tracuunv.html",
-  KeHoachChamCong: "KeHoachChamCong.html",
-  SoChuNhiem: "SoChuNhiem.html",
-
-  ThiDuaLop: "THPT_NguyenDuyTrinh/ThiDuaLop.html",
-
-  CKDBCLGD: "CKDBCLGD.html"
-};
+    'tuyensinh10': "tuyensinh10.html",
+    'quantridaucap': "quantridaucap.html",
+    'xeplop': "xeplop.html",
+    'QuanLyHoSoHocSinh': "QuanLyHoSoHocSinh.html",
+    'tracuunv': "tracuunv.html",
+    'KeHoachChamCong': "KeHoachChamCong.html",
+    'SoChuNhiem': "SoChuNhiem.html",
+    'ThiDuaLop': "THPT_NguyenDuyTrinh/ThiDuaLop.html", // Đường dẫn chính xác tới thư mục con
+    'CKDBCLGD': "CKDBCLGD.html"
+  };
   
-  if (localPageFiles.includes(appId)) {
+  // Sửa từ .includes() thành toán tử "in" hoặc hasOwnProperty để kiểm tra key trong Object
+  if (appId in localPageFiles) {
       document.getElementById(`title-${appId}`).innerText = `${appMeta.title} - [${currentSession.school ? currentSession.school.tenTruong : currentSession.maTruong}]`;
-      document.getElementById(`iframe-${appId}`).src = `${appId}.html`;
+      // Gán trực tiếp giá trị đường dẫn được định nghĩa trong Object (hỗ trợ cả đường dẫn chứa thư mục con)
+      document.getElementById(`iframe-${appId}`).src = localPageFiles[appId];
       return; // Dừng lại ở đây, không gọi API nữa
   }
 
