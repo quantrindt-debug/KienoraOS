@@ -6,7 +6,7 @@
 /* ================= API ================= */
 
 const API_URL =
-  "URL_GOOGLE_APPS_SCRIPT_CỦA_BẠN";
+  "https://script.google.com/macros/s/AKfycbyQO3cCXn5aZhAg6W2kQ82z-iMqXmcPl28J_otL7g3xXkRJj8A1wwUGjZm61cJ6_KqLzA/exec";
 
 
 async function postApi(payload) {
