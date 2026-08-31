@@ -299,55 +299,118 @@ async function postApi(payload) {
    6. API GET
 ========================================================= */
 
-async function getApi(params) {
+function getApi(params) {
 
-  const query =
-    new URLSearchParams(
-      params || {}
-    ).toString();
+  return new Promise(
+    function(resolve, reject) {
 
-  const response =
-    await fetch(
-      API_URL +
-      "?" +
-      query,
-      {
-        method: "GET",
-        cache: "no-store"
+      const callbackName =
+        "__kienora_jsonp_" +
+        Date.now() +
+        "_" +
+        Math.floor(
+          Math.random() * 100000
+        );
+
+      const script =
+        document.createElement("script");
+
+      const queryParams = {
+        ...(params || {}),
+        callback: callbackName
+      };
+
+      const query =
+        new URLSearchParams(
+          queryParams
+        ).toString();
+
+      const url =
+        API_URL +
+        "?" +
+        query;
+
+
+      const timeout =
+        setTimeout(
+          function() {
+
+            cleanup();
+
+            reject(
+              new Error(
+                "API hết thời gian phản hồi."
+              )
+            );
+
+          },
+          15000
+        );
+
+
+      function cleanup() {
+
+        clearTimeout(
+          timeout
+        );
+
+        delete window[
+          callbackName
+        ];
+
+        if (script.parentNode) {
+
+          script.parentNode.removeChild(
+            script
+          );
+
+        }
+
       }
-    );
 
-  if (!response.ok) {
 
-    throw new Error(
-      "HTTP " +
-      response.status
-    );
+      window[
+        callbackName
+      ] =
+        function(data) {
 
-  }
+          cleanup();
 
-  const text =
-    await response.text();
+          resolve(data);
 
-  try {
+        };
 
-    return JSON.parse(text);
 
-  } catch (error) {
+      script.onerror =
+        function() {
 
-    console.error(
-      "GET API trả về:",
-      text
-    );
+          cleanup();
 
-    throw new Error(
-      "API không trả về JSON hợp lệ."
-    );
+          reject(
+            new Error(
+              "Không thể kết nối Google Apps Script."
+            )
+          );
 
-  }
+        };
+
+
+      script.src =
+        url;
+
+      script.async =
+        true;
+
+      document
+        .head
+        .appendChild(
+          script
+        );
+
+    }
+  );
+
 }
-
-
 /* =========================================================
    7. HÀM CHUNG
 ========================================================= */
