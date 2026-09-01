@@ -1064,7 +1064,298 @@
   </div>
 </div>
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbyQO3cCXn5aZhAg6W2kQ82z-iMqXmcPl28J_otL7g3xXkRJj8A1wwUGjZm61cJ6_KqLzA/execc";
+const API_URL = "https://script.google.com/macros/s/AKfycbw_XtBo4_PHgWDUGIvF_K92O99NUezySMivjstziuxr21ZVhON90h_T1d8-rf4ARRRJ7Q/exec";
+  /* =========================================================
+   KIENORA API BRIDGE
+   GitHub Pages <-> Google Apps Script
+   Dùng JSONP để tránh CORS
+========================================================= */
+
+(function () {
+
+  const ORIGINAL_FETCH = window.fetch;
+
+  function jsonpRequest(apiUrl, options) {
+
+    options = options || {};
+
+    return new Promise(function (resolve, reject) {
+
+      const callbackName =
+        "__kienora_jsonp_" +
+        Date.now() +
+        "_" +
+        Math.random()
+          .toString(36)
+          .substring(2);
+
+      const script =
+        document.createElement("script");
+
+      let finished = false;
+
+      function cleanup() {
+
+        finished = true;
+
+        try {
+          delete window[callbackName];
+        } catch (e) {
+          window[callbackName] = undefined;
+        }
+
+        if (script.parentNode) {
+          script.parentNode.removeChild(script);
+        }
+      }
+
+      window[callbackName] =
+        function (data) {
+
+          cleanup();
+
+          resolve({
+
+            ok: true,
+
+            status: 200,
+
+            json: function () {
+              return Promise.resolve(data);
+            },
+
+            text: function () {
+              return Promise.resolve(
+                JSON.stringify(data)
+              );
+            }
+
+          });
+
+        };
+
+
+      script.onerror =
+        function () {
+
+          cleanup();
+
+          reject(
+            new Error(
+              "Không thể kết nối Google Apps Script."
+            )
+          );
+
+        };
+
+
+      /* =====================================================
+         TẠO URL
+      ===================================================== */
+
+      let url =
+        String(apiUrl || "");
+
+
+      const params =
+        new URLSearchParams();
+
+
+      /* =====================================================
+         POST:
+         Đọc body JSON và chuyển thành query GET
+      ===================================================== */
+
+      if (
+        options.body
+      ) {
+
+        try {
+
+          const body =
+            typeof options.body === "string"
+              ? JSON.parse(options.body)
+              : options.body;
+
+
+          if (
+            body &&
+            typeof body === "object"
+          ) {
+
+            Object.keys(body)
+              .forEach(function (key) {
+
+                const value =
+                  body[key];
+
+                if (
+                  value === undefined ||
+                  value === null
+                ) {
+                  return;
+                }
+
+
+                /*
+                 * Object / Array
+                 * → JSON string
+                 */
+
+                if (
+                  typeof value === "object"
+                ) {
+
+                  params.set(
+                    key,
+                    JSON.stringify(value)
+                  );
+
+                } else {
+
+                  params.set(
+                    key,
+                    String(value)
+                  );
+
+                }
+
+              });
+
+          }
+
+        }
+
+        catch (err) {
+
+          console.warn(
+            "Kienora API Bridge: body không phải JSON.",
+            err
+          );
+
+        }
+
+      }
+
+
+      /* =====================================================
+         CALLBACK
+      ===================================================== */
+
+      params.set(
+        "callback",
+        callbackName
+      );
+
+
+      const separator =
+        url.includes("?")
+          ? "&"
+          : "?";
+
+
+      url +=
+        separator +
+        params.toString();
+
+
+      /* =====================================================
+         CHẠY SCRIPT JSONP
+      ===================================================== */
+
+      script.src = url;
+
+      script.async = true;
+
+      document.head.appendChild(
+        script
+      );
+
+
+      /*
+       * Timeout 30 giây
+       */
+
+      setTimeout(
+        function () {
+
+          if (finished) {
+            return;
+          }
+
+          cleanup();
+
+          reject(
+            new Error(
+              "API timeout: Google Apps Script không phản hồi."
+            )
+          );
+
+        },
+        30000
+      );
+
+    });
+
+  }
+
+
+  /* =========================================================
+     GHI ĐÈ FETCH CHỈ CHO API KIENORA
+  ========================================================= */
+
+  window.fetch =
+    function (input, options) {
+
+      let url = "";
+
+      if (
+        typeof input === "string"
+      ) {
+
+        url = input;
+
+      }
+      else if (
+        input &&
+        input.url
+      ) {
+
+        url = input.url;
+
+      }
+
+
+      /*
+       * Chỉ intercept API_URL
+       */
+
+      if (
+        typeof API_URL !== "undefined" &&
+        url &&
+        url.indexOf(API_URL) === 0
+      ) {
+
+        return jsonpRequest(
+          url,
+          options || {}
+        );
+
+      }
+
+
+      /*
+       * URL khác → fetch bình thường
+       */
+
+      return ORIGINAL_FETCH(
+        input,
+        options
+      );
+
+    };
+
+})();
 /* ==========================================
    BIẾN TOÀN CỤC QUẢN LÝ
    ========================================== */
