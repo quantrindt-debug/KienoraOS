@@ -1078,6 +1078,10 @@ window.currentClassStudents = [];
    1. ĐĂNG NHẬP & PHÂN QUYỀN VAI TRÒ
    ========================================== */
 
+/* ==========================================
+   1. ĐĂNG NHẬP & PHÂN QUYỀN VAI TRÒ (ĐÃ TƯƠNG THÍCH GITHUB & GAS)
+   ========================================== */
+
 function handleLogin() {
   const u = document.getElementById('txtUsername') ? document.getElementById('txtUsername').value.trim() : '';
   const p = document.getElementById('txtPassword') ? document.getElementById('txtPassword').value.trim() : '';
@@ -1090,6 +1094,7 @@ function handleLogin() {
 
   if (msg) msg.innerText = "Đang xác thực thông tin...";
 
+  // 1. Kiểm tra nếu chạy trong môi trường Google Apps Script gốc
   if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
       .withSuccessHandler(onLoginResult)
@@ -1097,11 +1102,23 @@ function handleLogin() {
         if (msg) msg.innerText = "Lỗi kết nối máy chủ: " + err.toString();
       })
       .authenticateUser(u, p);
+  } 
+  // 2. Chuyển sang dùng FETCH API khi chạy trên GitHub Pages
+  else if (typeof API_URL !== 'undefined') {
+    const targetUrl = `${API_URL}?action=authenticate&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`;
+
+    fetch(targetUrl)
+      .then(response => response.json())
+      .then(res => {
+        onLoginResult(res);
+      })
+      .catch(err => {
+        if (msg) msg.innerText = "Lỗi kết nối API đăng nhập: " + err.toString();
+      });
   } else {
-    alert("Không tìm thấy môi trường Google Apps Script!");
+    if (msg) msg.innerText = "Chưa cấu hình API_URL hoặc môi trường không hợp lệ!";
   }
 }
-
 function onLoginResult(res) {
   const msg = document.getElementById('loginMsg');
 
@@ -1237,21 +1254,27 @@ function applyClassAndPermissions(user, assignedClass, role) {
   const btnAdmin = document.getElementById('btnTabAdmin');
   if (btnAdmin) btnAdmin.style.display = (role.includes('ADMIN') || role.includes('QUAN_TRI')) ? 'inline-block' : 'none';
 
-  if (isBGH || isCoDo || !assignedClass || assignedClass === 'ALL') {
+ if (isBGH || isCoDo || !assignedClass || assignedClass === 'ALL') {
     if (lblClass) lblClass.style.display = 'none';
     if (globalSel) {
       globalSel.style.display = 'inline-block';
+      
+      // --- ĐOẠN CẦN NÂNG CẤP ĐỂ CHẠY ĐƯỢC TRÊN CẢ GITHUB & GAS ---
       if (typeof google !== 'undefined' && google.script && google.script.run) {
         google.script.run.withSuccessHandler(populateClassDropdown).getAllClassList();
+      } else if (typeof API_URL !== 'undefined') {
+        fetch(`${API_URL}?action=getClassList`)
+          .then(res => res.json())
+          .then(res => {
+            if (res.success) {
+              populateClassDropdown(res.data);
+            } else {
+              console.error("Lỗi tải danh sách lớp:", res.message);
+            }
+          })
+          .catch(err => console.error("Lỗi kết nối API danh sách lớp:", err));
       }
     }
-  } else {
-    if (globalSel) globalSel.style.display = 'none';
-    if (lblClass) {
-      lblClass.style.display = 'inline-block';
-      lblClass.innerText = 'Lớp ' + assignedClass;
-    }
-    window.currentSelectedClass = assignedClass;
   }
 
   const perms = user.permissions || {};
@@ -1343,7 +1366,7 @@ function populateClassDropdown(classList) {
     }
   }
 }
-
+//========================
 function handleLogout() {
   if (confirm("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?")) {
     window.currentUserSession = null;
@@ -1491,51 +1514,39 @@ function loadWeeksDropdown() {
   if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
       .withSuccessHandler(function(res) {
-        if (res.success && res.weeks.length > 0) {
-          const weekSelect = document.getElementById('selectWeek');
-          if (!weekSelect) return;
-          
-          weekSelect.innerHTML = ''; // Xóa dữ liệu cũ
-          
-          res.weeks.forEach(function(weekName) {
-            let option = document.createElement('option');
-            // Đảm bảo value luôn lưu chuẩn dạng "Tuần 1", "Tuần 2"...
-            option.value = weekName; 
-            option.textContent = weekName;
-            weekSelect.appendChild(option);
-          });
-          
-          // Sau khi đổ dữ liệu vào dropdown xong, gọi luôn hàm load dữ liệu của tuần đầu tiên
-          loadWeeklyData();
-        }
+        handleWeeksResponse(res);
       })
       .withFailureHandler(function(err) {
         console.error("Lỗi nạp danh sách tuần:", err);
       })
       .getListWeeksFromConfig();
-  }
-}
-
-// 2. Hàm load dữ liệu chi tiết của tuần đang được chọn
-function loadWeeklyData() {
-  const className = getCurrentSelectedClass();
-  const weekElem = document.getElementById('selectWeek');
-  
-  // Lấy giá trị đang được chọn từ dropdown (ví dụ: "Tuần 1", "Tuần 2"...)
-  const selectedWeek = weekElem ? weekElem.value : '';
-
-  if (!className || !selectedWeek) return;
-
-  if (typeof google !== 'undefined' && google.script && google.script.run) {
-    google.script.run
-      .withSuccessHandler(renderWeeklyData)
-      .withFailureHandler(function(err) {
-        console.error("Lỗi nạp dữ liệu tuần:", err);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getListWeeks`)
+      .then(res => res.json())
+      .then(res => {
+        handleWeeksResponse(res);
       })
-      .getWeeklyMonitoringData(className, selectedWeek);
+      .catch(err => console.error("Lỗi kết nối API nạp danh sách tuần:", err));
   }
 }
 
+// Hàm phụ trợ xử lý dữ liệu tuần sau khi nhận về (tránh lặp code)
+function handleWeeksResponse(res) {
+  if (res && res.success && res.weeks && res.weeks.length > 0) {
+    const weekSelect = document.getElementById('selectWeek');
+    if (!weekSelect) return;
+    
+    weekSelect.innerHTML = ''; 
+    res.weeks.forEach(function(weekName) {
+      let option = document.createElement('option');
+      option.value = weekName; 
+      option.textContent = weekName;
+      weekSelect.appendChild(option);
+    });
+    
+    loadWeeklyData();
+  }
+}
 function renderWeeklyData(res) {
   if (!res || !res.success) return;
 
@@ -1600,7 +1611,7 @@ function submitWeeklyData() {
   const payload = {
     className: className,
     week: week,
-    dateRange: getVal('txtDateRange'), // THÊM DÒNG NÀY VÀO
+    dateRange: getVal('txtDateRange'),
     siSo: getVal('ccSiSo'),
     vangCoPhep: getVal('ccVangCoPhep', 0),
     vangKhongPhep: getVal('ccVangKhongPhep', 0),
@@ -1628,29 +1639,46 @@ function submitWeeklyData() {
   const role = window.currentUserRole || 'ADMIN';
   const userAcc = window.currentUsername || role;
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (btnSave) {
-        btnSave.disabled = false;
-        btnSave.innerHTML = oldText;
-      }
-      if (res && res.success) {
-        alert(res.message || 'Lưu dữ liệu thành công!');
-        loadWeeklyStatusOverview();
-      } else {
-        alert('Lỗi: ' + (res ? res.message : 'Không lưu được dữ liệu'));
-      }
-    })
-    .withFailureHandler(function(err) {
-      if (btnSave) {
-        btnSave.disabled = false;
-        btnSave.innerHTML = oldText;
-      }
-      alert('Lỗi kết nối máy chủ: ' + err.toString());
-    })
-    .saveWeeklyMonitoring(payload, role, userAcc);
-}
+  const handleSaveResponse = (res) => {
+    if (btnSave) {
+      btnSave.disabled = false;
+      btnSave.innerHTML = oldText;
+    }
+    if (res && res.success) {
+      alert(res.message || 'Lưu dữ liệu thành công!');
+      if (typeof loadWeeklyStatusOverview === 'function') loadWeeklyStatusOverview();
+    } else {
+      alert('Lỗi: ' + (res ? res.message : 'Không lưu được dữ liệu'));
+    }
+  };
 
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleSaveResponse)
+      .withFailureHandler(function(err) {
+        if (btnSave) {
+          btnSave.disabled = false;
+          btnSave.innerHTML = oldText;
+        }
+        alert('Lỗi kết nối máy chủ: ' + err.toString());
+      })
+      .saveWeeklyMonitoring(payload, role, userAcc);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=saveWeekly`, {
+      method: 'POST',
+      body: JSON.stringify({ payload, role, userAcc })
+    })
+      .then(res => res.json())
+      .then(res => handleSaveResponse(res))
+      .catch(err => {
+        if (btnSave) {
+          btnSave.disabled = false;
+          btnSave.innerHTML = oldText;
+        }
+        alert('Lỗi kết nối API lưu dữ liệu: ' + err.toString());
+      });
+  }
+}
 /* ==========================================
    5. BẢNG TIẾN ĐỘ & CHỐT/MỞ KHÓA TUẦN (BGH)
    ========================================== */
@@ -1658,7 +1686,6 @@ function submitWeeklyData() {
 // Hàm gọi tự động khi thay đổi tuần ở dropdown "Chọn Tuần"
 function loadWeeklyStatusOverview() {
   const selectWeekElem = document.getElementById('selectWeek');
-  // Lấy giá trị chuỗi chuẩn (ví: "Tuần 1", "Tuần 2"...) từ dropdown
   const weekValue = selectWeekElem ? selectWeekElem.value : 'Tuần 1';
 
   const lblWeek = document.getElementById('lblWeekNum');
@@ -1667,8 +1694,8 @@ function loadWeeklyStatusOverview() {
   if (lblWeek) lblWeek.innerText = weekValue;
   if (lblProgress) lblProgress.innerText = 'Đang kiểm tra...';
 
+  // 1. Tải thông tin khoảng thời gian tuần
   if (typeof google !== 'undefined' && google.script && google.script.run) {
-    // 1. Tự động load khoảng thời gian (Từ ngày - Đến ngày) từ sheet CauHinhTuan
     google.script.run
       .withSuccessHandler(function(res) {
         if (res && res.success) {
@@ -1676,19 +1703,38 @@ function loadWeeklyStatusOverview() {
           if (txtDateRange) txtDateRange.value = res.dateRange;
         }
       })
-      .getTuanInfo(weekValue); // Truyền tuần chuẩn xuống Backend
+      .getTuanInfo(weekValue);
 
-    // 2. Tải tiến độ trạng thái nhập liệu của các lớp
     google.script.run
       .withSuccessHandler(renderClassStatusGrid)
       .withFailureHandler(function(err) {
         if (lblProgress) lblProgress.innerText = 'Lỗi kết nối!';
         console.error("Lỗi tải trạng thái tuần:", err);
       })
-      .getWeeklyDataStatus(weekValue); // Truyền tuần chuẩn xuống Backend
+      .getWeeklyDataStatus(weekValue);
+  } else if (typeof API_URL !== 'undefined') {
+    // Gọi qua fetch cho GitHub Pages
+    fetch(`${API_URL}?action=getTuanInfo&week=${encodeURIComponent(weekValue)}`)
+      .then(res => res.json())
+      .then(res => {
+        if (res && res.success) {
+          const txtDateRange = document.getElementById('txtDateRange');
+          if (txtDateRange) txtDateRange.value = res.dateRange;
+        }
+      })
+      .catch(err => console.error("Lỗi API lấy thông tin tuần:", err));
+
+    fetch(`${API_URL}?action=getWeeklyDataStatus&week=${encodeURIComponent(weekValue)}`)
+      .then(res => res.json())
+      .then(res => {
+        renderClassStatusGrid(res);
+      })
+      .catch(err => {
+        if (lblProgress) lblProgress.innerText = 'Lỗi kết nối!';
+        console.error("Lỗi API tải trạng thái tuần:", err);
+      });
   }
 }
-
 function renderClassStatusGrid(res) {
   const lblProgress = document.getElementById('lblSummaryProgress');
   const container = document.getElementById('gridClassStatus');
@@ -1760,7 +1806,6 @@ function renderClassStatusGrid(res) {
 }
 
 function chotThiDuaTuan() {
-  // Kiểm tra vai trò ngay khi bấm nút Chốt
   const role = String(window.currentUserRole || "").trim().toUpperCase();
   const isBGH = role.includes('BGH') || 
                 role.includes('BAN_GIAM_HIEU') || 
@@ -1769,13 +1814,11 @@ function chotThiDuaTuan() {
                 role.includes('QUAN_TRI') ||
                 role.includes('HIEU_TRUONG');
 
-  // Nếu không phải BGH/Admin -> Chặn lại và báo lỗi ngay lập tức
   if (!isBGH) {
     alert('⚠️ Cảnh báo: Tài khoản Cờ đỏ / Đoàn trường không có quyền chốt thi đua! Vui lòng liên hệ Ban Giám Hiệu.');
     return;
   }
 
-  // --- Các bước xử lý chốt thi đua phía dưới giữ nguyên ---
   const selectEl = document.getElementById('selectWeekBatch') || document.getElementById('selectWeek');
   const weekNum = selectEl ? selectEl.value : null;
 
@@ -1796,31 +1839,48 @@ function chotThiDuaTuan() {
 
   const userAcc = window.currentUsername || window.currentUserRole || 'BGH';
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (btnChot) {
-        btnChot.disabled = false;
-        btnChot.innerHTML = originalText;
-      }
-      if (res && res.success) {
-        alert("✅ " + res.message);
-        if (typeof loadWeeklyStatusOverview === 'function') loadWeeklyStatusOverview();
-        if (typeof loadWeeklyData === 'function') loadWeeklyData();
-        if (typeof loadCoDoBatchData === 'function') loadCoDoBatchData(weekNum); 
-      } else {
-        alert('❌ Có lỗi xảy ra: ' + (res ? res.message : 'Không có phản hồi từ máy chủ'));
-      }
-    })
-    .withFailureHandler(function(err) {
-      if (btnChot) {
-        btnChot.disabled = false;
-        btnChot.innerHTML = originalText;
-      }
-      alert('❌ Lỗi kết nối: ' + err.toString());
-    })
-    .finalizeWeeklyRankings(weekNum, userAcc);
-}
+  const handleChotResponse = (res) => {
+    if (btnChot) {
+      btnChot.disabled = false;
+      btnChot.innerHTML = originalText;
+    }
+    if (res && res.success) {
+      alert("✅ " + res.message);
+      if (typeof loadWeeklyStatusOverview === 'function') loadWeeklyStatusOverview();
+      if (typeof loadWeeklyData === 'function') loadWeeklyData();
+      if (typeof loadCoDoBatchData === 'function') loadCoDoBatchData(weekNum); 
+    } else {
+      alert('❌ Có lỗi xảy ra: ' + (res ? res.message : 'Không có phản hồi từ máy chủ'));
+    }
+  };
 
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleChotResponse)
+      .withFailureHandler(function(err) {
+        if (btnChot) {
+          btnChot.disabled = false;
+          btnChot.innerHTML = originalText;
+        }
+        alert('❌ Lỗi kết nối: ' + err.toString());
+      })
+      .finalizeWeeklyRankings(weekNum, userAcc);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=finalizeWeeklyRankings`, {
+      method: 'POST',
+      body: JSON.stringify({ weekNum, userAcc })
+    })
+      .then(res => res.json())
+      .then(res => handleChotResponse(res))
+      .catch(err => {
+        if (btnChot) {
+          btnChot.disabled = false;
+          btnChot.innerHTML = originalText;
+        }
+        alert('❌ Lỗi kết nối API chốt thi đua: ' + err.toString());
+      });
+  }
+}
 function moKhoaTuan() {
   // Lấy tuần từ ô selectWeekBatch (ở tab cập nhật lô) hoặc selectWeek
   const selectEl = document.getElementById('selectWeekBatch') || document.getElementById('selectWeek');
@@ -1844,68 +1904,99 @@ function moKhoaTuan() {
   const userAcc = window.currentUsername || window.currentUserRole || 'BGH';
   const role = window.currentUserRole || 'BGH';
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (btnMo) {
-        btnMo.disabled = false;
-        btnMo.innerHTML = oldText;
-      }
-      if (res && res.success) {
-        alert("✅ " + res.message);
-        
-        // Cập nhật lại giao diện sau khi mở khóa
-        if (typeof loadWeeklyStatusOverview === 'function') loadWeeklyStatusOverview();
-        if (typeof loadWeeklyData === 'function') loadWeeklyData();
-        // Nếu có hàm tải lại bảng lô thì gọi thêm ở đây
-        if (typeof loadCoDoBatchData === 'function') loadCoDoBatchData(weekNum);
-      } else {
-        alert('❌ Lỗi: ' + (res ? res.message : 'Không thể mở khóa'));
-      }
+  const handleUnlockResponse = (res) => {
+    if (btnMo) {
+      btnMo.disabled = false;
+      btnMo.innerHTML = oldText;
+    }
+    if (res && res.success) {
+      alert("✅ " + res.message);
+      
+      // Cập nhật lại giao diện sau khi mở khóa
+      if (typeof loadWeeklyStatusOverview === 'function') loadWeeklyStatusOverview();
+      if (typeof loadWeeklyData === 'function') loadWeeklyData();
+      if (typeof loadCoDoBatchData === 'function') loadCoDoBatchData(weekNum);
+    } else {
+      alert('❌ Lỗi: ' + (res ? res.message : 'Không thể mở khóa'));
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleUnlockResponse)
+      .withFailureHandler(function(err) {
+        if (btnMo) {
+          btnMo.disabled = false;
+          btnMo.innerHTML = oldText;
+        }
+        alert('❌ Lỗi kết nối: ' + err.toString());
+      })
+      .unlockWeeklyData(weekNum, role, userAcc);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=unlockWeeklyData`, {
+      method: 'POST',
+      body: JSON.stringify({ weekNum, role, userAcc })
     })
-    .withFailureHandler(function(err) {
-      if (btnMo) {
-        btnMo.disabled = false;
-        btnMo.innerHTML = oldText;
-      }
-      alert('❌ Lỗi kết nối: ' + err.toString());
-    })
-    .unlockWeeklyData(weekNum, role, userAcc); // Gọi hàm GS của thầy
+      .then(res => res.json())
+      .then(res => handleUnlockResponse(res))
+      .catch(err => {
+        if (btnMo) {
+          btnMo.disabled = false;
+          btnMo.innerHTML = oldText;
+        }
+        alert('❌ Lỗi kết nối API mở khóa: ' + err.toString());
+      });
+  }
 }
-/* ==========================================
+  /* ==========================================
    6. NHẬT KÝ & BIÊN BẢN (J, K, L, M)
    ========================================== */
 //Load tuần
+/* ==========================================
+   6. NHẬT KÝ & BIÊN BẢN (J, K, L, M)
+   ========================================== */
+// Load tuần biên bản
 function loadBbWeeksDropdown() {
+  const handleBbWeeksResponse = (res) => {
+    if (res && res.success && res.weeks && res.weeks.length > 0) {
+      const bbWeekSelect = document.getElementById('bbWeek');
+      if (!bbWeekSelect) return;
+      
+      bbWeekSelect.innerHTML = ''; 
+      res.weeks.forEach(function(weekName) {
+        let option = document.createElement('option');
+        option.value = weekName; 
+        option.textContent = weekName;
+        bbWeekSelect.appendChild(option);
+      });
+      
+      if (typeof loadClassMeetingData === 'function') {
+        loadClassMeetingData();
+      }
+    }
+  };
+
   if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
-      .withSuccessHandler(function(res) {
-        if (res.success && res.weeks.length > 0) {
-          const bbWeekSelect = document.getElementById('bbWeek');
-          if (!bbWeekSelect) return;
-          
-          bbWeekSelect.innerHTML = ''; // Xóa dữ liệu cũ
-          
-          res.weeks.forEach(function(weekName) {
-            let option = document.createElement('option');
-            option.value = weekName; // Giá trị là "Tuần 1", "Tuần 2"...
-            option.textContent = weekName;
-            bbWeekSelect.appendChild(option);
-          });
-          
-          // Sau khi đổ xong, gọi luôn hàm load dữ liệu biên bản của tuần đầu tiên
-          if (typeof loadClassMeetingData === 'function') {
-            loadClassMeetingData();
-          }
-        }
+      .withSuccessHandler(handleBbWeeksResponse)
+      .withFailureHandler(function(err) {
+        console.error("Lỗi nạp danh sách tuần biên bản:", err);
       })
       .getListWeeksFromConfig();
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getListWeeks`)
+      .then(res => res.json())
+      .then(res => handleBbWeeksResponse(res))
+      .catch(err => console.error("Lỗi API nạp danh sách tuần biên bản:", err));
   }
 }
+
+// Load danh sách học sinh vào Dropdown
 function loadStudentDropdowns() {
   const currentClass = getCurrentSelectedClass();
   if (!currentClass) return;
 
-  google.script.run.withSuccessHandler(function(res) {
+  const handleStudentResponse = (res) => {
     if (!res || !res.success || !res.students) return;
 
     window.currentClassStudents = res.students;
@@ -1921,94 +2012,24 @@ function loadStudentDropdowns() {
       if (selJ) selJ.innerHTML += optStr;
       if (selK) selK.innerHTML += optStr;
     });
-  }).getClassStudentRoster(currentClass);
-}
-// lưu biên bản quan tâm
-  // --- 1. HÀM KHI CHỌN HỌC SINH TỪ DROPDOWN ---
-  function onCareStudentSelectChange() {
-    const select = document.getElementById('jSelectStudent');
-    if (!select) return;
+  };
 
-    const selectedValue = select.value;
-    const selectedText = select.options[select.selectedIndex] ? select.options[select.selectedIndex].text : '';
-
-    const inputMaHS = document.getElementById('jMaHS');
-    const inputHoTen = document.getElementById('jHoTen');
-
-    if (inputMaHS) inputMaHS.value = selectedValue;
-    if (inputHoTen) inputHoTen.value = selectedText;
-  }
-
-  // --- 2. HÀM BẤM NÚT LƯU NHẬT KÝ ---
-  function submitCareStudentLog() {
-    const maHS = document.getElementById('jMaHS') ? document.getElementById('jMaHS').value.trim() : '';
-    const hoTen = document.getElementById('jHoTen') ? document.getElementById('jHoTen').value.trim() : '';
-    const selectStudent = document.getElementById('jSelectStudent');
-    const bieuHien = document.getElementById('jBieuHien') ? document.getElementById('jBieuHien').value.trim() : '';
-    const bienPhap = document.getElementById('jBienPhap') ? document.getElementById('jBienPhap').value.trim() : '';
-    const ketQua = document.getElementById('jKetQua') ? document.getElementById('jKetQua').value.trim() : '';
-
-    if (!selectStudent || !selectStudent.value) {
-      alert('Vui lòng chọn học sinh cần theo dõi!');
-      if (selectStudent) selectStudent.focus();
-      return;
-    }
-
-    if (!bieuHien) {
-      alert('Vui lòng nhập biểu hiện hoặc hoàn cảnh của học sinh!');
-      document.getElementById('jBieuHien').focus();
-      return;
-    }
-
-    const payload = {
-      maHS: maHS || selectStudent.value,
-      hoTen: hoTen || (selectStudent.options[selectStudent.selectedIndex] ? selectStudent.options[selectStudent.selectedIndex].text : ''),
-      bieuLop: lop,
-      bieuHien: bieuHien,
-      bienPhap: bienPhap,
-      ketQua: ketQua,
-      ngayTao: new Date().toLocaleDateString('vi-VN')
-    };
-
-    // Tìm nút vừa bấm để tạo hiệu ứng đang tải
-    const btn = event ? event.target : null;
-    let originalText = '';
-    if (btn) {
-      originalText = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '⏳ Đang lưu...';
-    }
-
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
-      .withSuccessHandler(function(res) {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = originalText;
-        }
-
-        if (res && res.success) {
-          alert('✅ Lưu thông tin theo dõi học sinh thành công!');
-          document.getElementById('jBieuHien').value = '';
-          document.getElementById('jBienPhap').value = '';
-          document.getElementById('jKetQua').value = '';
-          selectStudent.value = '';
-        } else {
-          alert('❌ Lưu thất bại: ' + (res ? res.message : 'Có lỗi xảy ra'));
-        }
-      })
+      .withSuccessHandler(handleStudentResponse)
       .withFailureHandler(function(err) {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = originalText;
-        }
-        alert('❌ Lỗi kết nối máy chủ: ' + err.toString());
+        console.error("Lỗi tải danh sách học sinh:", err);
       })
-      .saveCareStudentLog(payload);
+      .getClassStudentRoster(currentClass);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getClassStudentRoster&className=${encodeURIComponent(currentClass)}`)
+      .then(res => res.json())
+      .then(res => handleStudentResponse(res))
+      .catch(err => console.error("Lỗi API tải danh sách học sinh:", err));
   }
+}
 
-/**
- * Tự động gán Mã HS và Họ Tên khi chọn Học sinh trong Dropdown
- */
+// --- 1. HÀM KHI CHỌN HỌC SINH TỪ DROPDOWN ---
 function onCareStudentSelectChange() {
   const select = document.getElementById('jSelectStudent');
   if (!select) return;
@@ -2021,6 +2042,90 @@ function onCareStudentSelectChange() {
 
   if (inputMaHS) inputMaHS.value = selectedValue;
   if (inputHoTen) inputHoTen.value = selectedText;
+}
+
+// --- 2. HÀM BẤM NÚT LƯU NHẬT KÝ ---
+function submitCareStudentLog() {
+  const maHS = document.getElementById('jMaHS') ? document.getElementById('jMaHS').value.trim() : '';
+  const hoTen = document.getElementById('jHoTen') ? document.getElementById('jHoTen').value.trim() : '';
+  const selectStudent = document.getElementById('jSelectStudent');
+  const bieuHien = document.getElementById('jBieuHien') ? document.getElementById('jBieuHien').value.trim() : '';
+  const bienPhap = document.getElementById('jBienPhap') ? document.getElementById('jBienPhap').value.trim() : '';
+  const ketQua = document.getElementById('jKetQua') ? document.getElementById('jKetQua').value.trim() : '';
+
+  if (!selectStudent || !selectStudent.value) {
+    alert('Vui lòng chọn học sinh cần theo dõi!');
+    if (selectStudent) selectStudent.focus();
+    return;
+  }
+
+  if (!bieuHien) {
+    alert('Vui lòng nhập biểu hiện hoặc hoàn cảnh của học sinh!');
+    document.getElementById('jBieuHien').focus();
+    return;
+  }
+
+  const payload = {
+    maHS: maHS || selectStudent.value,
+    hoTen: hoTen || (selectStudent.options[selectStudent.selectedIndex] ? selectStudent.options[selectStudent.selectedIndex].text : ''),
+    bieuLop: getActiveClassName(), // Đã sửa lỗi biến lop chưa khai báo thành hàm chuẩn
+    bieuHien: bieuHien,
+    bienPhap: bienPhap,
+    ketQua: ketQua,
+    ngayTao: new Date().toLocaleDateString('vi-VN')
+  };
+
+  const btn = event ? event.target : null;
+  let originalText = '';
+  if (btn) {
+    originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Đang lưu...';
+  }
+
+  const handleLogResponse = (res) => {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+
+    if (res && res.success) {
+      alert('✅ Lưu thông tin theo dõi học sinh thành công!');
+      document.getElementById('jBieuHien').value = '';
+      document.getElementById('jBienPhap').value = '';
+      document.getElementById('jKetQua').value = '';
+      selectStudent.value = '';
+    } else {
+      alert('❌ Lưu thất bại: ' + (res ? res.message : 'Có lỗi xảy ra'));
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleLogResponse)
+      .withFailureHandler(function(err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+        alert('❌ Lỗi kết nối máy chủ: ' + err.toString());
+      })
+      .saveCareStudentLog(payload);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=saveCareStudentLog`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(res => handleLogResponse(res))
+      .catch(err => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+        alert('❌ Lỗi kết nối API lưu nhật ký: ' + err.toString());
+      });
+  }
 }
 //Trao đổi với phụ huynh
 /**
@@ -2040,9 +2145,6 @@ function onParentStudentSelectChange() {
   if (inputHoTen) inputHoTen.value = selectedText;
 }
 
-/**
- * Hàm Lưu nhật ký trao đổi với Phụ huynh (Mục K)
- */
 function submitParentContactLog() {
   const selectStudent = document.getElementById('kSelectStudent');
   const maHS = document.getElementById('kMaHS') ? document.getElementById('kMaHS').value.trim() : '';
@@ -2052,7 +2154,6 @@ function submitParentContactLog() {
   const noiDung = document.getElementById('kNoiDung') ? document.getElementById('kNoiDung').value.trim() : '';
   const ketQua = document.getElementById('kKetQua') ? document.getElementById('kKetQua').value.trim() : '';
 
-  // Kiểm tra dữ liệu bắt buộc
   if (!selectStudent || !selectStudent.value) {
     alert('Vui lòng chọn học sinh!');
     if (selectStudent) selectStudent.focus();
@@ -2071,7 +2172,6 @@ function submitParentContactLog() {
     return;
   }
 
-  // Đóng gói dữ liệu gửi lên Server
   const payload = {
     maHS: maHS || selectStudent.value,
     hoTen: hoTen || (selectStudent.options[selectStudent.selectedIndex] ? selectStudent.options[selectStudent.selectedIndex].text : ''),
@@ -2081,7 +2181,6 @@ function submitParentContactLog() {
     ketQua: ketQua
   };
 
-  // Trạng thái nút đang lưu
   const btn = event ? event.target : null;
   let originalText = '';
   if (btn) {
@@ -2090,33 +2189,50 @@ function submitParentContactLog() {
     btn.innerHTML = '⏳ Đang lưu...';
   }
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-      }
+  const handleParentLogResponse = (res) => {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
 
-      if (res && res.success) {
-        alert('✅ Lưu thông tin trao đổi phụ huynh thành công!');
-        // Reset form
-        document.getElementById('kNoiDung').value = '';
-        document.getElementById('kKetQua').value = '';
-        selectStudent.value = '';
-      } else {
-        alert('❌ Lưu thất bại: ' + (res ? res.message : 'Có lỗi xảy ra'));
-      }
+    if (res && res.success) {
+      alert('✅ Lưu thông tin trao đổi phụ huynh thành công!');
+      document.getElementById('kNoiDung').value = '';
+      document.getElementById('kKetQua').value = '';
+      selectStudent.value = '';
+    } else {
+      alert('❌ Lưu thất bại: ' + (res ? res.message : 'Có lỗi xảy ra'));
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleParentLogResponse)
+      .withFailureHandler(function(err) {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+        alert('❌ Lỗi kết nối máy chủ: ' + err.toString());
+      })
+      .saveParentContactLog(payload);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=saveParentContactLog`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
     })
-    .withFailureHandler(function(err) {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = originalText;
-      }
-      alert('❌ Lỗi kết nối máy chủ: ' + err.toString());
-    })
-    .saveParentContactLog(payload);
+      .then(res => res.json())
+      .then(res => handleParentLogResponse(res))
+      .catch(err => {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }
+        alert('❌ Lỗi kết nối API lưu trao đổi PH: ' + err.toString());
+      });
+  }
 }
-//---------------------------------------
+  //---------------------------------------
 function loadClassMeetingData() {
   const currentClass = getCurrentSelectedClass();
   const week = document.getElementById('bbWeek') ? document.getElementById('bbWeek').value : 1;
@@ -2131,8 +2247,11 @@ function loadClassMeetingData() {
 
   tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 10px; color: #64748b;">Đang tải danh sách...</td></tr>';
 
-  google.script.run.withSuccessHandler(function(res) {
-    if (!res || !res.success) return;
+  const handleMeetingDataResponse = (res) => {
+    if (!res || !res.success) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 10px; color: #ef4444;">Lỗi tải dữ liệu biên bản!</td></tr>`;
+      return;
+    }
 
     if (document.getElementById('bbChuTri')) document.getElementById('bbChuTri').value = res.defaultChuTri || '';
     if (document.getElementById('bbThuKy')) document.getElementById('bbThuKy').value = res.defaultThuKy || '';
@@ -2159,9 +2278,26 @@ function loadClassMeetingData() {
     } else {
       tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 10px; color: #ef4444;">Không tìm thấy học sinh lớp <b>${currentClass}</b>!</td></tr>`;
     }
-  }).getClassMeeting(currentClass, week);
-}
+  };
 
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleMeetingDataResponse)
+      .withFailureHandler(function(err) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 10px; color: #ef4444;">Lỗi kết nối máy chủ!</td></tr>`;
+        console.error(err);
+      })
+      .getClassMeeting(currentClass, week);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getClassMeeting&className=${encodeURIComponent(currentClass)}&week=${encodeURIComponent(week)}`)
+      .then(res => res.json())
+      .then(res => handleMeetingDataResponse(res))
+      .catch(err => {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 10px; color: #ef4444;">Lỗi kết nối API!</td></tr>`;
+        console.error(err);
+      });
+  }
+}
 function submitClassMeeting() {
   const currentClass = getCurrentSelectedClass();
   const week = document.getElementById('bbWeek') ? document.getElementById('bbWeek').value : 1;
@@ -2182,15 +2318,29 @@ function submitClassMeeting() {
     yKien: document.getElementById('bbYKien') ? document.getElementById('bbYKien').value : ''
   };
 
-  google.script.run.withSuccessHandler(function(res) {
+  const handleMeetingSaveResponse = (res) => {
     if (res && res.success) {
       alert(res.message || "Lưu biên bản sinh hoạt lớp thành công!");
     } else {
       alert("Lỗi: " + (res ? res.message : "Không lưu được biên bản"));
     }
-  }).saveClassMeeting(payload);
-}
+  };
 
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleMeetingSaveResponse)
+      .withFailureHandler(err => alert("Lỗi kết nối: " + err.toString()))
+      .saveClassMeeting(payload);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=saveClassMeeting`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(res => handleMeetingSaveResponse(res))
+      .catch(err => alert("Lỗi kết nối API: " + err.toString()));
+  }
+}
 function submitStudentLog(type) {
   const currentClass = getCurrentSelectedClass();
   if (!currentClass) {
@@ -2216,7 +2366,7 @@ function submitStudentLog(type) {
     return;
   }
 
-  google.script.run.withSuccessHandler(function(res) {
+  const handleStudentLogResponse = (res) => {
     if (res && res.success) {
       alert(res.message || "Ghi nhật ký thành công!");
       if (type === 'J' && document.getElementById('jNoiDung')) document.getElementById('jNoiDung').value = '';
@@ -2224,9 +2374,24 @@ function submitStudentLog(type) {
     } else {
       alert("Lỗi: " + (res ? res.message : "Không thể ghi nhật ký"));
     }
-  }).saveStudentLog(type, currentClass, maHS, noiDung);
-}
+  };
 
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleStudentLogResponse)
+      .withFailureHandler(err => alert("Lỗi kết nối: " + err.toString()))
+      .saveStudentLog(type, currentClass, maHS, noiDung);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=saveStudentLog`, {
+      method: 'POST',
+      body: JSON.stringify({ type, currentClass, maHS, noiDung })
+    })
+      .then(res => res.json())
+      .then(res => handleStudentLogResponse(res))
+      .catch(err => alert("Lỗi kết nối API: " + err.toString()));
+  }
+}
+  //=====================================
 /* ==========================================
    7. ĐÁNH GIÁ THÁNG (MÁT M)
    ========================================== */
