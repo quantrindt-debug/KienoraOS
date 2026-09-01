@@ -2396,13 +2396,17 @@ function submitStudentLog(type) {
    7. ĐÁNH GIÁ THÁNG (MÁT M)
    ========================================== */
 
+/* ==========================================
+   7. ĐÁNH GIÁ THÁNG (MÁT M)
+   ========================================== */
+
 function loadMonthlyAssessmentData() {
   const month = document.getElementById('selMonth') ? document.getElementById('selMonth').value : 1;
   const currentClass = getCurrentSelectedClass();
 
   if (!currentClass) return;
 
-  google.script.run.withSuccessHandler(function(res) {
+  const handleMonthlyResponse = (res) => {
     if (res && res.data) {
       if (document.getElementById('mUuDiem')) document.getElementById('mUuDiem').value = res.data.uuDiem || '';
       if (document.getElementById('mTonTai')) document.getElementById('mTonTai').value = res.data.tonTai || '';
@@ -2412,7 +2416,19 @@ function loadMonthlyAssessmentData() {
       if (document.getElementById('mTonTai')) document.getElementById('mTonTai').value = '';
       if (document.getElementById('mBienPhap')) document.getElementById('mBienPhap').value = '';
     }
-  }).getMonthlyAssessment(currentClass, month);
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleMonthlyResponse)
+      .withFailureHandler(err => console.error("Lỗi nạp đánh giá tháng:", err))
+      .getMonthlyAssessment(currentClass, month);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getMonthlyAssessment&className=${encodeURIComponent(currentClass)}&month=${encodeURIComponent(month)}`)
+      .then(res => res.json())
+      .then(res => handleMonthlyResponse(res))
+      .catch(err => console.error("Lỗi API nạp đánh giá tháng:", err));
+  }
 }
 
 function submitMonthlyAssessment() {
@@ -2432,15 +2448,33 @@ function submitMonthlyAssessment() {
     bienPhap: document.getElementById('mBienPhap') ? document.getElementById('mBienPhap').value : ''
   };
 
-  google.script.run.withSuccessHandler(function(res) {
+  const handleMonthlySaveResponse = (res) => {
     if (res && res.success) {
       alert(res.message || "Lưu đánh giá tháng thành công!");
     } else {
       alert("Lỗi: " + (res ? res.message : "Không thể lưu đánh giá tháng"));
     }
-  }).saveMonthlyAssessment(payload);
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleMonthlySaveResponse)
+      .withFailureHandler(err => alert("Lỗi kết nối: " + err.toString()))
+      .saveMonthlyAssessment(payload);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=saveMonthlyAssessment`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    })
+      .then(res => res.json())
+      .then(res => handleMonthlySaveResponse(res))
+      .catch(err => alert("Lỗi kết nối API lưu đánh giá tháng: " + err.toString()));
+  }
 }
 
+/* ==========================================
+   8. TAB QUẢN TRỊ ADMIN & TẢI DỮ LIỆU TỰ ĐỘNG
+   ========================================== */
 /* ==========================================
    8. TAB QUẢN TRỊ ADMIN & TẢI DỮ LIỆU TỰ ĐỘNG
    ========================================== */
@@ -2453,7 +2487,7 @@ function initAdminTab() {
 
 // 1. Tải danh sách các Lớp vào Dropdown
 function loadAdminClassList() {
-  google.script.run.withSuccessHandler(function(classList) {
+  const handleClassListResponse = (classList) => {
     const selOld = document.getElementById('admOldClass');
     const selNew = document.getElementById('admNewClass');
     const selAssign = document.getElementById('admAssignClass');
@@ -2470,21 +2504,34 @@ function loadAdminClassList() {
         if (selAssign) selAssign.innerHTML += opt;
       });
     }
-  }).getAllClassList();
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleClassListResponse)
+      .withFailureHandler(err => console.error("Lỗi tải danh sách lớp Admin:", err))
+      .getAllClassList();
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getAllClassList`)
+      .then(res => res.json())
+      .then(res => {
+        // Hỗ trợ mảng trả về trực tiếp hoặc dạng { success: true, classList: [...] }
+        const list = Array.isArray(res) ? res : (res.classList || res.data || []);
+        handleClassListResponse(list);
+      })
+      .catch(err => console.error("Lỗi API tải danh sách lớp Admin:", err));
+  }
 }
 
-// 2. Tải danh sách Học sinh khi chọn Lớp cũ
 // 2. Tải danh sách Học sinh khi chọn Lớp cũ
 function onAdminClassChange() {
   const oldClassElem = document.getElementById('admOldClass');
   const oldClass = oldClassElem ? oldClassElem.value : '';
   const selStudent = document.getElementById('admSelectStudent');
 
-  // Hỗ trợ cả 2 bộ ID: trfMaHS/trfHoTen (trong HTML) và admStudentId/admStudentName
   const txtId = document.getElementById('trfMaHS') || document.getElementById('admStudentId');
   const txtName = document.getElementById('trfHoTen') || document.getElementById('admStudentName');
 
-  // Reset trắng ô thông tin Mã & Tên
   if (txtId) txtId.value = '';
   if (txtName) txtName.value = '';
 
@@ -2497,38 +2544,48 @@ function onAdminClassChange() {
 
   selStudent.innerHTML = '<option value="">Đang tải danh sách học sinh...</option>';
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      // Nhận diện linh hoạt mảng dữ liệu trả về từ GS (Mảng trực tiếp hoặc Đối tượng bọc)
-      let students = [];
-      if (Array.isArray(res)) {
-        students = res;
-      } else if (res && typeof res === 'object') {
-        students = res.students || res.data || res.list || [];
-      }
+  const handleStudentListResponse = (res) => {
+    let students = [];
+    if (Array.isArray(res)) {
+      students = res;
+    } else if (res && typeof res === 'object') {
+      students = res.students || res.data || res.list || [];
+    }
 
-      window.currentAdminStudentList = students; // Lưu cache tạm
+    window.currentAdminStudentList = students; 
 
-      if (students && students.length > 0) {
-        selStudent.innerHTML = '<option value="">-- Chọn Học sinh --</option>';
-        students.forEach(function(st) {
-          const ma = st.maHS || st.maHocSinh || st.id || (Array.isArray(st) ? st[0] : '');
-          const ten = st.hoTen || st.fullName || st.name || (Array.isArray(st) ? st[1] : '');
-          if (ma) {
-            selStudent.innerHTML += `<option value="${ma}">${ma} - ${ten}</option>`;
-          }
-        });
-      } else {
-        selStudent.innerHTML = '<option value="">Không có học sinh trong lớp này</option>';
-      }
-    })
-    .withFailureHandler(function(err) {
-      selStudent.innerHTML = '<option value="">Lỗi tải danh sách học sinh!</option>';
-      console.error("Lỗi getStudentsByClass:", err);
-    })
-    .getStudentsByClass(oldClass);
+    if (students && students.length > 0) {
+      selStudent.innerHTML = '<option value="">-- Chọn Học sinh --</option>';
+      students.forEach(function(st) {
+        const ma = st.maHS || st.maHocSinh || st.id || (Array.isArray(st) ? st[0] : '');
+        const ten = st.hoTen || st.fullName || st.name || (Array.isArray(st) ? st[1] : '');
+        if (ma) {
+          selStudent.innerHTML += `<option value="${ma}">${ma} - ${ten}</option>`;
+        }
+      });
+    } else {
+      selStudent.innerHTML = '<option value="">Không có học sinh trong lớp này</option>';
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleStudentListResponse)
+      .withFailureHandler(function(err) {
+        selStudent.innerHTML = '<option value="">Lỗi tải danh sách học sinh!</option>';
+        console.error("Lỗi getStudentsByClass:", err);
+      })
+      .getStudentsByClass(oldClass);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getStudentsByClass&className=${encodeURIComponent(oldClass)}`)
+      .then(res => res.json())
+      .then(res => handleStudentListResponse(res))
+      .catch(err => {
+        selStudent.innerHTML = '<option value="">Lỗi tải danh sách học sinh!</option>';
+        console.error("Lỗi API getStudentsByClass:", err);
+      });
+  }
 }
-
 
 // Khi bấm chọn 1 Học sinh -> Tự động điền Mã HS và Tên HS
 function onAdminStudentSelect() {
@@ -2550,8 +2607,9 @@ function onAdminStudentSelect() {
   });
 
   if (st) {
-    const ma = st.maHS || st.maHocSinh || st.id || (Array.isArray(s) ? s[0] : '');
-    const ten = st.hoTen || st.fullName || st.name || (Array.isArray(s) ? st[1] : '');
+    // Sửa lỗi cú pháp biến s thành st
+    const ma = st.maHS || st.maHocSinh || st.id || (Array.isArray(st) ? st[0] : '');
+    const ten = st.hoTen || st.fullName || st.name || (Array.isArray(st) ? st[1] : '');
 
     if (txtId) txtId.value = ma;
     if (txtName) txtName.value = ten;
@@ -2569,42 +2627,53 @@ function loadAdminTeacherList() {
 
   selTeacher.innerHTML = '<option value="">Đang tải danh sách tài khoản...</option>';
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      let teachers = [];
-      if (Array.isArray(res)) {
-        teachers = res;
-      } else if (res && typeof res === 'object') {
-        teachers = res.teachers || res.data || res.users || [];
-      }
+  const handleTeacherListResponse = (res) => {
+    let teachers = [];
+    if (Array.isArray(res)) {
+      teachers = res;
+    } else if (res && typeof res === 'object') {
+      teachers = res.teachers || res.data || res.users || [];
+    }
 
-      window.currentAdminTeacherList = teachers; // Lưu cache tạm
-      selTeacher.innerHTML = '<option value="">-- Chọn Tài khoản --</option><option value="NEW">+ Tạo tài khoản mới</option>';
+    window.currentAdminTeacherList = teachers; 
+    selTeacher.innerHTML = '<option value="">-- Chọn Tài khoản --</option><option value="NEW">+ Tạo tài khoản mới</option>';
 
-      if (teachers && teachers.length > 0) {
-        teachers.forEach(function(t) {
-          const u = t.username || t.account || (Array.isArray(t) ? t[0] : '');
-          const name = t.fullName || t.hoTen || (Array.isArray(t) ? t[1] : u);
-          if (u) {
-            selTeacher.innerHTML += `<option value="${u}">${name} (${u})</option>`;
-          }
-        });
-      }
-    })
-    .withFailureHandler(function(err) {
-      selTeacher.innerHTML = '<option value="">Lỗi tải tài khoản!</option>';
-      console.error("Lỗi getTeacherListOnly:", err);
-    })
-    .getTeacherListOnly();
+    if (teachers && teachers.length > 0) {
+      teachers.forEach(function(t) {
+        const u = t.username || t.account || (Array.isArray(t) ? t[0] : '');
+        const name = t.fullName || t.hoTen || (Array.isArray(t) ? t[1] : u);
+        if (u) {
+          selTeacher.innerHTML += `<option value="${u}">${name} (${u})</option>`;
+        }
+      });
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleTeacherListResponse)
+      .withFailureHandler(function(err) {
+        selTeacher.innerHTML = '<option value="">Lỗi tải tài khoản!</option>';
+        console.error("Lỗi getTeacherListOnly:", err);
+      })
+      .getTeacherListOnly();
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getTeacherListOnly`)
+      .then(res => res.json())
+      .then(res => handleTeacherListResponse(res))
+      .catch(err => {
+        selTeacher.innerHTML = '<option value="">Lỗi tải tài khoản!</option>';
+        console.error("Lỗi API getTeacherListOnly:", err);
+      });
+  }
 }
 
-// 2. Khi chọn 1 Giáo viên -> Tự động điền Tên đăng nhập, Họ tên, Mật khẩu, Vai trò, Lớp, Trạng thái
+// 2. Khi chọn 1 Giáo viên -> Tự động điền thông tin
 function onAdminTeacherSelect() {
   const selTeacher = document.getElementById('admSelectTeacher');
   const username = selTeacher ? selTeacher.value : '';
   const txtUser = document.getElementById('admUsername');
   
-  // Đã sửa khớp ID với HTML (uadmPassword, usrRole, usrStatus)
   const txtPass = document.getElementById('uadmPassword') || document.getElementById('admPassword');
   const txtName = document.getElementById('admFullName');
   const selRole = document.getElementById('usrRole') || document.getElementById('admRole');
@@ -2640,7 +2709,7 @@ function onAdminTeacherSelect() {
 
     if (txtUser) txtUser.value = u;
     if (txtName) txtName.value = name;
-    if (txtPass) txtPass.value = ''; // Bỏ trống mật khẩu khi xem/sửa
+    if (txtPass) txtPass.value = ''; 
     if (selRole) selRole.value = t.role || t.quyen || 'GVCN';
     if (selClass) selClass.value = t.assignedClass || t.lop || '';
     if (selStatus) selStatus.value = t.status || t.trangThai || 'ACTIVE';
@@ -2688,23 +2757,31 @@ function submitStudentTransfer() {
 
   if (!confirm(`Xác nhận thực hiện luân chuyển cho học sinh ${hoTen} (${maHS})?`)) return;
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (res && res.success) {
-        alert(res.message || 'Lưu giao dịch thành công!');
-        onAdminClassChange(); // Tải lại danh sách học sinh
-        if (document.getElementById('trfLyDo')) document.getElementById('trfLyDo').value = '';
-      } else {
-        alert('Lỗi: ' + (res ? res.message : 'Không xác định'));
-      }
+  const handleTransferResponse = (res) => {
+    if (res && res.success) {
+      alert(res.message || 'Lưu giao dịch thành công!');
+      onAdminClassChange(); 
+      if (document.getElementById('trfLyDo')) document.getElementById('trfLyDo').value = '';
+    } else {
+      alert('Lỗi: ' + (res ? res.message : 'Không xác định'));
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleTransferResponse)
+      .withFailureHandler(err => alert('Lỗi kết nối Server: ' + err.toString()))
+      .saveStudentTransfer(payload);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=saveStudentTransfer`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
     })
-    .withFailureHandler(function(err) {
-      alert('Lỗi kết nối Server: ' + err.toString());
-    })
-    .saveStudentTransfer(payload);
+      .then(res => res.json())
+      .then(res => handleTransferResponse(res))
+      .catch(err => alert('Lỗi kết nối API lưu luân chuyển: ' + err.toString()));
+  }
 }
-
-
 // 3. Xử lý nút "Lưu Tài Khoản" (Đã đổi tên hàm thành submitUserAccount để khớp với onclick trong HTML)
 function submitUserAccount() {
   const username = document.getElementById('admUsername') ? document.getElementById('admUsername').value.trim() : '';
@@ -2740,19 +2817,29 @@ function submitUserAccount() {
 
   if (!confirm(`Xác nhận lưu thông tin tài khoản: ${username}?`)) return;
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (res && res.success) {
-        alert(res.message || 'Lưu tài khoản thành công!');
-        loadAdminTeacherList(); // Tải lại danh sách Tài khoản
-      } else {
-        alert('Lỗi: ' + (res ? res.message : 'Không xác định'));
-      }
+  const handleUserAccountResponse = (res) => {
+    if (res && res.success) {
+      alert(res.message || 'Lưu tài khoản thành công!');
+      loadAdminTeacherList(); // Tải lại danh sách Tài khoản
+    } else {
+      alert('Lỗi: ' + (res ? res.message : 'Không xác định'));
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleUserAccountResponse)
+      .withFailureHandler(err => alert('Lỗi kết nối Server: ' + err.toString()))
+      .saveTeacherAccount(payload);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=saveTeacherAccount`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
     })
-    .withFailureHandler(function(err) {
-      alert('Lỗi kết nối Server: ' + err.toString());
-    })
-    .saveTeacherAccount(payload);
+      .then(res => res.json())
+      .then(res => handleUserAccountResponse(res))
+      .catch(err => alert('Lỗi kết nối API lưu tài khoản: ' + err.toString()));
+  }
 }
 
 /* ==========================================
@@ -2766,8 +2853,9 @@ window.addEventListener('DOMContentLoaded', function() {
     if (el) {
       el.addEventListener('input', calculateTotalEmulation);
     }
-  }); // <-- Phải đủ cả ngoặc nhọn và ngoặc tròn thế này: });
-// Tự động gọi load danh sách lớp ngay khi load trang
+  }); 
+
+  // Tự động gọi load danh sách lớp ngay khi load trang
   loadClassDropdowns();
 
   // Gán ngày mặc định cho tab Cờ đỏ
@@ -2775,8 +2863,9 @@ window.addEventListener('DOMContentLoaded', function() {
   const ngayInput = document.getElementById('cdNgay');
   if (ngayInput) ngayInput.value = today;
 });
+
 /* ==========================================
-   11.  TRANG THỐNG KÊ BÁO CÁO
+   11. TRANG THỐNG KÊ BÁO CÁO
    ========================================== */
 /**
  * Tự động đổ danh sách Tuần vào Dropdown và thêm HK1, HK2, Cả Năm xuống DƯỚI CÙNG
@@ -2787,59 +2876,70 @@ function initWeekDropdown() {
 
   selectWeek.innerHTML = '<option value="">Đang tải...</option>';
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (res && res.success && res.weeks.length > 0) {
-        selectWeek.innerHTML = ''; // Xóa các option tạm
+  const handleWeekListResponse = (res) => {
+    if (res && res.success && res.weeks.length > 0) {
+      selectWeek.innerHTML = ''; // Xóa các option tạm
 
-        // 1. Nạp danh sách các Tuần (Tuần 1, Tuần 2,...)
-        res.weeks.forEach(week => {
-          selectWeek.innerHTML += `<option value="${week}">Tuần ${week}</option>`;
-        });
+      // 1. Nạp danh sách các Tuần (Tuần 1, Tuần 2,...)
+      res.weeks.forEach(week => {
+        selectWeek.innerHTML += `<option value="${week}">Tuần ${week}</option>`;
+      });
 
-        // 2. Nạp thêm các tùy chọn Học Kỳ & Cả Năm xuống DƯỚI CÙNG
-        selectWeek.innerHTML += `
-          <option value="" disabled>──────────</option>
-          <option value="HK1">📌 Học Kỳ 1 (Tuần 1 - 18)</option>
-          <option value="HK2">📌 Học Kỳ 2 (Tuần 19 - 35)</option>
-          <option value="ALL">🏆 Cả Năm</option>
-        `;
+      // 2. Nạp thêm các tùy chọn Học Kỳ & Cả Năm xuống DƯỚI CÙNG
+      selectWeek.innerHTML += `
+        <option value="" disabled>──────────</option>
+        <option value="HK1">📌 Học Kỳ 1 (Tuần 1 - 18)</option>
+        <option value="HK2">📌 Học Kỳ 2 (Tuần 19 - 35)</option>
+        <option value="ALL">🏆 Cả Năm</option>
+      `;
 
-        // Mặc định tự chọn Tuần mới nhất (lớn nhất)
-        if (res.latestWeek) {
-          selectWeek.value = res.latestWeek;
-        }
-
-        // Tải dữ liệu báo cáo
-        loadReportData();
-      } else {
-        selectWeek.innerHTML = '<option value="ALL">🏆 Cả Năm</option>';
-        loadReportData();
+      // Mặc định tự chọn Tuần mới nhất (lớn nhất)
+      if (res.latestWeek) {
+        selectWeek.value = res.latestWeek;
       }
-    })
-    .withFailureHandler(function(err) {
-      console.error("Lỗi nạp tuần: " + err);
+
+      // Tải dữ liệu báo cáo
       loadReportData();
-    })
-    .getWeekList();
+    } else {
+      selectWeek.innerHTML = '<option value="ALL">🏆 Cả Năm</option>';
+      loadReportData();
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleWeekListResponse)
+      .withFailureHandler(function(err) {
+        console.error("Lỗi nạp tuần: " + err);
+        loadReportData();
+      })
+      .getWeekList();
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getWeekList`)
+      .then(res => res.json())
+      .then(res => handleWeekListResponse(res))
+      .catch(err => {
+        console.error("Lỗi API nạp tuần: " + err);
+        loadReportData();
+      });
+  }
 }
 
 // Gọi khởi tạo ngay khi trang hoặc ứng dụng vừa load xong
 document.addEventListener('DOMContentLoaded', function() {
   initWeekDropdown();
 });
+
 // Sự kiện khi người dùng đổi Học kỳ -> Load lại báo cáo
 function onTermChange() {
   loadReportData();
 }
 
-
-
 /**
  * Hàm tải dữ liệu Báo cáo
  */
 function loadReportData() {
- const selectClass = document.getElementById('rptSelectClass');
+  const selectClass = document.getElementById('rptSelectClass');
   const selectWeek = document.getElementById('rptSelectWeek');
   const tbodyEmu = document.getElementById('rptEmuTableBody');
 
@@ -2851,19 +2951,15 @@ function loadReportData() {
   
   tbodyEmu.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">Đang tổng hợp dữ liệu...</td></tr>';
   
-  
+  const handleReportResponse = (res) => {
+    if (res && res.success) {
+      // Cập nhật KPI
+      if (document.getElementById('kpiTotalStudents')) document.getElementById('kpiTotalStudents').innerText = res.kpi.totalStudents || 0;
+      if (document.getElementById('kpiTotalClasses')) document.getElementById('kpiTotalClasses').innerText = res.kpi.totalClasses || 0;
+      if (document.getElementById('kpiChuyenDen')) document.getElementById('kpiChuyenDen').innerText = res.kpi.chuyenDen || 0;
+      if (document.getElementById('kpiChuyenDi')) document.getElementById('kpiChuyenDi').innerText = res.kpi.chuyenDi || 0;
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (res && res.success) {
-        // Cập nhật KPI
-        document.getElementById('kpiTotalStudents').innerText = res.kpi.totalStudents || 0;
-        document.getElementById('kpiTotalClasses').innerText = res.kpi.totalClasses || 0;
-        document.getElementById('kpiChuyenDen').innerText = res.kpi.chuyenDen || 0;
-        document.getElementById('kpiChuyenDi').innerText = res.kpi.chuyenDi || 0;
-
-        // Render Bảng 10 Cột
-       // Render Bảng 10 Cột tối ưu Mobile
+      // Render Bảng 10 Cột tối ưu Mobile
       if (tbodyEmu) {
         tbodyEmu.innerHTML = '';
         if (res.emuData && res.emuData.length > 0) {
@@ -2891,41 +2987,54 @@ function loadReportData() {
           tbodyEmu.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 15px;">Không tìm thấy dữ liệu!</td></tr>';
         }
       }
-      } else {
-        alert('Lỗi tải báo cáo: ' + (res ? res.message : ''));
-      }
-    })
-    .withFailureHandler(function(err) {
-      alert('Lỗi kết nối Server: ' + err.toString());
-    })
-    .getReportSummaryData(selectedClass, selectedTime); // Gửi 1 giá trị duy nhất
-}
+    } else {
+      alert('Lỗi tải báo cáo: ' + (res ? res.message : ''));
+    }
+  };
 
-
-
-//Cập nhật hàm báo lỗi cờ đỏ và nút tải minh chứng
-// A. Nạp danh sách tuần vào dropdown của Tab Cờ Đỏ
-function loadCoDoWeeksDropdown() {
   if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
-      .withSuccessHandler(function(res) {
-        if (res.success && res.weeks.length > 0) {
-          const selectElem = document.getElementById('cdSelectWeek');
-          if (!selectElem) return;
-          
-          selectElem.innerHTML = '';
-          res.weeks.forEach(function(weekName) {
-            let option = document.createElement('option');
-            option.value = weekName;
-            option.textContent = weekName;
-            selectElem.appendChild(option);
-          });
-          
-          // Sau khi nạp xong, tự động load khoảng ngày và trạng thái khóa của tuần đầu tiên
-          onCoDoWeekChange();
-        }
+      .withSuccessHandler(handleReportResponse)
+      .withFailureHandler(function(err) {
+        alert('Lỗi kết nối Server: ' + err.toString());
       })
+      .getReportSummaryData(selectedClass, selectedTime);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getReportSummaryData&class=${encodeURIComponent(selectedClass)}&time=${encodeURIComponent(selectedTime)}`)
+      .then(res => res.json())
+      .then(res => handleReportResponse(res))
+      .catch(err => alert('Lỗi kết nối API tải báo cáo: ' + err.toString()));
+  }
+}
+
+// A. Nạp danh sách tuần vào dropdown của Tab Cờ Đỏ
+function loadCoDoWeeksDropdown() {
+  const handleCoDoWeeksResponse = (res) => {
+    if (res && res.success && res.weeks && res.weeks.length > 0) {
+      const selectElem = document.getElementById('cdSelectWeek');
+      if (!selectElem) return;
+      
+      selectElem.innerHTML = '';
+      res.weeks.forEach(function(weekName) {
+        let option = document.createElement('option');
+        option.value = weekName;
+        option.textContent = weekName;
+        selectElem.appendChild(option);
+      });
+      
+      onCoDoWeekChange();
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleCoDoWeeksResponse)
       .getListWeeksFromConfig();
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getListWeeksFromConfig`)
+      .then(res => res.json())
+      .then(res => handleCoDoWeeksResponse(res))
+      .catch(err => console.error("Lỗi API nạp tuần cờ đỏ:", err));
   }
 }
 
@@ -2935,61 +3044,80 @@ function onCoDoWeekChange() {
   const weekVal = selectElem ? selectElem.value : '';
   if (!weekVal) return;
 
+  const handleConfigDetails = (res) => {
+    if (res && res.success) {
+      const dateInput = document.getElementById('cdNgay');
+      const dateNote = document.getElementById('cdDateNote');
+      const btnSubmit = document.getElementById('btnLuuCoDo');
+
+      if (dateInput && res.startDate && res.endDate) {
+        dateInput.min = res.startDate; 
+        dateInput.max = res.endDate;   
+        dateInput.value = res.startDate; 
+        if (dateNote) dateNote.innerText = `Chỉ được chọn ngày từ ${res.startDate} đến ${res.endDate}`;
+      }
+
+      if (res.isLocked) {
+        if (dateInput) dateInput.disabled = true;
+        if (btnSubmit) {
+          btnSubmit.disabled = true;
+          btnSubmit.style.background = '#94a3b8';
+          btnSubmit.innerHTML = '🔒 Tuần này đã khóa (Không thể nhập)';
+        }
+      } else {
+        if (dateInput) dateInput.disabled = false;
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.style.background = '#dc2626';
+          btnSubmit.innerHTML = '💾 Gửi báo cáo lỗi';
+        }
+      }
+    }
+  };
+
   if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
-      .withSuccessHandler(function(res) {
-        if (res && res.success) {
-          const dateInput = document.getElementById('cdNgay');
-          const dateNote = document.getElementById('cdDateNote');
-          const btnSubmit = document.getElementById('btnLuuCoDo');
-
-          // Giới hạn ngày trong khoảng Từ ngày - Đến ngày của tuần cấu hình
-          if (res.startDate && res.endDate) {
-            dateInput.min = res.startDate; // Định dạng YYYY-MM-DD
-            dateInput.max = res.endDate;   // Định dạng YYYY-MM-DD
-            dateInput.value = res.startDate; // Mặc định chọn ngày đầu tuần
-            if (dateNote) dateNote.innerText = `Chỉ được chọn ngày từ ${res.startDate} đến ${res.endDate}`;
-          }
-
-          // Kiểm tra cột J (Trạng thái khóa tuần)
-          if (res.isLocked) {
-            dateInput.disabled = true;
-            if (btnSubmit) {
-              btnSubmit.disabled = true;
-              btnSubmit.style.background = '#94a3b8';
-              btnSubmit.innerHTML = '🔒 Tuần này đã khóa (Không thể nhập)';
-            }
-          } else {
-            dateInput.disabled = false;
-            if (btnSubmit) {
-              btnSubmit.disabled = false;
-              btnSubmit.style.background = '#dc2626';
-              btnSubmit.innerHTML = '💾 Gửi báo cáo lỗi';
-            }
-          }
-        }
-      })
+      .withSuccessHandler(handleConfigDetails)
       .getWeekConfigDetails(weekVal);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getWeekConfigDetails&week=${encodeURIComponent(weekVal)}`)
+      .then(res => res.json())
+      .then(res => handleConfigDetails(res))
+      .catch(err => console.error("Lỗi API chi tiết tuần:", err));
   }
 }
+
 // Gọi hàm này khi khởi động ứng dụng hoặc khi chuyển sang tab cần dùng
 function loadClassDropdowns() {
-  google.script.run
-    .withSuccessHandler(function(classList) {
-      const selectLop = document.getElementById('cdLop');
-      if (!selectLop) return;
-      
-      // Giữ lại option mặc định đầu tiên
-      selectLop.innerHTML = '<option value="">-- Chọn lớp --</option>';
-      
+  const handleClassDropdowns = (classList) => {
+    const selectLop = document.getElementById('cdLop');
+    if (!selectLop) return;
+    
+    selectLop.innerHTML = '<option value="">-- Chọn lớp --</option>';
+    
+    if (classList && classList.length > 0) {
       classList.forEach(lop => {
         const opt = document.createElement('option');
         opt.value = lop;
         opt.textContent = lop;
         selectLop.appendChild(opt);
       });
-    })
-    .getDanhSachLopTuSheet();
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleClassDropdowns)
+      .getDanhSachLopTuSheet();
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getDanhSachLopTuSheet`)
+      .then(res => res.json())
+      .then(res => {
+        const list = Array.isArray(res) ? res : (res.data || res.classList || []);
+        handleClassDropdowns(list);
+      })
+      .catch(err => console.error("Lỗi API danh sách lớp:", err));
+  }
 }
 
 // Hàm tải danh sách học sinh dựa trên lớp được chọn
@@ -3004,50 +3132,65 @@ function taiDanhSachHocSinhTheoLop(tenLop) {
     return;
   }
 
-  google.script.run
-    .withSuccessHandler(function(dsHocSinh) {
-      selectHS.innerHTML = '<option value="">-- Chọn học sinh --</option>';
+  const handleStudentList = (dsHocSinh) => {
+    selectHS.innerHTML = '<option value="">-- Chọn học sinh --</option>';
+    if (dsHocSinh && dsHocSinh.length > 0) {
       dsHocSinh.forEach(hs => {
         const opt = document.createElement('option');
         opt.value = hs;
         opt.textContent = hs;
         selectHS.appendChild(opt);
       });
-    })
-    .getHocSinhTheoLop(tenLop);
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleStudentList)
+      .getHocSinhTheoLop(tenLop);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=getHocSinhTheoLop&className=${encodeURIComponent(tenLop)}`)
+      .then(res => res.json())
+      .then(res => {
+        const list = Array.isArray(res) ? res : (res.data || res.students || []);
+        handleStudentList(list);
+      })
+      .catch(err => {
+        selectHS.innerHTML = '<option value="">Lỗi tải học sinh</option>';
+        console.error("Lỗi API học sinh theo lớp:", err);
+      });
+  }
 }
 
 function submitLoiCoDo(event) {
     event.preventDefault();
     
     const btn = document.getElementById('btnLuuCoDo');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý minh chứng...';
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xử lý minh chứng...';
+    }
 
     const fileInput = document.getElementById('cdFileMinhChung');
-    const file = fileInput.files[0];
+    const file = fileInput && fileInput.files ? fileInput.files[0] : null;
 
-    // Lấy tuần hiện tại đang chọn trên dropdown
     const tuanVal = document.getElementById('cdSelectWeek') ? document.getElementById('cdSelectWeek').value : '';
-
-    // Lấy thông tin tên và tài khoản người đang đăng nhập (dựa trên biến toàn cục hệ thống của bạn)
     const tenNguoiDung = window.currentUserName || 'Cờ đỏ';
     const taiKhoanNguoiDung = window.currentUserEmail || window.currentUserRole || 'N/A';
-    const nguoiNhapInfo = `${tenNguoiDung} (${taiKhoanNguoiDung})`; // Lưu vào Cột I
+    const nguoiNhapInfo = `${tenNguoiDung} (${taiKhoanNguoiDung})`; 
 
     const formData = {
         tuan: tuanVal,
-        ngay: document.getElementById('cdNgay').value,
-        lop: document.getElementById('cdLop').value,
-        hoTen: document.getElementById('cdHoTen').value,
-        tenLoi: document.getElementById('cdTenLoi').value,
-        mucDo: document.getElementById('cdMucDo').value,
-        ghiChu: document.getElementById('cdGhiChu').value,
-        nguoiNhap: nguoiNhapInfo, // Ghi nhận người nhập
+        ngay: document.getElementById('cdNgay') ? document.getElementById('cdNgay').value : '',
+        lop: document.getElementById('cdLop') ? document.getElementById('cdLop').value : '',
+        hoTen: document.getElementById('cdHoTen') ? document.getElementById('cdHoTen').value : '',
+        tenLoi: document.getElementById('cdTenLoi') ? document.getElementById('cdTenLoi').value : '',
+        mucDo: document.getElementById('cdMucDo') ? document.getElementById('cdMucDo').value : '',
+        ghiChu: document.getElementById('cdGhiChu') ? document.getElementById('cdGhiChu').value : '',
+        nguoiNhap: nguoiNhapInfo, 
         fileMinhChung: null
     };
 
-    // Nếu người dùng có chọn file minh chứng
     if (file) {
         const reader = new FileReader();
         reader.onload = function (e) {
@@ -3067,41 +3210,56 @@ function submitLoiCoDo(event) {
     }
 }
 
-// Các hàm phụ trợ giữ nguyên của bạn:
 function guiDuLieuLenSheet(formData, btn, fileInput) {
-    google.script.run
-        .withSuccessHandler(function(response) {
+    const handleAddResponse = (response) => {
+        resetButtonState(btn);
+        if (response && response.success) {
+            alert('Đã ghi nhận lỗi và lưu minh chứng thành công!');
+            if (document.getElementById('formCoDoNhapLoi')) document.getElementById('formCoDoNhapLoi').reset(); 
+            if (fileInput) fileInput.value = '';
+            onCoDoWeekChange(); 
+        } else {
+            alert('Lỗi từ Server: ' + (response ? response.message : 'Không thể lưu dữ liệu.'));
+        }
+    };
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+          .withSuccessHandler(handleAddResponse)
+          .withFailureHandler(function(error) {
+              resetButtonState(btn);
+              alert('Lỗi kết nối hệ thống: ' + error.message);
+          })
+          .addLoiPhatSinh(formData);
+    } else if (typeof API_URL !== 'undefined') {
+      fetch(`${API_URL}?action=addLoiPhatSinh`, {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      })
+        .then(res => res.json())
+        .then(res => handleAddResponse(res))
+        .catch(error => {
             resetButtonState(btn);
-            if (response && response.success) {
-                alert('Đã ghi nhận lỗi và lưu minh chứng thành công!');
-                document.getElementById('formCoDoNhapLoi').reset(); 
-                if (fileInput) fileInput.value = '';
-                onCoDoWeekChange(); // Reset lại ngày theo tuần sau khi gửi thành công
-            } else {
-                alert('Lỗi từ Server: ' + (response.message || 'Không thể lưu dữ liệu.'));
-            }
-        })
-        .withFailureHandler(function(error) {
-            resetButtonState(btn);
-            alert('Lỗi kết nối hệ thống: ' + error.message);
-        })
-        .addLoiPhatSinh(formData);
+            alert('Lỗi kết nối API gửi lỗi: ' + error.message);
+        });
+    }
 }
 
 function resetButtonState(btn) {
+    if (!btn) return;
     btn.disabled = false;
     btn.innerHTML = '💾 Gửi báo cáo lỗi';
 }
-//========================================================giám sát lỗi phát sinh =====================
+
 // Gọi hàm này khi tải trang hoặc khi chuyển sang Tab 
 document.addEventListener("DOMContentLoaded", function() {
-  loadWeeksDropdownxemtab6(); // Sửa lại đúng tên hàm đã khai báo phía trên
+  loadWeeksDropdownxemtab6(); 
 });
-  function loadWeeksDropdownxemtab6() {
+
+function loadWeeksDropdownxemtab6() {
   const selectEl = document.getElementById('selectTuanViPham');
   if (!selectEl) return;
 
-  // 1. Nếu chạy trên Google Apps Script gốc
   if (typeof google !== 'undefined' && google.script && google.script.run) {
     google.script.run
       .withSuccessHandler(function(weeks) {
@@ -3111,9 +3269,7 @@ document.addEventListener("DOMContentLoaded", function() {
         console.error("Không thể tải danh sách tuần: " + err.toString());
       })
       .getWeeksFromLoiPhatSinh();
-  } 
-  // 2. Nếu chạy trên GitHub Pages (dùng FETCH API)
-  else {
+  } else {
     fetch(`${API_URL}?action=getWeeks`)
       .then(response => response.json())
       .then(res => {
@@ -3127,7 +3283,6 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 }
 
-// Hàm phụ trợ đổ dữ liệu vào thẻ select (tránh lặp code)
 function populateWeeksDropdown(selectEl, weeks) {
   selectEl.innerHTML = '<option value="ALL">-- Tất cả các tuần --</option>';
   if (weeks && weeks.length > 0) {
@@ -3140,7 +3295,6 @@ function populateWeeksDropdown(selectEl, weeks) {
   }
 }
   
-// Hàm load dữ liệu dùng chung theo lớp và tuần
 function loadLoiViPham() {
   var tbody = document.getElementById("bodyViPham");
   if (!tbody) return;
@@ -3154,15 +3308,12 @@ function loadLoiViPham() {
 
   tbody.innerHTML = "<tr><td colspan='8' class='text-center'>Đang tải dữ liệu...</td></tr>";
 
-  // --- KIỂM TRA MÔI TRƯỜNG HOẠT ĐỘNG ---
   if (typeof google !== 'undefined' && google.script && google.script.run) {
-    // 1. Chạy trực tiếp khi ở trong Google Apps Script (Web App gốc)
     google.script.run.withSuccessHandler(function(data) {
       renderTableViPham(data);
     }).getLoiViPhamTheoLopVaTuan(lop, tuan, role, assignedClass);
     
   } else {
-    // 2. Tự động chuyển sang dùng FETCH API khi chạy trên GitHub Pages
     var targetUrl = `${API_URL}?action=getLoiViPham&lop=${encodeURIComponent(lop)}&tuan=${encodeURIComponent(tuan)}&role=${encodeURIComponent(role)}&assignedClass=${encodeURIComponent(assignedClass)}`;
 
     fetch(targetUrl)
@@ -3180,7 +3331,6 @@ function loadLoiViPham() {
   }
 }
 
-// Hàm phụ trợ dùng chung để đổ dữ liệu ra bảng (giữ nguyên logic hiển thị chuẩn của bạn)
 function renderTableViPham(data) {
   var tbody = document.getElementById("bodyViPham");
   if (!tbody) return;
@@ -3193,14 +3343,14 @@ function renderTableViPham(data) {
 
   var html = "";
   data.forEach(function(row) {
-    var ngay   = Array.isArray(row) ? (row[1] || "") : (row.ngay || "");
-    var tuanVal= Array.isArray(row) ? (row[2] || "") : (row.tuan || "");
-    var lopVal = Array.isArray(row) ? (row[3] || "") : (row.lop || "");
-    var hoTen  = Array.isArray(row) ? (row[4] || "") : (row.hoTen || "");
-    var tenLoi = Array.isArray(row) ? (row[5] || "") : (row.tenLoi || "");
-    var mucDo  = Array.isArray(row) ? (row[6] || "") : (row.mucDo || "");
-    var ghiChu = Array.isArray(row) ? (row[7] || "") : (row.ghiChu || "");
-    var linkAnh= Array.isArray(row) ? (row[8] || "") : (row.linkAnh || "");
+    var ngay    = Array.isArray(row) ? (row[1] || "") : (row.ngay || "");
+    var tuanVal = Array.isArray(row) ? (row[2] || "") : (row.tuan || "");
+    var lopVal  = Array.isArray(row) ? (row[3] || "") : (row.lop || "");
+    var hoTen   = Array.isArray(row) ? (row[4] || "") : (row.hoTen || "");
+    var tenLoi  = Array.isArray(row) ? (row[5] || "") : (row.tenLoi || "");
+    var mucDo   = Array.isArray(row) ? (row[6] || "") : (row.mucDo || "");
+    var ghiChu  = Array.isArray(row) ? (row[7] || "") : (row.ghiChu || "");
+    var linkAnh = Array.isArray(row) ? (row[8] || "") : (row.linkAnh || "");
 
     html += "<tr>" +
       "<td>" + ngay + "</td>" +
@@ -3215,27 +3365,40 @@ function renderTableViPham(data) {
   });
   tbody.innerHTML = html;
 }
-//===========================================
+
 // 1. Tải danh sách tuần từ Server
 function taiDuLieuTuan() {
-  google.script.run
-    .withSuccessHandler(function(data) {
-      globalDanhSachTuan = data || [];
-      
-      // Đổ dữ liệu ra bảng chính
-      renderBangTuan();
-      
-      // Cập nhật danh sách tuần vào 2 dropdown Ranh giới Học kỳ
-      capNhatDropdownRanhGioiHK();
-      
-      // Tải và hiển thị lại cấu hình học kỳ đã lưu trước đó
-      taiCauHinhHocKyDaLuu();
-    })
-    .withFailureHandler(function(error) {
-      console.error("Lỗi tải dữ liệu tuần: ", error);
-      document.getElementById("tableTuanBody").innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #ef4444;">Lỗi tải dữ liệu từ máy chủ!</td></tr>`;
-    })
-    .layDanhSachTuan();
+  const handleTuanResponse = (data) => {
+    globalDanhSachTuan = data || [];
+    renderBangTuan();
+    capNhatDropdownRanhGioiHK();
+    taiCauHinhHocKyDaLuu();
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleTuanResponse)
+      .withFailureHandler(function(error) {
+        console.error("Lỗi tải dữ liệu tuần: ", error);
+        if (document.getElementById("tableTuanBody")) {
+          document.getElementById("tableTuanBody").innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #ef4444;">Lỗi tải dữ liệu từ máy chủ!</td></tr>`;
+        }
+      })
+      .layDanhSachTuan();
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=layDanhSachTuan`)
+      .then(res => res.json())
+      .then(res => {
+        const list = Array.isArray(res) ? res : (res.data || res.weeks || []);
+        handleTuanResponse(list);
+      })
+      .catch(err => {
+        console.error("Lỗi API tải tuần: ", err);
+        if (document.getElementById("tableTuanBody")) {
+          document.getElementById("tableTuanBody").innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 20px; color: #ef4444;">Lỗi tải dữ liệu từ API!</td></tr>`;
+        }
+      });
+  }
 }
 
 // 2. Đổ dữ liệu ra bảng có hỗ trợ lọc theo học kỳ
@@ -3247,9 +3410,9 @@ function renderBangTuan() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  let filteredData = globalDanhSachTuan;
+  let filteredData = typeof globalDanhSachTuan !== 'undefined' ? globalDanhSachTuan : [];
   if (filter !== "ALL") {
-    filteredData = globalDanhSachTuan.filter(t => t.hocKy === filter);
+    filteredData = filteredData.filter(t => t.hocKy === filter);
   }
 
   if (filteredData.length === 0) {
@@ -3299,19 +3462,34 @@ function doiTrangThaiTuan(tenTuan, trangThaiMoi) {
     return;
   }
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (res.success) {
-        taiDuLieuTuan(); 
-      } else {
-        alert("Lỗi: " + res.message);
-      }
+  const handleStatusResponse = (res) => {
+    if (res && res.success) {
+      taiDuLieuTuan(); 
+    } else {
+      alert("Lỗi: " + (res ? res.message : "Không xác định"));
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleStatusResponse)
+      .withFailureHandler(function(err) {
+        alert("Lỗi kết nối máy chủ!");
+        console.error(err);
+      })
+      .capNhatTrangThaiTuan(tenTuan, trangThaiMoi);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=capNhatTrangThaiTuan`, {
+      method: 'POST',
+      body: JSON.stringify({ tenTuan, trangThaiMoi })
     })
-    .withFailureHandler(function(err) {
-      alert("Lỗi kết nối máy chủ!");
-      console.error(err);
-    })
-    .capNhatTrangThaiTuan(tenTuan, trangThaiMoi);
+      .then(res => res.json())
+      .then(res => handleStatusResponse(res))
+      .catch(err => {
+        alert("Lỗi kết nối API!");
+        console.error(err);
+      });
+  }
 }
 
 // 4. Đổ dữ liệu tuần vào 2 dropdown ranh giới HK
@@ -3327,17 +3505,19 @@ function capNhatDropdownRanhGioiHK() {
   selHK1.innerHTML = '<option value="">-- Chọn tuần kết thúc HK1 --</option>';
   selHK2.innerHTML = '<option value="">-- Chọn tuần kết thúc HK2 --</option>';
 
-  globalDanhSachTuan.forEach(tuan => {
-    let opt1 = document.option ? null : document.createElement("option");
-    opt1.value = tuan.tenTuan;
-    opt1.textContent = `${tuan.tenTuan} (${tuan.ngayBatDau} - ${tuan.ngayKetThuc})`;
-    selHK1.appendChild(opt1);
+  if (typeof globalDanhSachTuan !== 'undefined' && globalDanhSachTuan.length > 0) {
+    globalDanhSachTuan.forEach(tuan => {
+      let opt1 = document.createElement("option");
+      opt1.value = tuan.tenTuan;
+      opt1.textContent = `${tuan.tenTuan} (${tuan.ngayBatDau} - ${tuan.ngayKetThuc})`;
+      selHK1.appendChild(opt1);
 
-    let opt2 = document.createElement("option");
-    opt2.value = tuan.tenTuan;
-    opt2.textContent = `${tuan.tenTuan} (${tuan.ngayBatDau} - ${tuan.ngayKetThuc})`;
-    selHK2.appendChild(opt2);
-  });
+      let opt2 = document.createElement("option");
+      opt2.value = tuan.tenTuan;
+      opt2.textContent = `${tuan.tenTuan} (${tuan.ngayBatDau} - ${tuan.ngayKetThuc})`;
+      selHK2.appendChild(opt2);
+    });
+  }
 
   if (valHK1) selHK1.value = valHK1;
   if (valHK2) selHK2.value = valHK2;
@@ -3345,18 +3525,27 @@ function capNhatDropdownRanhGioiHK() {
 
 // 5. Tải cấu hình học kỳ đã lưu từ Google Sheets
 function taiCauHinhHocKyDaLuu() {
-  google.script.run
-    .withSuccessHandler(function(config) {
-      if (config) {
-        if (config.tuanHK1 && document.getElementById("selTuanCuoiHK1")) {
-          document.getElementById("selTuanCuoiHK1").value = config.tuanHK1;
-        }
-        if (config.tuanHK2 && document.getElementById("selTuanCuoiHK2")) {
-          document.getElementById("selTuanCuoiHK2").value = config.tuanHK2;
-        }
+  const handleConfigResponse = (config) => {
+    if (config) {
+      if (config.tuanHK1 && document.getElementById("selTuanCuoiHK1")) {
+        document.getElementById("selTuanCuoiHK1").value = config.tuanHK1;
       }
-    })
-    .layCauHinhHocKy();
+      if (config.tuanHK2 && document.getElementById("selTuanCuoiHK2")) {
+        document.getElementById("selTuanCuoiHK2").value = config.tuanHK2;
+      }
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleConfigResponse)
+      .layCauHinhHocKy();
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=layCauHinhHocKy`)
+      .then(res => res.json())
+      .then(res => handleConfigResponse(res.data || res))
+      .catch(err => console.error("Lỗi API tải cấu hình học kỳ:", err));
+  }
 }
 
 // 6. Lưu cấu hình học kỳ
@@ -3369,41 +3558,66 @@ function luuCauHinhHocKy() {
     return;
   }
 
-  google.script.run
-    .withSuccessHandler(function(res) {
-      if (res && res.success) {
-        alert(res.message);
-      } else {
-        alert("Lỗi: " + (res ? res.message : "Không xác định"));
-      }
+  const handleSaveConfig = (res) => {
+    if (res && res.success) {
+      alert(res.message);
+    } else {
+      alert("Lỗi: " + (res ? res.message : "Không xác định"));
+    }
+  };
+
+  if (typeof google !== 'undefined' && google.script && google.script.run) {
+    google.script.run
+      .withSuccessHandler(handleSaveConfig)
+      .withFailureHandler(function(err) {
+        alert("Lỗi kết nối máy chủ!");
+        console.error(err);
+      })
+      .luuRanhGioiHocKy(tuanCuoiHK1, tuanCuoiHK2);
+  } else if (typeof API_URL !== 'undefined') {
+    fetch(`${API_URL}?action=luuRanhGioiHocKy`, {
+      method: 'POST',
+      body: JSON.stringify({ tuanCuoiHK1, tuanCuoiHK2 })
     })
-    .withFailureHandler(function(err) {
-      alert("Lỗi kết nối máy chủ!");
-      console.error(err);
-    })
-    .luuRanhGioiHocKy(tuanCuoiHK1, tuanCuoiHK2);
+      .then(res => res.json())
+      .then(res => handleSaveConfig(res))
+      .catch(err => {
+        alert("Lỗi kết nối API!");
+        console.error(err);
+      });
+  }
 }
-//Tự động tính tuần lưu vào sheet
+
+// Tự động tính tuần lưu vào sheet
 function tuDongSinhTuan() {
     if (!confirm("Hành động này sẽ XÓA TOÀN BỘ cấu hình tuần cũ và tạo lại từ đầu. Bạn có chắc không?")) return;
     
-    // Thẻ input type="date" luôn trả về chuẩn năm-tháng-ngày (yyyy-mm-dd) ngầm bên dưới
-    const ngayBD = document.getElementById("txtNgayBatDauNamHoc").value;
-    const tongSo = document.getElementById("txtTongSoTuan").value;
-    const hk1 = document.getElementById("txtTuanKetThucHK1").value;
+    const ngayBD = document.getElementById("txtNgayBatDauNamHoc") ? document.getElementById("txtNgayBatDauNamHoc").value : '';
+    const tongSo = document.getElementById("txtTongSoTuan") ? document.getElementById("txtTongSoTuan").value : '';
+    const hk1 = document.getElementById("txtTuanKetThucHK1") ? document.getElementById("txtTuanKetThucHK1").value : '';
     
     if(!ngayBD) return alert("Vui lòng chọn ngày bắt đầu!");
 
-    google.script.run
-      .withSuccessHandler(function(res) {
-        alert(res.message);
-        taiDuLieuTuan(); // Tải lại bảng sau khi sinh xong
+    const handleGenWeeks = (res) => {
+      alert(res.message || "Đã tạo tuần thành công!");
+      taiDuLieuTuan(); 
+    };
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(handleGenWeeks)
+        .taoVaCapNhatDanhSachTuan(ngayBD, tongSo, hk1);
+    } else if (typeof API_URL !== 'undefined') {
+      fetch(`${API_URL}?action=taoVaCapNhatDanhSachTuan`, {
+        method: 'POST',
+        body: JSON.stringify({ ngayBD, tongSo, hk1 })
       })
-      .taoVaCapNhatDanhSachTuan(ngayBD, tongSo, hk1);
-  }
-  //==================================================================Sơ đồ chỗ ngồi================================
- // Tạo một Namespace riêng cho Sơ đồ chỗ ngồi để tránh mọi xung đột phạm vi
-//==================================================================
+        .then(res => res.json())
+        .then(res => handleGenWeeks(res))
+        .catch(err => alert("Lỗi kết nối API sinh tuần: " + err));
+    }
+}
+ //==================================================================
 // SƠ ĐỒ CHỖ NGỒI (Namespace: window.SoDoModule)
 //==================================================================
 window.SoDoModule = {
@@ -3445,28 +3659,38 @@ window.SoDoModule = {
     let lop = self.getActiveWorkingClass();
     if (!lop) return;
 
-    google.script.run
-      .withSuccessHandler(function(res) {
-        if (res.success) {
-          self.currentDsHS = res.dsHocSinh;
-          self.currentMapping = res.duLieuChoNgoi || {};
-          
-          if (res.cauHinh) {
-            document.getElementById('inputSoDay').value = res.cauHinh.soDay || 6;
-            document.getElementById('inputSoBan').value = res.cauHinh.soBanMoiDay || 5;
-            document.getElementById('inputHSBan').value = res.cauHinh.hocSinhMoiBan || 4;
-          }
-          
-          self.renderSidebar();
-          self.renderGrid();
-        } else {
-          alert('Lỗi: ' + res.message);
+    const handleSoDoResponse = (res) => {
+      if (res && res.success) {
+        self.currentDsHS = res.dsHocSinh || [];
+        self.currentMapping = res.duLieuChoNgoi || {};
+        
+        if (res.cauHinh) {
+          if (document.getElementById('inputSoDay')) document.getElementById('inputSoDay').value = res.cauHinh.soDay || 6;
+          if (document.getElementById('inputSoBan')) document.getElementById('inputSoBan').value = res.cauHinh.soBanMoiDay || 5;
+          if (document.getElementById('inputHSBan')) document.getElementById('inputHSBan').value = res.cauHinh.hocSinhMoiBan || 4;
         }
-      })
-      .getSoDoChoNgoiData(lop);
+        
+        self.renderSidebar();
+        self.renderGrid();
+      } else {
+        alert('Lỗi: ' + (res ? res.message : 'Không xác định'));
+      }
+    };
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(handleSoDoResponse)
+        .withFailureHandler(err => alert('Lỗi kết nối Server: ' + err.toString()))
+        .getSoDoChoNgoiData(lop);
+    } else if (typeof API_URL !== 'undefined') {
+      fetch(`${API_URL}?action=getSoDoChoNgoiData&lop=${encodeURIComponent(lop)}`)
+        .then(res => res.json())
+        .then(res => handleSoDoResponse(res))
+        .catch(err => alert('Lỗi kết nối API tải sơ đồ: ' + err.toString()));
+    }
   },
 
- // Hàm ẩn/hiện Sidebar nổi
+  // Hàm ẩn/hiện Sidebar nổi
   toggleSidebar: function() {
     let sb = document.getElementById('floatingSidebar');
     if (sb) {
@@ -3500,18 +3724,19 @@ window.SoDoModule = {
     dsChuaXep.forEach(hs => {
       let div = document.createElement('div');
       div.className = 'list-group-item list-group-item-action py-1 px-2 student-row';
-      div.setAttribute('data-name', hs.hoTen.toLowerCase());
-      div.innerHTML = `<div class="fw-bold">${hs.hoTen}</div><small class="text-muted">Mã: ${hs.maHS}</small>`;
+      div.setAttribute('data-name', (hs.hoTen || '').toLowerCase());
+      div.innerHTML = `<div class="fw-bold">${hs.hoTen || ''}</div><small class="text-muted">Mã: ${hs.maHS || ''}</small>`;
       container.appendChild(div);
     });
   },
 
   // Hàm lọc tìm kiếm học sinh nhanh bên trong Sidebar
   filterSidebar: function() {
-    let keyword = document.getElementById('searchSidebarHS').value.toLowerCase();
+    let searchInput = document.getElementById('searchSidebarHS');
+    let keyword = searchInput ? searchInput.value.toLowerCase() : '';
     let items = document.querySelectorAll('.student-row');
     items.forEach(item => {
-      let name = item.getAttribute('data-name');
+      let name = item.getAttribute('data-name') || '';
       if (name.includes(keyword)) {
         item.style.display = 'block';
       } else {
@@ -3520,11 +3745,11 @@ window.SoDoModule = {
     });
   },
 
-renderGrid: function() {
+  renderGrid: function() {
     let self = this;
-    let totalDay = parseInt(document.getElementById('inputSoDay').value) || 2;
-    let soBan = parseInt(document.getElementById('inputSoBan').value) || 6; 
-    let hsBan = parseInt(document.getElementById('inputHSBan').value) || 4;  
+    let totalDay = parseInt(document.getElementById('inputSoDay')?.value) || 2;
+    let soBan = parseInt(document.getElementById('inputSoBan')?.value) || 6; 
+    let hsBan = parseInt(document.getElementById('inputHSBan')?.value) || 4;  
 
     let container = document.getElementById('gridSoDoContainer');
     if (!container) return;
@@ -3632,6 +3857,7 @@ renderGrid: function() {
     tableWrapper.appendChild(tr);
     container.appendChild(tableWrapper);
   },
+
   autoArrange: function(type) {
     let self = this;
     if (!self.currentDsHS || self.currentDsHS.length === 0) {
@@ -3639,9 +3865,9 @@ renderGrid: function() {
       return;
     }
 
-    let totalDay = parseInt(document.getElementById('inputSoDay').value) || 2;
-    let soBan = parseInt(document.getElementById('inputSoBan').value) || 6;
-    let hsBan = parseInt(document.getElementById('inputHSBan').value) || 4;
+    let totalDay = parseInt(document.getElementById('inputSoDay')?.value) || 2;
+    let soBan = parseInt(document.getElementById('inputSoBan')?.value) || 6;
+    let hsBan = parseInt(document.getElementById('inputHSBan')?.value) || 4;
 
     // 1. Tạo danh sách toàn bộ các ghế trống hiện có theo cấu hình
     let allSeats = [];
@@ -3752,6 +3978,7 @@ renderGrid: function() {
     self.renderGrid();
     self.renderSidebar();
   },
+
   handleSelectArrange: function(el) {
     this.autoArrange(el.value);
     el.selectedIndex = 0; // Reset lại ô chọn
@@ -3765,9 +3992,9 @@ renderGrid: function() {
       return;
     }
 
-    let soDay = parseInt(document.getElementById('inputSoDay').value) || 6;
-    let soBan = parseInt(document.getElementById('inputSoBan').value) || 5;
-    let hsBan = parseInt(document.getElementById('inputHSBan').value) || 4;
+    let soDay = parseInt(document.getElementById('inputSoDay')?.value) || 6;
+    let soBan = parseInt(document.getElementById('inputSoBan')?.value) || 5;
+    let hsBan = parseInt(document.getElementById('inputHSBan')?.value) || 4;
 
     let payload = {
       lop: lop,
@@ -3785,27 +4012,45 @@ renderGrid: function() {
       btnSave.innerText = 'Đang lưu...';
     }
 
-    google.script.run
-      .withSuccessHandler(function(res) {
-        if (btnSave) {
-          btnSave.disabled = false;
-          btnSave.innerText = '💾 Lưu sơ đồ';
-        }
-        if (res && res.success) {
-          alert("Lưu sơ đồ chỗ ngồi thành công!");
-        } else {
-          alert("Lỗi khi lưu: " + (res ? res.message : "Không xác định"));
-        }
+    const handleSaveResponse = (res) => {
+      if (btnSave) {
+        btnSave.disabled = false;
+        btnSave.innerText = '💾 Lưu sơ đồ';
+      }
+      if (res && res.success) {
+        alert("Lưu sơ đồ chỗ ngồi thành công!");
+      } else {
+        alert("Lỗi khi lưu: " + (res ? res.message : "Không xác định"));
+      }
+    };
+
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      google.script.run
+        .withSuccessHandler(handleSaveResponse)
+        .withFailureHandler(function(err) {
+          if (btnSave) {
+            btnSave.disabled = false;
+            btnSave.innerText = '💾 Lưu sơ đồ';
+          }
+          alert("Lỗi kết nối máy chủ: " + err.message);
+          console.error(err);
+        })
+        .saveSoDoChoNgoiData(payload);
+    } else if (typeof API_URL !== 'undefined') {
+      fetch(`${API_URL}?action=saveSoDoChoNgoiData`, {
+        method: 'POST',
+        body: JSON.stringify(payload)
       })
-      .withFailureHandler(function(err) {
-        if (btnSave) {
-          btnSave.disabled = false;
-          btnSave.innerText = '💾 Lưu sơ đồ';
-        }
-        alert("Lỗi kết nối máy chủ: " + err.message);
-        console.error(err);
-      })
-      .saveSoDoChoNgoiData(payload);
+        .then(res => res.json())
+        .then(res => handleSaveResponse(res))
+        .catch(err => {
+          if (btnSave) {
+            btnSave.disabled = false;
+            btnSave.innerText = '💾 Lưu sơ đồ';
+          }
+          alert("Lỗi kết nối API lưu sơ đồ: " + err.toString());
+        });
+    }
   },
 
   resetGrid: function() {
@@ -3821,9 +4066,10 @@ renderGrid: function() {
 function initSoDoTab() {
   window.SoDoModule.init();
 }
+// ==========================================
+// QUẢN LÝ PHÂN QUYỀN BGH VÀ XỬ LÝ ĐIỂM THI ĐUA
+// ==========================================
 
-
-//-==========================================================================================================================================================
 // Hàm tự động ẩn/hiện nút Chốt và Mở khóa dựa theo vai trò (Role)
 function checkBghButtonsPermission() {
   // Dùng setTimeout 100 mili-giây để chắc chắn giao diện HTML đã vẽ xong
@@ -3853,6 +4099,7 @@ function checkBghButtonsPermission() {
     console.log("🔍 [DEBUG] Đã ép hiển thị nút thành công! Trạng thái nút:", showButton);
   }, 100);
 }
+
 // ==========================================
 // TOÀN BỘ CODE XỬ LÝ CHỌN TUẦN, LOAD, RENDER VÀ UPLOAD EXCEL (ĐÃ TỐI ƯU HÓA)
 // ==========================================
@@ -3955,7 +4202,7 @@ function onCoDoWeekChange() {
   }
 }
 
-// 3. Hàm tải dữ liệu theo tuần (Đã có sẵn cơ chế sinh khung danh sách lớp chuẩn khi tuần mới trống)
+// 3. Hàm tải dữ liệu theo tuần
 function loadWeekData(tuanId) {
   console.log("Đang tải dữ liệu điểm thi đua cho tuần:", tuanId);
   
@@ -3964,7 +4211,6 @@ function loadWeekData(tuanId) {
     tbody.innerHTML = `<tr><td colspan="10" style="padding: 20px; color: #64748b; font-style: italic;">⏳ Đang tải dữ liệu tuần ${tuanId}...</td></tr>`;
   }
 
-  // 1. Gọi đồng thời hoặc đảm bảo ta đã có sẵn sĩ số các lớp
   google.script.run
     .withSuccessHandler(function(response) {
       let weekData = [];
@@ -3974,10 +4220,8 @@ function loadWeekData(tuanId) {
         weekData = response.data;
       }
 
-      // 2. Gọi tiếp hàm lấy sĩ số chuẩn từ sheet DanhSachHocSinh (hoặc dùng cache nếu đã lưu)
       google.script.run
         .withSuccessHandler(function(resClasses) {
-          // Tạo một bản đồ tra cứu sĩ số theo tên lớp (Ví dụ: {"10A1": 46, "10A2": 45...})
           let sizeMap = {};
           if (resClasses && Array.isArray(resClasses)) {
             resClasses.forEach(cls => {
@@ -3987,45 +4231,42 @@ function loadWeekData(tuanId) {
             });
           }
 
-          // 3. Nếu tuần trên sheet đã có dữ liệu điểm, ta kết hợp điểm của tuần + sĩ số chuẩn từ sizeMap
           if (weekData.length > 0) {
             batchCoDoData = weekData.map(item => {
               let lopName = (item.lop || "").trim().toUpperCase();
               return {
                 lop: item.lop || "",
-                siSo: sizeMap[lopName] !== undefined ? sizeMap[lopName] : (item.siSo || ""), // Lấy sĩ số chuẩn từ danh sách lớp
-                sdb: item.sdb !== undefined && item.sdb !== "" ? parseFloat(item.sdb) : "",
-                vs: item.vs !== undefined && item.vs !== "" ? parseFloat(item.vs) : "",
-                csvc: item.csvc !== undefined && item.csvc !== "" ? parseFloat(item.csvc) : "",
-                xe: item.xe !== undefined && item.xe !== "" ? parseFloat(item.xe) : "",
-                qdKhac: item.qdKhac !== undefined && item.qdKhac !== "" ? parseFloat(item.qdKhac) : "",
-                cThi: item.cThi !== undefined && item.cThi !== "" ? parseFloat(item.cThi) : "",
-                diemTD: item.diemTD || "",
+                siSo: sizeMap[lopName] !== undefined ? sizeMap[lopName] : (item.siSo || ""),
+                sdb: item.sdb !== undefined && item.sdb !== "" ? parseFloat(item.sdb) : 10,
+                vs: item.vs !== undefined && item.vs !== "" ? parseFloat(item.vs) : 10,
+                csvc: item.csvc !== undefined && item.csvc !== "" ? parseFloat(item.csvc) : 10,
+                xe: item.xe !== undefined && item.xe !== "" ? parseFloat(item.xe) : 10,
+                qdKhac: item.qdKhac !== undefined && item.qdKhac !== "" ? parseFloat(item.qdKhac) : 10,
+                cThi: item.cThi !== undefined && item.cThi !== "" ? parseFloat(item.cThi) : 10,
+                diemTD: item.diemTD || 10,
                 hang: item.hang || ""
               };
             });
           } else {
-            // Trường hợp tuần này chưa có dữ liệu điểm trên sheet, khởi tạo bảng trống với danh sách lớp và sĩ số đầy đủ
             if (resClasses && resClasses.length > 0) {
               batchCoDoData = resClasses.map(cls => ({
                 lop: cls.lop,
                 siSo: cls.siSo || "",
-                sdb: "", vs: "", csvc: "", xe: "", qdKhac: "", cThi: "", diemTD: "", hang: ""
+                sdb: 10, vs: 10, csvc: 10, xe: 10, qdKhac: 10, cThi: 10, diemTD: 10, hang: ""
               }));
             } else {
               batchCoDoData = [];
             }
           }
 
-          renderCoDoBatchTable();
+          recalculateAndRender();
         })
         .withFailureHandler(function(err) {
           console.error("Lỗi lấy sĩ số:", err);
-          // Vẫn render dữ liệu tuần dù lỗi lấy sĩ số
           batchCoDoData = weekData;
-          renderCoDoBatchTable();
+          recalculateAndRender();
         })
-        .getClassesAndSizesFromSheet(); // Gọi hàm .gs lấy sĩ số chuẩn mà thầy đã viết
+        .getClassesAndSizesFromSheet();
 
     })
     .withFailureHandler(function(error) {
@@ -4041,7 +4282,51 @@ function loadBatchTableByWeek(tuanId) {
   loadWeekData(tuanId);
 }
 
-// 4. Render bảng giao diện
+// 4. Hàm cập nhật dữ liệu dòng và tính toán lại điểm thi đua trực tiếp
+function updateRowData(index, field, value) {
+  if (!batchCoDoData[index]) return;
+  
+  // Cập nhật giá trị mới vào mảng dữ liệu tạm
+  batchCoDoData[index][field] = value === "" ? "" : parseFloat(value);
+  
+  // Tính toán lại điểm thi đua và xếp hạng ngay lập tức
+  recalculateAndRender();
+}
+
+// Hàm tính toán điểm thi đua, xếp hạng và gọi render lại bảng
+function recalculateAndRender() {
+  if (!batchCoDoData || batchCoDoData.length === 0) {
+    renderCoDoBatchTable();
+    return;
+  }
+
+  // Công thức tính điểm (Ví dụ: Trọng số các cột VS, CSVC, Xe, CThi hệ số 1; QDKhac, SDB hệ số 3 hoặc tùy chỉnh theo qui chế)
+  batchCoDoData.forEach(row => {
+    let vs = parseFloat(row.vs) || 10;
+    let csvc = parseFloat(row.csvc) || 10;
+    let xe = parseFloat(row.xe) || 10;
+    let cThi = parseFloat(row.cThi) || 10;
+    let qdKhac = parseFloat(row.qdKhac) || 10;
+    let sdb = parseFloat(row.sdb) || 10;
+
+    // Ví dụ tính trung bình có trọng số (hoặc tổng điểm tùy theo quy chế trường thầy)
+    // Giả sử tổng điểm thang 10: 
+    let tongDiem = (vs + csvc + xe + cThi + (qdKhac * 3) + (sdb * 3)) / 8;
+    row.diemTD = Math.round(tongDiem * 100) / 100; // Làm tròn 2 chữ số thập phân
+  });
+
+  // Sắp xếp lại thứ hạng (Hạng 1 cho điểm cao nhất)
+  let sortedRanks = [...batchCoDoData].map((item, idx) => ({ idx, diem: item.diemTD }));
+  sortedRanks.sort((a, b) => b.diem - a.diem);
+
+  sortedRanks.forEach((item, rankIdx) => {
+    batchCoDoData[item.idx].hang = rankIdx + 1;
+  });
+
+  renderCoDoBatchTable();
+}
+
+// 5. Render bảng giao diện
 function renderCoDoBatchTable() {
   const tbody = document.getElementById('coDoTableBody');
   if (!tbody) return;
@@ -4059,39 +4344,39 @@ function renderCoDoBatchTable() {
       <td class="py-2 px-3 text-left font-bold text-slate-800">${row.lop || ''}</td>
       <td class="py-2 px-2 text-blue-600 font-bold">${row.siSo || 0}</td>
       
-      <!-- Cột 1: Vệ sinh (Hệ số 1) -->
+      <!-- Cột 1: Vệ sinh -->
       <td class="py-2 px-1">
-        <input type="number" step="0.1" min="1" max="10" value="${row.vs !== undefined ? row.vs : 10}" onchange="updateRowData(${index}, 'vs', this.value)"
+        <input type="number" step="0.1" min="1" max="10" value="${row.vs !== '' && row.vs != null ? row.vs : 10}" onchange="updateRowData(${index}, 'vs', this.value)"
                style="width: 48px; text-align: center; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; color: #dc2626; font-weight: bold;">
       </td>
 
-      <!-- Cột 2: CSVC (Hệ số 1) -->
+      <!-- Cột 2: CSVC -->
       <td class="py-2 px-1">
-        <input type="number" step="0.1" min="1" max="10" value="${row.csvc !== undefined ? row.csvc : 10}" onchange="updateRowData(${index}, 'csvc', this.value)"
+        <input type="number" step="0.1" min="1" max="10" value="${row.csvc !== '' && row.csvc != null ? row.csvc : 10}" onchange="updateRowData(${index}, 'csvc', this.value)"
                style="width: 48px; text-align: center; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; color: #dc2626; font-weight: bold;">
       </td>
 
-      <!-- Cột 3: Xếp xe (Hệ số 1) -->
+      <!-- Cột 3: Xếp xe -->
       <td class="py-2 px-1">
-        <input type="number" step="0.1" min="1" max="10" value="${row.xe !== undefined ? row.xe : 10}" onchange="updateRowData(${index}, 'xe', this.value)"
+        <input type="number" step="0.1" min="1" max="10" value="${row.xe !== '' && row.xe != null ? row.xe : 10}" onchange="updateRowData(${index}, 'xe', this.value)"
                style="width: 48px; text-align: center; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; color: #dc2626; font-weight: bold;">
       </td>
 
-      <!-- Cột 4: Cuộc thi (Hệ số 1) -->
+      <!-- Cột 4: Cuộc thi -->
       <td class="py-2 px-1">
-        <input type="number" step="0.1" min="1" max="10" value="${row.cThi !== undefined ? row.cThi : 10}" onchange="updateRowData(${index}, 'cThi', this.value)"
+        <input type="number" step="0.1" min="1" max="10" value="${row.cThi !== '' && row.cThi != null ? row.cThi : 10}" onchange="updateRowData(${index}, 'cThi', this.value)"
                style="width: 48px; text-align: center; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; color: #dc2626; font-weight: bold;">
-
+      </td>
       
-      <!-- Cột 5: Quy định khác (Hệ số 3) -->
+      <!-- Cột 5: Quy định khác -->
       <td class="py-2 px-1">
-        <input type="number" step="0.1" min="1" max="10" value="${row.qdKhac !== undefined ? row.qdKhac : 10}" onchange="updateRowData(${index}, 'qdKhac', this.value)"
+        <input type="number" step="0.1" min="1" max="10" value="${row.qdKhac !== '' && row.qdKhac != null ? row.qdKhac : 10}" onchange="updateRowData(${index}, 'qdKhac', this.value)"
                style="width: 48px; text-align: center; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; color: #dc2626; font-weight: bold;">
       </td>
 
-      <!-- Cột 6: SĐB - Sổ đầu bài (Hệ số 3) - BGH chốt sau cùng ở áp chót -->
+      <!-- Cột 6: SĐB - Sổ đầu bài -->
       <td class="py-2 px-1 bg-rose-50/30">
-        <input type="number" step="0.1" min="1" max="10" value="${row.sdb !== undefined ? row.sdb : 10}" ${isCoDo ? 'disabled' : ''} 
+        <input type="number" step="0.1" min="1" max="10" value="${row.sdb !== '' && row.sdb != null ? row.sdb : 10}" ${isCoDo ? 'disabled' : ''} 
                onchange="updateRowData(${index}, 'sdb', this.value)"
                style="width: 48px; text-align: center; padding: 4px; border-radius: 4px; ${isCoDo ? 'background: #f1f5f9; color: #94a3b8; border: 1px solid transparent;' : 'border: 1px solid #cbd5e1; color: #dc2626; font-weight: bold;'}">
       </td>
@@ -4108,7 +4393,9 @@ function renderCoDoBatchTable() {
     </tr>
   `).join('');
 }
-
+// =========================================================================================
+// PHẦN 1: HÀM CẬP NHẬT DÒNG VÀ TÍNH TOÁN ĐIỂM THI ĐUA TRỰC TIẾP TRÊN GIAO DIỆN
+// =========================================================================================
 function updateRowData(index, field, value) {
   batchCoDoData[index][field] = value !== "" ? parseFloat(value) : "";
   
@@ -4140,8 +4427,11 @@ function updateRowData(index, field, value) {
   }
 }
 
+// =========================================================================================
+// PHẦN 2: ĐỌC VÀ XỬ LÝ FILE EXCEL ĐOÀN TRƯỜNG & BGH
+// =========================================================================================
+
 // 5. Hàm đọc File Excel của Đoàn Trường (Dò tiêu đề thông minh + bảo vệ SĐB/Sĩ số)
-// Cờ đỏ upload file Excel theo mẫu riêng (Không lấy/sửa sĩ số từ file, chỉ lấy điểm thi đua)
 function handleCoDoExcelUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -4226,6 +4516,7 @@ function handleCoDoExcelUpload(event) {
 
   reader.readAsArrayBuffer(file);
 }
+
 // 6. BGH load file mẫu tổng hợp (Cột B là Lớp, các cột điểm nằm so le theo tuần)
 function handleBghExcelUpload(event) {
   const file = event.target.files[0];
@@ -4282,10 +4573,9 @@ function handleBghExcelUpload(event) {
             lop === "LỚP" || 
             lop === "STT" || 
             (!lop.startsWith("10") && !lop.startsWith("11") && !lop.startsWith("12"))) {
-          continue; // Bỏ qua các dòng trống hoặc dòng rác không phải tên lớp
+          continue; 
         }
 
-        // Lấy giá trị điểm đúng tại cột của tuần tương ứng
         let diemVal = row[targetColIndex]; 
         
         if (diemVal !== undefined && diemVal !== "" && !isNaN(diemVal)) {
@@ -4324,6 +4614,10 @@ function handleBghExcelUpload(event) {
   reader.readAsArrayBuffer(file);
 }
 
+// =========================================================================================
+// PHẦN 3: TẢI FILE MẪU & LƯU TRỮ DỮ LIỆU LÊN SERVER
+// =========================================================================================
+
 // 7. Tải file mẫu Excel dành cho BGH (Hỗ trợ cấu trúc dài hạn)
 function downloadBghExcelTemplate() {
   try {
@@ -4348,7 +4642,7 @@ function downloadBghExcelTemplate() {
     let ws_data = [
       ["SỞ GIÁO DỤC VÀ ĐÀO TẠO NGHỆ AN"],
       ["THPT Nguyễn Duy Trinh"],
-      [""],
+      ["\n"],
       ["BẢNG TỔNG HỢP ĐIỂM THI ĐUA CÁC LỚP (DÀNH CHO BGH)"],
       headerRow1,
       headerRow2
@@ -4366,7 +4660,7 @@ function downloadBghExcelTemplate() {
     listLop.forEach((lop, index) => {
       let row = [index + 1, lop];
       for (let w = 1; w <= 35; w++) {
-        row.push(10, ""); // Mặc định điểm khởi tạo là 10 (hoặc 100 tùy thầy điều chỉnh)
+        row.push(10, ""); 
       }
       ws_data.push(row);
     });
@@ -4382,6 +4676,7 @@ function downloadBghExcelTemplate() {
     alert("❌ Lỗi tải file mẫu: " + err.message);
   }
 }
+
 function downloadExcelTemplate() {
   const weekSelect = document.getElementById('selectWeekBatch');
   const weekName = weekSelect ? weekSelect.options[weekSelect.selectedIndex].text : "Tuần";
@@ -4430,7 +4725,10 @@ function saveBatchCoDoData() {
       .saveBatchCoDoFromWeb(batchCoDoData, selectedWeek, dateRangeToSave, currentUserRole);
   }
 }
-//hàm bổ sung tab theo doi tuan
+
+// =========================================================================================
+// PHẦN 4: HÀM BỔ SUNG THEO DÕI TUẦN
+// =========================================================================================
 function loadWeeksForWeeklyTab() {
   const selectEl = document.getElementById('selectWeek');
   if (!selectEl) return;
