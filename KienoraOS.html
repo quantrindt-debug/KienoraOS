@@ -413,7 +413,8 @@
   // ==========================================
   // CƠ CHẾ 2: GỌI GOOGLE APPS SCRIPT LẤY LINK TỪ SHEET
   // ==========================================
-  const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maNhanSu)}&sessionToken=active&maTruong=${encodeURIComponent(currentSession.maTruong)}&appId=${encodeURIComponent(appId)}`;
+  // Đảm bảo truyền chính xác từng biến độc lập:
+const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maNhanSu)}&maTruong=${encodeURIComponent(currentSession.maTruong)}&appId=${encodeURIComponent(appId)}`;
 
   fetch(requestUrl)
     .then(res => res.json())
