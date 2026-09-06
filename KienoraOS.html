@@ -410,19 +410,19 @@
       return; // Dừng lại ở đây, không gọi API nữa
   }
 
-  // ==========================================
-  // CƠ CHẾ 2: GỌI GOOGLE APPS SCRIPT LẤY LINK TỪ SHEET
-  // ==========================================
-  // Đảm bảo truyền chính xác từng biến độc lập:
-// Thay thế đoạn tạo requestUrl cũ bằng đoạn này:
-// Ép kết hợp mã trường và mã nhân sự vào biến maTruong để khớp đúng với định dạng c3ndtnl.nan trên Google Sheets
-const combinedMaTruong = `${currentSession.maTruong}.${currentSession.maNhanSu}`;
+// ==========================================
+// CƠ CHẾ 2: GỌI GOOGLE APPS SCRIPT LẤY LINK TỪ SHEET
+// ==========================================
+// Dùng trực tiếp maTruong và maNhanSu đã phân tách sẵn từ phiên làm việc
+const maTruong = currentSession.maTruong; 
+const maNhanSu = currentSession.user.maNhanSu || currentSession.maNhanSu;
 
-// Tạo sẵn chuỗi khóa chuẩn cần tìm (Ví dụ: c3ndtnl.nan.ThiDuaLop)
-const fullTargetKey = `${currentSession.maTruong}.${currentSession.maNhanSu}.${appId}`;
+// Tạo chuẩn khóa tìm kiếm (VD: c3ndtnl.c3ndtnl.nan.ThiDuaLop hoặc tùy theo cấu trúc sheet của bạn)
+// Nếu maNhanSu đã bao gồm cả mã trường ở đầu, bạn chỉ cần ghép:
+const fullTargetKey = `${maNhanSu}.${appId}`;
 
 // Gửi lên API
-const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maNhanSu)}&sessionToken=active&fullKey=${encodeURIComponent(fullTargetKey)}`;
+const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(maNhanSu)}&sessionToken=active&fullKey=${encodeURIComponent(fullTargetKey)}`;
   fetch(requestUrl)
     .then(res => res.json())
     .then(res => {
