@@ -414,8 +414,11 @@
   // CƠ CHẾ 2: GỌI GOOGLE APPS SCRIPT LẤY LINK TỪ SHEET
   // ==========================================
   // Đảm bảo truyền chính xác từng biến độc lập:
-const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maNhanSu)}&maTruong=${encodeURIComponent(currentSession.maTruong)}&appId=${encodeURIComponent(appId)}`;
+// Thay thế đoạn tạo requestUrl cũ bằng đoạn này:
+// Ép kết hợp mã trường và mã nhân sự vào biến maTruong để khớp đúng với định dạng c3ndtnl.nan trên Google Sheets
+const combinedMaTruong = `${currentSession.maTruong}.${currentSession.maNhanSu}`;
 
+const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maNhanSu)}&maTruong=${encodeURIComponent(combinedMaTruong)}&appId=${encodeURIComponent(appId)}`;
   fetch(requestUrl)
     .then(res => res.json())
     .then(res => {
