@@ -418,7 +418,11 @@
 // Ép kết hợp mã trường và mã nhân sự vào biến maTruong để khớp đúng với định dạng c3ndtnl.nan trên Google Sheets
 const combinedMaTruong = `${currentSession.maTruong}.${currentSession.maNhanSu}`;
 
-const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maNhanSu)}&maTruong=${encodeURIComponent(combinedMaTruong)}&appId=${encodeURIComponent(appId)}`;
+// Tạo sẵn chuỗi khóa chuẩn cần tìm (Ví dụ: c3ndtnl.nan.ThiDuaLop)
+const fullTargetKey = `${currentSession.maTruong}.${currentSession.maNhanSu}.${appId}`;
+
+// Gửi lên API
+const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(currentSession.maNhanSu)}&sessionToken=active&fullKey=${encodeURIComponent(fullTargetKey)}`;
   fetch(requestUrl)
     .then(res => res.json())
     .then(res => {
