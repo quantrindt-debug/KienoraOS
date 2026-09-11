@@ -58,12 +58,12 @@
       </span>
     </div>
 
-    <div onclick="launchApp('tracuunv')" class="flex flex-col items-center group cursor-pointer w-20">
+    <div onclick="launchApp('sdb')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-cyan-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
         <i class="fa-solid fa-magnifying-glass"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
-        Tra cứu NV
+        Kế hoạch - sổ đầu bài
       </span>
     </div>
     
@@ -266,14 +266,14 @@
 
   <!-- ================= 5. SCRIPT XỬ LÝ HỆ THỐNG & CHẶN TRUY CẬP TRỰC TIẾP ================= -->
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxw9_IwDZqka0NzwFKX9KihjvTP2-EEBsNGzxVBrPn4vQJMXMfwFQtsQTsliPA0xaRa/exec"; 
+    const API_URL = "https://script.google.com/macros/s/AKfycbxSNT8iSyfIg3gySKEfwrmVTWwrAKY1VDb3oyR_wQPbbLFTRNHYzB-7SMKOKIWgWqnfLw/exec"; 
 
     const APP_REGISTRY = {
       'tuyensinh10': { title: 'Tuyển sinh Lớp 10', icon: 'fa-solid fa-user-plus text-rose-400' },
       'quantridaucap': { title: 'Quản trị đầu cấp', icon: 'fa-solid fa-sliders text-indigo-400' },
       'xeplop': { title: 'Xếp lớp vào 10', icon: 'fa-solid fa-sitemap text-amber-400' },
       'hosohocsinh': { title: 'Quản lý Hồ sơ học sinh', icon: 'fa-solid fa-folder-open text-violet-400' },
-      'tracuunv': { title: 'Tra cứu Nguyện vọng', icon: 'fa-solid fa-magnifying-glass text-cyan-400' },
+      'sdb': { title: 'Kế hoạch dạy học - sổ đầu bài', icon: 'fa-solid fa-magnifying-glass text-cyan-400' },
       'KeHoachChamCong': { title: 'Kế hoạch chấm công', icon: 'fa-solid fa-calendar-check text-blue-400' },
       'SoChuNhiem': { title: 'Sổ chủ nhiệm', icon: 'fa-solid fa-book-open text-cyan-400' },
       'ThiDuaLop': { title: 'Theo dõi thi đua lớp', icon: 'fa-solid fa-award text-emerald-400' },
@@ -299,10 +299,10 @@
         const userData = JSON.parse(savedSession);
         const schoolData = JSON.parse(savedSchool);
         
-        // Gán dữ liệu phiên làm việc từ cấu trúc localStorage chuẩn
+        // Gán dữ liệu phiên làm việc, hỗ trợ nhiều dạng tên biến khác nhau để tránh bị undefined
         currentSession = {
-          maTruong: schoolData.maTruong || '',
-          maNhanSu: userData.maNhanSu || '',
+          maTruong: schoolData.maTruong || userData.maTruong || '',
+          maNhanSu: userData.maNhanSu || userData.account || userData.username || '',
           user: userData,
           school: schoolData
         };
@@ -395,10 +395,10 @@
     'quantridaucap': "quantridaucap.html",
     'xeplop': "xeplop.html",
     'QuanLyHoSoHocSinh': "QuanLyHoSoHocSinh.html",
-    'tracuunv': "tracuunv.html",
+    'sdb': "sdb.html",
     'KeHoachChamCong': "KeHoachChamCong.html",
     'SoChuNhiem': "SoChuNhiem.html",
-    
+    'ThiDuaLop': "THPT_NguyenDuyTrinh/ThiDuaLop.html", // Đường dẫn chính xác tới thư mục con
     'ThiDua': "THPT_NguyenDuyTrinh/ThiDua.html"
   };
   
@@ -410,19 +410,24 @@
       return; // Dừng lại ở đây, không gọi API nữa
   }
 
-// ==========================================
-// CƠ CHẾ 2: GỌI GOOGLE APPS SCRIPT LẤY LINK TỪ SHEET
-// ==========================================
-// Dùng trực tiếp maTruong và maNhanSu đã phân tách sẵn từ phiên làm việc
-const maTruong = currentSession.maTruong; 
-const maNhanSu = currentSession.user.maNhanSu || currentSession.maNhanSu;
+  // ==========================================
+  // CƠ CHẾ 2: GỌI GOOGLE APPS SCRIPT LẤY LINK TỪ SHEET
+  // ==========================================
+  // Gửi lên API sử dụng đúng giá trị từ currentSession
+const userData = JSON.parse(savedSession);
+        const schoolData = JSON.parse(savedSchool);
+        
+        // Lấy dữ liệu linh hoạt tránh bị undefined
+        const parsedMaTruong = schoolData.maTruong || userData.maTruong || localStorage.getItem('maTruong') || '';
+        const parsedMaNS = userData.maNhanSu || userData.account || userData.username || localStorage.getItem('maNhanSu') || '';
 
-// Tạo chuẩn khóa tìm kiếm (VD: c3ndtnl.c3ndtnl.nan.ThiDuaLop hoặc tùy theo cấu trúc sheet của bạn)
-// Nếu maNhanSu đã bao gồm cả mã trường ở đầu, bạn chỉ cần ghép:
-const fullTargetKey = `${maNhanSu}.${appId}`;
-
-// Gửi lên API
-const requestUrl = `${API_URL}?action=getAppUrl&account=${encodeURIComponent(maNhanSu)}&sessionToken=active&fullKey=${encodeURIComponent(fullTargetKey)}`;
+        // Gán dữ liệu phiên làm việc chuẩn xác
+        currentSession = {
+          maTruong: parsedMaTruong,
+          maNhanSu: parsedMaNS,
+          user: userData,
+          school: schoolData
+        };
   fetch(requestUrl)
     .then(res => res.json())
     .then(res => {
