@@ -541,58 +541,110 @@ fetch(`${API_URL}?action=getCauHinhTuan`)
     }
 if (pageType === 'baocao') {
     contentDiv.innerHTML = `
-        <div class="space-y-4">
-            <div class="flex flex-col md:flex-row justify-between items-center gap-3">
-                <h3 class="text-base font-bold text-slate-800">📊 Quản Trị Báo Cáo Chi Tiết Tiết Dạy</h3>
+        <div class="space-y-5 bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+            
+            <!-- TIÊU ĐỀ & CÁC NÚT THAO TÁC CHÍNH -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span>📊</span> Quản Trị Báo Cáo Chi Tiết Tiết Dạy
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Theo dõi, lọc dữ liệu và khóa tuần thao tác hệ thống</p>
+                </div>
+                
                 <div class="flex items-center gap-2 flex-wrap">
-                    <div class="px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
-                        Tổng số tiết: <span id="countBaoCao" class="text-indigo-600 font-bold">0</span>
+                    <!-- Badge tổng số tiết -->
+                    <div class="px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-xl text-xs font-semibold text-indigo-700 flex items-center gap-1.5 shadow-xs">
+                        <span>Tổng số tiết:</span>
+                        <span id="countBaoCao" class="text-base font-bold text-indigo-600">0</span>
                     </div>
-                    <button onclick="taiBaoCaoChiTiet()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition-colors">🔄 Tải Lại Báo Cáo</button>
-                    <button onclick="xuatBaoCaoTongHopGV()" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition-colors">📊 Thống Kê & Xuất Excel GV</button>
-                    <button onclick="xuatExcelBaoCao()" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg transition-colors">📥 Xuất Excel Chi Tiết</button>
+
+                    <button onclick="taiBaoCaoChiTiet()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shadow-xs">
+                        <span>🔄</span> Tải Lại
+                    </button>
+                    
+                    <button onclick="thucHienKhoaTuan('KeHoach')" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shadow-xs">
+                        <span>🔒</span> Khóa Kế Hoạch <span class="text-[10px] opacity-75">(Cột H)</span>
+                    </button>
+                    
+                    <button onclick="thucHienKhoaTuan('SoDauBai')" class="px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shadow-xs">
+                        <span>🔒</span> Khóa SĐB <span class="text-[10px] opacity-75">(Cột I)</span>
+                    </button>
+                    
+                    <button onclick="xuatBaoCaoTongHopGV()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shadow-xs">
+                        <span>📊</span> Xuất Thống Kê GV
+                    </button>
+                    
+                    <button onclick="xuatExcelBaoCao()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shadow-xs">
+                        <span>📥</span> Xuất Excel Chi Tiết
+                    </button>
                 </div>
             </div>
 
-            <!-- Bộ lọc tìm kiếm nâng cao (Đã thêm Phân Môn) -->
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                <select id="filterBCCoGiGV" onchange="filterBaoCaoTable()" class="px-3 py-1.5 text-xs border rounded-lg bg-white">
-                    <option value="">-- Tất cả Giáo Viên --</option>
-                </select>
-                <select id="filterBCCoGiMon" onchange="filterBaoCaoTable()" class="px-3 py-1.5 text-xs border rounded-lg bg-white">
-                    <option value="">-- Tất cả Môn Học --</option>
-                </select>
-                <!-- Thêm ô lọc Phân Môn -->
-                <select id="filterBCCoGiPhanMon" onchange="filterBaoCaoTable()" class="px-3 py-1.5 text-xs border rounded-lg bg-white">
-                    <option value="">-- Tất cả Phân Môn --</option>
-                </select>
-                <select id="filterBCCoGiLop" onchange="filterBaoCaoTable()" class="px-3 py-1.5 text-xs border rounded-lg bg-white">
-                    <option value="">-- Tất cả Lớp --</option>
-                </select>
-                <select id="filterBCCoGiTrangThai" onchange="filterBaoCaoTable()" class="px-3 py-1.5 text-xs border rounded-lg bg-white">
-                    <option value="">Tất cả trạng thái</option>
-                    <option value="chua-ky">Có kế hoạch nhưng CHƯA KÝ SĐB</option>
-                    <option value="da-ky">Đã ký sổ đầu bài</option>
-                </select>
+            <!-- THANH BỘ LỌC NÂNG CAO -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80">
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">📅 Tuần</label>
+                    <select id="filterBCCoGiTuan" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Tất cả Tuần --</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">👨‍🏫 Giáo Viên</label>
+                    <select id="filterBCCoGiGV" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Tất cả Giáo Viên --</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">📚 Môn Học</label>
+                    <select id="filterBCCoGiMon" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Tất cả Môn --</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">🎯 Phân Môn</label>
+                    <select id="filterBCCoGiPhanMon" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Tất cả Phân Môn --</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">🏫 Lớp</label>
+                    <select id="filterBCCoGiLop" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Tất cả Lớp --</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">⚡ Trạng Thái SĐB</label>
+                    <select id="filterBCCoGiTrangThai" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="chua-ky">Chưa ký SĐB</option>
+                        <option value="da-ky">Đã ký SĐB</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- Bảng hiển thị dữ liệu -->
-            <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white">
+            <!-- BẢNG HIỂN THỊ DỮ LIỆU -->
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-xs">
                 <table id="tableBaoCao" class="w-full text-left text-xs border-collapse">
                     <thead>
-                        <tr class="bg-slate-100 text-slate-700">
-                            <th class="p-2.5 border">Tuần</th>
-                            <th class="p-2.5 border">Giáo Viên</th>
-                            <th class="p-2.5 border">Môn</th>
-                            <th class="p-2.5 border">Phân Môn</th>
-                            <th class="p-2.5 border">Lớp</th>
-                            <th class="p-2.5 border text-center">Tiết</th>
-                            <th class="p-2.5 border">Nội Dung Kế Hoạch</th>
-                            <th class="p-2.5 border text-center">Trạng Thái Sổ Đầu Bài</th>
+                        <tr class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                            <th class="p-3">Tuần</th>
+                            <th class="p-3">Giáo Viên</th>
+                            <th class="p-3">Môn</th>
+                            <th class="p-3">Phân Môn</th>
+                            <th class="p-3">Lớp</th>
+                            <th class="p-3 text-center">Tiết</th>
+                            <th class="p-3">Nội Dung Kế Hoạch</th>
+                            <th class="p-3 text-center">Trạng Thái Sổ Đầu Bài</th>
                         </tr>
                     </thead>
-                    <tbody id="baoCaoTableBody">
-                        <tr><td colspan="8" class="p-4 text-center text-slate-400">Đang tải dữ liệu báo cáo...</td></tr>
+                    <tbody id="baoCaoTableBody" class="divide-y divide-slate-100">
+                        <tr><td colspan="8" class="p-6 text-center text-slate-400">Đang tải dữ liệu báo cáo...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -601,7 +653,6 @@ if (pageType === 'baocao') {
     
     taiBaoCaoChiTiet();
 }
-
 
 
     }
@@ -1822,19 +1873,35 @@ function taiBaoCaoChiTiet() {
 
 // Hàm tự động nạp danh sách vào các dropdown bộ lọc
 function populateDropdowns(data) {
+    const tuanSet = new Set(); // Set cho Tuần
     const gvSet = new Set();
     const monSet = new Set();
-    const phanMonSet = new Set(); // Set cho Phân môn
+    const phanMonSet = new Set();
     const lopSet = new Set();
     
     data.forEach(item => {
+        if(item.tuan) tuanSet.add(item.tuan);
         if(item.giaoVien) gvSet.add(item.giaoVien);
         if(item.monHoc) monSet.add(item.monHoc);
-        if(item.phanMon) phanMonSet.add(item.phanMon); // Thu thập phân môn
+        if(item.phanMon) phanMonSet.add(item.phanMon);
         if(item.lop) lopSet.add(item.lop);
     });
     
-    // Nạp dropdown Giáo Viên
+    // Nạp dropdown Tuần (Sắp xếp theo thứ tự số nếu có)
+    const selectTuan = document.getElementById('filterBCCoGiTuan');
+    if(selectTuan) {
+        selectTuan.innerHTML = '<option value="">-- Tất cả Tuần --</option>';
+        Array.from(tuanSet).sort((a, b) => {
+            // Cố gắng tách số từ chuỗi tuần (VD: "Tuần 1", "1"...) để sắp xếp tự nhiên
+            let numA = parseInt(a.toString().replace(/\D/g, '')) || 0;
+            let numB = parseInt(b.toString().replace(/\D/g, '')) || 0;
+            return numA - numB;
+        }).forEach(tuan => {
+            selectTuan.innerHTML += `<option value="${tuan}">Tuần: ${tuan}</option>`;
+        });
+    }
+
+    // Nạp các dropdown khác như cũ...
     const selectGV = document.getElementById('filterBCCoGiGV');
     if(selectGV) {
         selectGV.innerHTML = '<option value="">-- Tất cả Giáo Viên --</option>';
@@ -1843,7 +1910,6 @@ function populateDropdowns(data) {
         });
     }
     
-    // Nạp dropdown Môn Học
     const selectMon = document.getElementById('filterBCCoGiMon');
     if(selectMon) {
         selectMon.innerHTML = '<option value="">-- Tất cả Môn Học --</option>';
@@ -1852,7 +1918,6 @@ function populateDropdowns(data) {
         });
     }
 
-    // Nạp dropdown Phân Môn (Mới)
     const selectPhanMon = document.getElementById('filterBCCoGiPhanMon');
     if(selectPhanMon) {
         selectPhanMon.innerHTML = '<option value="">-- Tất cả Phân Môn --</option>';
@@ -1861,7 +1926,6 @@ function populateDropdowns(data) {
         });
     }
     
-    // Nạp dropdown Lớp
     const selectLop = document.getElementById('filterBCCoGiLop');
     if(selectLop) {
         selectLop.innerHTML = '<option value="">-- Tất cả Lớp --</option>';
@@ -1871,33 +1935,32 @@ function populateDropdowns(data) {
     }
 }
 
-// Hàm lọc dữ liệu hiển thị trên bảng
+// Hàm lọc cập nhật thêm điều kiện Tuần
 function filterBaoCaoTable() {
+    const tuanKey = document.getElementById('filterBCCoGiTuan').value; // Lấy giá trị Tuần lọc
     const gvKey = document.getElementById('filterBCCoGiGV').value;
     const monKey = document.getElementById('filterBCCoGiMon').value;
-    const phanMonKey = document.getElementById('filterBCCoGiPhanMon').value; // Lấy giá trị lọc Phân môn
+    const phanMonKey = document.getElementById('filterBCCoGiPhanMon').value;
     const lopKey = document.getElementById('filterBCCoGiLop').value;
     const ttKey = document.getElementById('filterBCCoGiTrangThai').value;
     
     currentFilteredData = globalBaoCaoData.filter(item => {
+        const matchTuan = !tuanKey || String(item.tuan) === String(tuanKey); // So khớp Tuần
         const matchGV = !gvKey || item.giaoVien === gvKey;
         const matchMon = !monKey || item.monHoc === monKey;
-        const matchPhanMon = !phanMonKey || item.phanMon === phanMonKey; // Điều kiện khớp Phân môn
+        const matchPhanMon = !phanMonKey || item.phanMon === phanMonKey;
         const matchLop = !lopKey || item.lop === lopKey;
         
         let matchTT = true;
         if(ttKey === 'chua-ky') matchTT = !item.daKy;
         if(ttKey === 'da-ky') matchTT = item.daKy;
         
-        return matchGV && matchMon && matchPhanMon && matchLop && matchTT;
+        return matchTuan && matchGV && matchMon && matchPhanMon && matchLop && matchTT;
     });
     
-    // Cập nhật lại số lượng trên thẻ thống kê nhanh
     document.getElementById('countBaoCao').innerText = currentFilteredData.length;
-    
     renderBaoCaoTable(currentFilteredData);
 }
-
 // Cập nhật lại hàm render để lưu luôn vào biến currentFilteredData lúc ban đầu tải xong
 function taiBaoCaoChiTiet() {
     fetch(`${API_URL}?action=getBaoCaoChiTiet`)
@@ -2024,6 +2087,65 @@ function xuatBaoCaoTongHopGV() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "TongHopTheoGV_PhanMon");
     XLSX.writeFile(workbook, "Thong_Ke_Tong_Hop_Giao_Vien_Theo_Phan_Mon.xlsx");
+}
+//Khoá 
+function khóaSDBTheoTuần() {
+    const tuanKey = document.getElementById('filterBCCoGiTuan').value;
+    
+    if (!tuanKey) {
+        alert("Vui lòng chọn cụ thể một Tuần cần khóa ở ô bộ lọc bên trái!");
+        return;
+    }
+    
+    if (!confirm(`Bạn có chắc chắn muốn khóa Sổ Đầu Bài và Kế Hoạch của [ Tuần ${tuanKey} ] không? Thao tác này sẽ ghi nhận trạng thái khóa vào sheet CauHinhTuan.`)) {
+        return;
+    }
+    
+    // Gọi API thực hiện khóa trên Google Apps Script
+    fetch(`${API_URL}?action=khoaTuanSDB&tuan=${encodeURIComponent(tuanKey)}`, {
+        method: 'POST'
+    })
+    .then(res => res.json())
+    .then(res => {
+        if(res.success) {
+            alert(`Đã khóa thành công tuần ${tuanKey} vào cột H của sheet CauHinhTuan!`);
+        } else {
+            alert("Lỗi: " + (res.message || "Không thể thực hiện khóa tuần."));
+        }
+    })
+    .catch(err => {
+        console.error("Lỗi kết nối:", err);
+        alert("Có lỗi xảy ra khi gửi yêu cầu khóa tuần.");
+    });
+}function thucHienKhoaTuan(loaiKhoa) {
+    const tuanKey = document.getElementById('filterBCCoGiTuan').value;
+    
+    if (!tuanKey) {
+        alert("Vui lòng chọn cụ thể một Tuần cần khóa ở ô bộ lọc bên trái!");
+        return;
+    }
+    
+    const tenLoai = loaiKhoa === 'KeHoach' ? 'Kế Hoạch (Cột H)' : 'Sổ Đầu Bài (Cột I)';
+    
+    if (!confirm(`Bạn có chắc chắn muốn khóa ${tenLoai} của [ Tuần ${tuanKey} ] không?`)) {
+        return;
+    }
+    
+    fetch(`${API_URL}?action=khoaTuanTheoLoai&tuan=${encodeURIComponent(tuanKey)}&loai=${encodeURIComponent(loaiKhoa)}`, {
+        method: 'POST'
+    })
+    .then(res => res.json())
+    .then(res => {
+        if(res.success) {
+            alert(`Đã khóa ${tenLoai} thành công cho tuần ${tuanKey}!`);
+        } else {
+            alert("Lỗi: " + (res.message || "Không thể thực hiện khóa tuần."));
+        }
+    })
+    .catch(err => {
+        console.error("Lỗi kết nối:", err);
+        alert("Có lỗi xảy ra khi gửi yêu cầu khóa.");
+    });
 }
     </script>
 </body>
