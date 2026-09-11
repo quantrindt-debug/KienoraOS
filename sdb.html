@@ -22,9 +22,6 @@
 
             <!-- Các Tab Điều Hướng Ngay Trên Header -->
             <nav class="flex flex-wrap items-center gap-2 bg-indigo-950/30 p-1.5 rounded-xl backdrop-blur-sm border border-indigo-500/30">
-                <button onclick="switchTab('quantri'); loadQuanTriThongKe();" id="tab-quantri" class="tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all bg-white text-indigo-900 shadow-md">
-                    Quản trị & Khoá
-                </button>
                 <button onclick="switchTab('admin-tkb')" id="tab-admin-tkb" class="tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all bg-white text-indigo-900 shadow-md">
                     Đăng TKB
                 </button>
@@ -48,9 +45,33 @@
             
             
 
-            <!-- Khu Vực Hiển Thị Bảng Dữ Liệu -->
+            
+                <!-- Widget Thống kê nhanh ngay màn hình chính -->
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="bg-blue-50 border border-blue-100 p-3 rounded-xl flex items-center justify-between">
+                        <div>
+                            <div class="text-[11px] font-semibold text-blue-600 uppercase">Kế Hoạch</div>
+                            <div id="mainStatKH" class="text-xl font-bold text-blue-900">0</div>
+                        </div>
+                        <div class="text-blue-400 text-lg">📅</div>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-xl flex items-center justify-between">
+                        <div>
+                            <div class="text-[11px] font-semibold text-emerald-600 uppercase">Đã Ký / Dạy</div>
+                            <div id="mainStatDaKy" class="text-xl font-bold text-emerald-900">0</div>
+                        </div>
+                        <div class="text-emerald-400 text-lg">✅</div>
+                    </div>
+                    <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl flex items-center justify-between">
+                        <div>
+                            <div class="text-[11px] font-semibold text-indigo-600 uppercase">Tiến Độ</div>
+                            <div id="mainStatPercent" class="text-xl font-bold text-indigo-900">0%</div>
+                        </div>
+                        <div class="text-indigo-400 text-lg">📊</div>
+                    </div>
+                </div>
+                <!-- Khu Vực Hiển Thị Bảng Dữ Liệu -->
             <div id="tabContent" class="overflow-x-auto">
-                <div class="text-center py-24 text-slate-400 font-medium text-sm animate-pulse">Đang đồng bộ cấu trúc dữ liệu...</div>
             </div>
 
 
@@ -150,14 +171,13 @@ async function taiThongTinGiaoVien() {
 }
 // 5. Khởi chạy khi tải trang xong (Gom chung các hàm chạy khởi tạo)
 document.addEventListener("DOMContentLoaded", function() {
-    hienThiQuyen();       // Hiển thị khung cơ bản trước
-    taiVaiTro();          // Lấy thông tin quyền chính xác từ server
-    taiThongTinGiaoVien();// Lấy tên giáo viên
+    hienThiQuyen();         // Hiển thị khung cơ bản trước
+    taiVaiTro();            // Lấy thông tin quyền chính xác từ server
     
-    // Tự động mở tab mặc định ban đầu
-    if (typeof switchTab === 'function') {
-        switchTab('admin-tkb'); 
-    }
+    // Gọi tải thông tin giáo viên, và TRUYỀN HÀM TẢI DỮ LIỆU VÀO LÀM CALLBACK (để chạy sau khi đã có tên/mã GV)
+    taiThongTinGiaoVien(function() {
+        loadTatCaThongKeVaSoDauBai();
+    });
 });
 
 //----------------------------------------------
@@ -498,52 +518,7 @@ fetch(`${API_URL}?action=getCauHinhTuan`)
     initSDBTuanDropdown();
         return;
     }
-//Thống kê và khoá
-// 7. Tab Quản trị & Khoá
-    if (pageType === 'quantri') {
-        contentDiv.innerHTML = `
-                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-100 mt-6">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-base font-bold text-slate-800">🔒 Quản Trị & Thống Kê Sổ Đầu Bài</h3>
-                        <button onclick="loadQuanTriThongKe()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition-colors">🔄 Làm mới</button>
-                    </div>
 
-                    <!-- Tổng quan -->
-                    <div class="grid grid-cols-2 gap-4 mb-5">
-                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                            <div class="text-xs text-blue-600 font-semibold">Tổng Tiết Kế Hoạch</div>
-                            <div id="quantriTongKH" class="text-2xl font-bold text-blue-800">0</div>
-                        </div>
-                        <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
-                            <div class="text-xs text-emerald-600 font-semibold">Tổng Tiết Đã Ký / Dạy</div>
-                            <div id="quantriTongDaKy" class="text-2xl font-bold text-emerald-800">0</div>
-                        </div>
-                    </div>
-
-                    <!-- Bảng chi tiết theo tuần -->
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs border-collapse">
-                            <thead>
-                                <tr class="bg-slate-100 text-slate-700">
-                                    <th class="p-2.5 border">Tuần</th>
-                                    <th class="p-2.5 border text-center">Kế Hoạch</th>
-                                    <th class="p-2.5 border text-center">Đã Thực Hiện</th>
-                                    <th class="p-2.5 border text-center">Tiến Độ</th>
-                                    <th class="p-2.5 border text-center">Trạng Thái Khóa (Cột H)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="quanTriTableBody">
-                                <!-- Render tự động -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-            
-        // Gọi luôn hàm load dữ liệu ngay khi render xong khung tab
-        loadQuanTriThongKe();
-        return;
-    }
     }
 
        function handleAddNew() {
@@ -1673,132 +1648,74 @@ function saveSoDauBai() {
 }
 
 //Thống kê và khoá sổ đầu bài
-function getQuanTriVaThongKe(e) {
-  var tuanFilter = e.parameter.tuan || "";
-  var maNhanSu = e.parameter.maNhanSu || "";
-  
-  try {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var khSheet = ss.getSheetByName("KeHoachDayHoc");
-    var sdbSheet = ss.getSheetByName("SoDauBai");
-    var khoaSheet = ss.getSheetByName("Khoa");
-    
-    var khData = khSheet ? khSheet.getDataRange().getValues() : [];
-    var sdbData = sdbSheet ? sdbSheet.getDataRange().getValues() : [];
-    var khoaData = khoaSheet ? khoaSheet.getDataRange().getValues() : [];
-    
-    var cleanNS = String(maNhanSu).toLowerCase().trim();
-    
-    // 1. Đọc trạng thái khóa từ sheet Khoa (Cột H - index 7)
-    var khoaMap = {};
-    for (var k = 1; k < khoaData.length; k++) {
-      var rk = khoaData[k];
-      var kTuan = String(rk[0] || "").toLowerCase().trim();
-      var kNS = String(rk[1] || "").toLowerCase().trim();
-      var trangThai = String(rk[7] || "").toLowerCase().trim();
-      var kKey = kTuan + "_" + kNS;
-      khoaMap[kKey] = (trangThai === "true" || trangThai === "khoa" || trangThai === "1");
-    }
-    
-    // 2. Thống kê tiến độ tiết dạy
-    var weeklyStats = {};
-    var totalTiet = 0;
-    var totalDaKy = 0;
-    
-    for (var i = 1; i < khData.length; i++) {
-      var row = khData[i];
-      var rowNS = String(row[1] || "").toLowerCase().trim();
-      if (cleanNS === "" || rowNS === cleanNS) {
-        var tuan = String(row[0] || "").trim();
-        if (!weeklyStats[tuan]) {
-          weeklyStats[tuan] = { keHoach: 0, daDay: 0, isLocked: khoaMap[String(tuan).toLowerCase().trim() + "_" + rowNS] || false };
-        }
-        weeklyStats[tuan].keHoach++;
-        totalTiet++;
-      }
-    }
-    
-    for (var j = 1; j < sdbData.length; j++) {
-      var r = sdbData[j];
-      var rowNS = String(r[1] || "").toLowerCase().trim();
-      var trangThaiKy = String(r[15] || "").toLowerCase().trim();
-      if ((cleanNS === "" || rowNS === cleanNS) && (trangThaiKy === "đã ký" || trangThaiKy === "true")) {
-        var tuan = String(r[0] || "").trim();
-        if (weeklyStats[tuan]) {
-          weeklyStats[tuan].daDay++;
-          totalDaKy++;
-        }
-      }
-    }
-    
-    var chiTietTuan = [];
-    for (var t in weeklyStats) {
-      chiTietTuan.push({
-        tuan: t,
-        keHoach: weeklyStats[t].keHoach,
-        daDay: weeklyStats[t].daDay,
-        isLocked: weeklyStats[t].isLocked
-      });
-    }
-    
-    return ContentService.createTextOutput(JSON.stringify({ 
-      success: true, 
-      tongKeHoach: totalTiet, 
-      tongDaKy: totalDaKy, 
-      chiTietTuan: chiTietTuan 
-    })).setMimeType(ContentService.MimeType.JSON);
-    
-  } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ success: false, message: err.toString() }))
-                         .setMimeType(ContentService.MimeType.JSON);
-  }
-}
 
-//Thống kê và khoá
-function loadQuanTriThongKe() {
+function loadTatCaThongKeVaSoDauBai() {
+    // 1. Load bảng sổ đầu bài ở màn hình chính như cũ
+    if (typeof loadSoDauBai === 'function') {
+        loadSoDauBai();
+    }
+    
+    // 2. Lấy thông tin nhân sự và tuần đang chọn
     const inputGv = document.getElementById('inputGiaoVien');
     const maNhanSu = inputGv ? inputGv.getAttribute('data-manhansu') : (typeof currentSession !== 'undefined' ? currentSession.maNhanSu : 'luyen');
-    
-    // Lấy giá trị tuần đang chọn từ combobox lọc sổ đầu bài (hoặc để trống nếu muốn xem tất cả các tuần)
     const tuanSelect = document.getElementById('filterSDBTuan');
-    const tuan = tuanSelect ? tuanSelect.value : ''; 
+    const tuan = tuanSelect ? tuanSelect.value : '';
     
+    // 3. Gọi duy nhất một API để lấy toàn bộ dữ liệu thống kê & khóa
     fetch(`${API_URL}?action=getQuanTriVaThongKe&maNhanSu=${encodeURIComponent(maNhanSu)}&tuan=${encodeURIComponent(tuan)}`)
     .then(res => res.json())
     .then(res => {
         if(res.success) {
-            document.getElementById('quantriTongKH').innerText = res.tongKeHoach;
-            document.getElementById('quantriTongDaKy').innerText = res.tongDaKy;
+            // Cập nhật cho widget màn hình chính (nếu có tồn tại các ID này trên DOM)
+            const statKH = document.getElementById('mainStatKH');
+            const statDaKy = document.getElementById('mainStatDaKy');
+            const statPercent = document.getElementById('mainStatPercent');
             
-            const tbody = document.getElementById('quanTriTableBody');
-            tbody.innerHTML = "";
+            if (statKH) statKH.innerText = res.tongKeHoach;
+            if (statDaKy) statDaKy.innerText = res.tongDaKy;
             
-            if(res.chiTietTuan.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Không có dữ liệu cho phạm vi này.</td></tr>`;
-                return;
+            if (statPercent) {
+                const percent = res.tongKeHoach > 0 ? Math.round((res.tongDaKy / res.tongKeHoach) * 100) : 0;
+                statPercent.innerText = percent + "%";
+                statPercent.className = `text-xl font-bold ${percent >= 100 ? 'text-emerald-700' : 'text-indigo-900'}`;
             }
             
-            res.chiTietTuan.forEach(item => {
-                const percent = item.keHoach > 0 ? Math.round((item.daDay / item.keHoach) * 100) : 0;
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-2.5 border font-semibold text-slate-800">${item.tuan}</td>
-                        <td class="p-2.5 border text-center">${item.keHoach}</td>
-                        <td class="p-2.5 border text-center text-emerald-600 font-bold">${item.daDay}</td>
-                        <td class="p-2.5 border text-center">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${percent >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${percent}%</span>
-                        </td>
-                        <td class="p-2.5 border text-center">
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">
-                                ${item.isLocked ? '🔒 Đã khóa' : '🔓 Đang mở'}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            });
+            // Đồng thời cập nhật luôn cho bảng chi tiết ở Tab Quản trị (nếu bảng đó đang hiển thị)
+            const quantriKH = document.getElementById('quantriTongKH');
+            const quantriDaKy = document.getElementById('quantriTongDaKy');
+            if (quantriKH) quantriKH.innerText = res.tongKeHoach;
+            if (quantriDaKy) quantriDaKy.innerText = res.tongDaKy;
+            
+            const tbody = document.getElementById('quanTriTableBody');
+            if (tbody) {
+                tbody.innerHTML = "";
+                if(res.chiTietTuan.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Không có dữ liệu cho phạm vi này.</td></tr>`;
+                    return;
+                }
+                
+                res.chiTietTuan.forEach(item => {
+                    const percent = item.keHoach > 0 ? Math.round((item.daDay / item.keHoach) * 100) : 0;
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-slate-50">
+                            <td class="p-2.5 border font-semibold text-slate-800">${item.tuan}</td>
+                            <td class="p-2.5 border text-center">${item.keHoach}</td>
+                            <td class="p-2.5 border text-center text-emerald-600 font-bold">${item.daDay}</td>
+                            <td class="p-2.5 border text-center">
+                                <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${percent >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${percent}%</span>
+                            </td>
+                            <td class="p-2.5 border text-center">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">
+                                    ${item.isLocked ? '🔒 Đã khóa' : '🔓 Đang mở'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
         }
     })
-    .catch(err => console.error("Lỗi tải quản trị thống kê:", err));
+    .catch(err => console.error("Lỗi tải thống kê hệ thống:", err));
 }
     </script>
 </body>
