@@ -200,6 +200,9 @@ document.addEventListener("DOMContentLoaded", function() {
         loadQuanTriThongKe();
     }
 });
+// ==========================================
+// ĐẶT ĐOẠN NÀY Ở KHU VỰC SCRIPT CHUNG (CHẠY KHI TẢI TRANG)
+// ==========================================
 
 //----------------------------------------------
 
@@ -1388,8 +1391,29 @@ function renderKeHoachTable(data) {
         `;
     });
     tbody.innerHTML = html;
-//Thống kê theo dõi tiến độ
 
+    // ==========================================
+    // TỰ ĐỘNG QUÉT VÀ ĐIỀN TÊN BÀI SAU KHI VẼ XONG BẢNG
+    // ==========================================
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach(row => {
+        let lopEl = row.querySelector('.td-lop');
+        let monEl = row.querySelector('.td-mon');
+        let tietEl = row.querySelector('.input-tietppct');
+
+        if (lopEl && monEl && tietEl) {
+            let lop = lopEl.getAttribute('data-val') || lopEl.innerText.trim();
+            let mon = monEl.getAttribute('data-val') || monEl.innerText.trim();
+            let tietPPCT = tietEl.value.trim();
+
+            let khoiMatch = lop.match(/\d+/);
+            let khoi = khoiMatch ? khoiMatch[0] : '';
+
+            if (khoi && mon && tietPPCT) {
+                tuDongXacDinhPhanMonVaDienTenBai(row, khoi, mon, tietPPCT, lop);
+            }
+        }
+    });
 }
 
 function filterKeHoachData() {
@@ -1413,6 +1437,67 @@ function filterKeHoachData() {
 
     renderKeHoachTable(filtered);
 }
+// Tự động xác định phân môn
+function tuDongXacDinhPhanMonVaDienTenBai(row, khoi, mon, tietPPCT, tenLop) {
+    if (!window.cachedPPCTData || window.cachedPPCTData.length === 0) return;
+
+    let tenBaiEl = row.querySelector('.input-tenbai') || row.querySelector('.ten-bai');
+    let phanMonInput = row.querySelector('.input-phanmon');
+    if (!tenBaiEl) return;
+
+    let cleanMon = mon.trim().toLowerCase();       // VD: "văn", "toán"
+    let cleanLop = tenLop.trim().toLowerCase();   // VD: "12a1 (thoan) - ôn tập a", "12a1 (tuệ)"
+
+    // 1. Xác định từ khóa phân hóa từ tên lớp trên TKB
+    let keyword = "";
+    if (cleanLop.includes("bdhsg") || cleanLop.includes("bồi dưỡng")) {
+        keyword = "bdhsg";
+    } else if (cleanLop.includes("ôn tập d")) {
+        keyword = "ôn tập_d";
+    } else if (cleanLop.includes("ôn tập a")) {
+        keyword = "ôn tập_a";
+    } else if (cleanLop.includes("ôn tập")) {
+        keyword = "ôn tập";
+    }
+
+    let foundTenBai = "";
+    let foundPhanMon = "";
+    let fallbackTenBai = ""; // Lưu kết quả dự phòng cho môn dùng chung
+
+    // 2. Duyệt qua mảng PPCT
+    for (let p = 1; p < window.cachedPPCTData.length; p++) {
+        let pRow = window.cachedPPCTData[p];
+        let pKhoi = String(pRow[1] || "").trim();           
+        let pMon = String(pRow[2] || "").trim().toLowerCase(); // VD: "văn", "toán"
+        let pPhanMon = String(pRow[3] || "").trim().toLowerCase(); // VD: "ôn tập_d" hoặc để trống
+        let pTiet = parseInt(pRow[5]) || parseInt(pRow[4]) || 0;    
+
+        let matchKhoi = (pKhoi === "" || pKhoi === khoi || khoi.includes(pKhoi));
+        let matchMon = pMon.includes(cleanMon) || cleanMon.includes(cleanMon);
+        let matchTiet = (pTiet === parseInt(tietPPCT));
+
+        if (matchKhoi && matchMon && matchTiet) {
+            // Trường hợp A: Nếu lớp trên TKB có từ khóa phân hóa (VD: Ôn tập A, BDHSG...)
+            if (keyword && pPhanMon.includes(keyword)) {
+                foundTenBai = String(pRow[6] || "").trim();
+                foundPhanMon = String(pRow[3] || "").trim();
+                break; // Khớp chuẩn xác phân hóa thì lấy luôn và dừng lại
+            }
+            
+            // Trường hợp B: Nếu dòng PPCT đó để trống phân môn (dùng chung cho mọi lớp)
+            if (!pPhanMon || pPhanMon === "" || pPhanMon === "chung") {
+                fallbackTenBai = String(pRow[6] || "").trim();
+            }
+        }
+    }
+
+    // 3. Gán kết quả: Ưu tiên tìm theo phân hóa riêng, nếu không có thì lấy bản dùng chung
+    tenBaiEl.value = foundTenBai || fallbackTenBai;
+    if (phanMonInput && foundPhanMon) {
+        phanMonInput.value = foundPhanMon;
+    }
+}
+
 
 function onTietPPCTChange(input) {
     const tr = input.closest('tr');
@@ -1656,7 +1741,7 @@ function saveKeHoachTuan() {
         alert("❌ Lỗi kết nối khi gửi dữ liệu lên server!");
     });
 }
-//Ký sổ đầu bài
+//==========================================Ký sổ đầu bài ================================
 // Hàm tự động đổ dữ liệu danh sách tuần vào dropdown của Sổ đầu bài
 function initSDBTuanDropdown() {
     const selectTuan = document.getElementById('filterSDBTuan');
@@ -2265,6 +2350,7 @@ function phanQuyenGiaoDien() {
 document.addEventListener("DOMContentLoaded", function() {
     phanQuyenGiaoDien();
 });
+
     </script>
 </body>
 </html>
