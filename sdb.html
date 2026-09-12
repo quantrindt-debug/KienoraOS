@@ -2117,7 +2117,8 @@ function khóaSDBTheoTuần() {
         console.error("Lỗi kết nối:", err);
         alert("Có lỗi xảy ra khi gửi yêu cầu khóa tuần.");
     });
-}function thucHienKhoaTuan(loaiKhoa) {
+}
+function thucHienKhoaTuan(loaiKhoa) {
     const tuanKey = document.getElementById('filterBCCoGiTuan').value;
     
     if (!tuanKey) {
@@ -2139,14 +2140,50 @@ function khóaSDBTheoTuần() {
         if(res.success) {
             alert(`Đã khóa ${tenLoai} thành công cho tuần ${tuanKey}!`);
         } else {
-            alert("Lỗi: " + (res.message || "Không thể thực hiện khóa tuần."));
+            alert("Lỗi từ Server: " + (res.message || "Không rõ nguyên nhân"));
         }
     })
     .catch(err => {
-        console.error("Lỗi kết nối:", err);
-        alert("Có lỗi xảy ra khi gửi yêu cầu khóa.");
+        console.error("Lỗi kết nối chi tiết:", err);
+        alert("Lỗi kết nối hoặc phản hồi không phải định dạng JSON: " + err.toString());
     });
 }
+//Phân quyền
+// Hàm kiểm tra và ẩn các tab quản trị / báo cáo đối với giáo viên thường
+function phanQuyenGiaoDien() {
+    // Lấy thông tin vai trò hoặc mã nhân sự từ lúc đăng nhập (ví dụ lưu trong localStorage)
+    var vaiTroUser = (localStorage.getItem("vaiTroUser") || "").toLowerCase();
+    var maNhanSu = (localStorage.getItem("maNhanSu") || "").toLowerCase();
+
+    // Danh sách các từ khóa được phép xem báo cáo và tải TKB/PPCT
+    var dsQuyenQuanTri = ["BGH", "bgh", "admin", "kythuat", "hieutruong", "phohieutruong", "it"];
+    
+    // Kiểm tra xem user hiện tại có thuộc nhóm quản trị hay không
+    var coQuyen = dsQuyenQuanTri.some(function(q) {
+        return vaiTroUser.includes(q) || maNhanSu.includes(q); // Tùy cách bạn lưu định danh
+    });
+
+    // Nếu KHÔNG có quyền thì ẩn các tab/nút chức năng nhạy cảm
+    if (!coQuyen) {
+        // Ẩn Tab Báo cáo (Thay 'tab-baocao' bằng ID thật của thẻ HTML tab báo cáo)
+        var tabBaoCao = document.getElementById("tab-baocao");
+        if (tabBaoCao) tabBaoCao.style.display = "none";
+
+        // Ẩn Nút Tải TKB / PPCT (Thay 'btn-taotkb' bằng ID nút thực tế của bạn)
+        var btnTaiTKB = document.getElementById("tab-admin-tkb");
+        if (btnTaiTKB) btnTaiTKB.style.display = "none";
+
+
+        // Ẩn tab tải PPCT (thay 'tab-tai-ppct' bằng ID thực tế trên giao diện HTML của bạn)
+        var tabTaiPPCT = document.getElementById("tab-ppct");
+        if (tabTaiPPCT) tabTaiPPCT.style.display = "none";
+    }
+}
+
+// Gọi hàm này ngay khi trang vừa tải xong
+document.addEventListener("DOMContentLoaded", function() {
+    phanQuyenGiaoDien();
+});
     </script>
 </body>
 </html>
