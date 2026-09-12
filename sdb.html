@@ -294,8 +294,14 @@ if (pageType === 'admin-tkb') {
                         <option value="Toán học">Toán học</option>
                         <option value="Ngữ văn">Ngữ văn</option>
                         <option value="Tiếng Anh">Tiếng Anh</option>
-                        <option value="Khoa học tự nhiên">Khoa học tự nhiên</option>
-                        <option value="Lịch sử và Địa lí">Lịch sử và Địa lí</option>
+                        <option value="Vật lí">Vật lý</option>
+                        <option value="Hoá học">Hoá học</option>                        
+                        <option value="Sinh học">Sinh học</option>                        
+                        <option value="Lịch sử">Lịch sử</option>                        
+                        <option value="Địa lí">Địa lí</option>                        
+                        <option value="Gdkt-PL">GDKT - PL</option>
+                        <option value="Tin học">Tin học</option>
+                        
                     </select>
                     <!-- Thêm ô chọn Phân môn ở đây -->
                     <select id="filterPhanMon" onchange="filterPPCTData()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
@@ -1090,9 +1096,11 @@ let allPPCTData = [];
 function filterPPCTData() {
     const selectedKhoi = document.getElementById('filterKhoi').value.trim().toLowerCase();
     const selectedMon = document.getElementById('filterMon').value.trim().toLowerCase();
+    const selectPM = document.getElementById('filterPhanMon'); // ID của thẻ select Phân môn (bạn đổi tên nếu ID khác)
 
     if (!window.allPPCTData) return;
 
+    // 1. Lọc dữ liệu theo Khối và Môn để tìm ra các Phân môn tương ứng
     let filtered = window.allPPCTData.filter(item => {
         let itemKhoi = item.khoi ? item.khoi.toString().trim().toLowerCase() : "";
         let itemMon = item.mon ? item.mon.toString().trim().toLowerCase() : "";
@@ -1106,7 +1114,40 @@ function filterPPCTData() {
         return matchKhoi && matchMon;
     });
 
-    renderPPCTTable(filtered);
+    // 2. Cập nhật lại danh sách Phân môn đổ xuống theo Khối/Môn đang chọn
+    if (selectPM) {
+        let currentSelectedPM = selectPM.value; // Giữ lại giá trị đang chọn nếu có
+        selectPM.innerHTML = '<option value="">-- Tất cả Phân môn --</option>';
+        
+        let uniquePhanMon = {};
+        filtered.forEach(item => {
+            let pm = item.phanMon ? item.phanMon.trim() : "";
+            if (pm !== "") {
+                uniquePhanMon[pm] = true;
+            }
+        });
+
+        Object.keys(uniquePhanMon).forEach(pm => {
+            let opt = document.createElement("option");
+            opt.value = pm;
+            opt.textContent = pm;
+            selectPM.appendChild(opt);
+        });
+
+        // Khôi phục lại giá trị cũ nếu nó vẫn tồn tại trong danh sách mới
+        if (uniquePhanMon[currentSelectedPM]) {
+            selectPM.value = currentSelectedPM;
+        }
+    }
+
+    // 3. Lọc tiếp theo Phân môn nếu có chọn cụ thể và vẽ lại bảng
+    const selectedPhanMon = selectPM ? selectPM.value.trim().toLowerCase() : "";
+    let finalFiltered = filtered.filter(item => {
+        let itemPM = item.phanMon ? item.phanMon.trim().toLowerCase() : "";
+        return selectedPhanMon === "" || itemPM === selectedPhanMon;
+    });
+
+    renderPPCTTable(finalFiltered);
 }
 
 //===================================================================
