@@ -112,7 +112,13 @@
                         localStorage.setItem('maTruong', extractedMaTruong);
                         localStorage.setItem('maNhanSu', extractedMaNS);
 
+                        // 👇 THÊM 2 DÒNG NÀY ĐỂ LƯU CHUẨN XÁC VAI TRÒ CHO TRANG CHÍNH ĐỌC
+                        localStorage.setItem('vaiTroUser', res.user.vaiTro || res.user.role || '');
+                        localStorage.setItem('tenNhanSu', res.user.tenNhanSu || res.user.hoTen || '');
+
                         showMsg("✅ Đăng nhập thành công! Đang chuyển hướng...", "success");
+
+                        
 
                         setTimeout(() => {
                             window.location.href = "KienoraOS.html";
