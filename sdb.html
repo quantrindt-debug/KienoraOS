@@ -200,6 +200,7 @@ document.addEventListener("DOMContentLoaded", function() {
         loadQuanTriThongKe();
     }
 });
+
 // ==========================================
 // ĐẶT ĐOẠN NÀY Ở KHU VỰC SCRIPT CHUNG (CHẠY KHI TẢI TRANG)
 // ==========================================
@@ -1445,56 +1446,76 @@ function tuDongXacDinhPhanMonVaDienTenBai(row, khoi, mon, tietPPCT, tenLop) {
     let phanMonInput = row.querySelector('.input-phanmon');
     if (!tenBaiEl) return;
 
-    let cleanMon = mon.trim().toLowerCase();       // VD: "văn", "toán"
-    let cleanLop = tenLop.trim().toLowerCase();   // VD: "12a1 (thoan) - ôn tập a", "12a1 (tuệ)"
+    let cleanMon = mon.trim().toLowerCase();       
+    let cleanLop = tenLop.trim().toLowerCase();   
 
     // 1. Xác định từ khóa phân hóa từ tên lớp trên TKB
-    let keyword = "";
-    if (cleanLop.includes("bdhsg") || cleanLop.includes("bồi dưỡng")) {
-        keyword = "bdhsg";
-    } else if (cleanLop.includes("ôn tập d")) {
-        keyword = "ôn tập_d";
-    } else if (cleanLop.includes("ôn tập a")) {
-        keyword = "ôn tập_a";
-    } else if (cleanLop.includes("ôn tập")) {
-        keyword = "ôn tập";
-    }
+    let hasBDHSG = cleanLop.includes("bdhsg") || cleanLop.includes("bồi dưỡng");
+    let hasA = cleanLop.includes("ôn tập a") || cleanLop.includes("ôn tập_a");
+    let hasD = cleanLop.includes("ôn tập d") || cleanLop.includes("ôn tập_d");
 
-    let foundTenBai = "";
-    let foundPhanMon = "";
-    let fallbackTenBai = ""; // Lưu kết quả dự phòng cho môn dùng chung
+    let matchedRowSpecific = null; 
+    let matchedRowGeneral = null;  
 
     // 2. Duyệt qua mảng PPCT
     for (let p = 1; p < window.cachedPPCTData.length; p++) {
         let pRow = window.cachedPPCTData[p];
         let pKhoi = String(pRow[1] || "").trim();           
-        let pMon = String(pRow[2] || "").trim().toLowerCase(); // VD: "văn", "toán"
-        let pPhanMon = String(pRow[3] || "").trim().toLowerCase(); // VD: "ôn tập_d" hoặc để trống
+        let pMon = String(pRow[2] || "").trim().toLowerCase(); 
+        let pPhanMon = String(pRow[3] || "").trim().toLowerCase(); 
         let pTiet = parseInt(pRow[5]) || parseInt(pRow[4]) || 0;    
 
         let matchKhoi = (pKhoi === "" || pKhoi === khoi || khoi.includes(pKhoi));
-        let matchMon = pMon.includes(cleanMon) || cleanMon.includes(cleanMon);
+        let matchMon = (pMon === cleanMon || pMon.includes(cleanMon) || cleanMon.includes(pMon));
         let matchTiet = (pTiet === parseInt(tietPPCT));
 
         if (matchKhoi && matchMon && matchTiet) {
-            // Trường hợp A: Nếu lớp trên TKB có từ khóa phân hóa (VD: Ôn tập A, BDHSG...)
-            if (keyword && pPhanMon.includes(keyword)) {
-                foundTenBai = String(pRow[6] || "").trim();
-                foundPhanMon = String(pRow[3] || "").trim();
-                break; // Khớp chuẩn xác phân hóa thì lấy luôn và dừng lại
+            // Kiểm tra khớp riêng biệt cho từng loại lớp
+            if (hasBDHSG && (pPhanMon.includes("bdhsg") || pPhanMon.includes("bồi dưỡng"))) {
+                matchedRowSpecific = pRow;
+                break; // Tìm thấy dòng riêng chính xác cho BDHSG thì dừng luôn
+            } 
+            if (hasA && (pPhanMon.includes("ôn tập a") || pPhanMon.includes("ôn tập_a"))) {
+                matchedRowSpecific = pRow;
+                break; // Tìm thấy dòng riêng chính xác cho Ôn tập A thì dừng luôn
+            } 
+            if (hasD && (pPhanMon.includes("ôn tập d") || pPhanMon.includes("ôn tập_d"))) {
+                matchedRowSpecific = pRow;
+                break; // Tìm thấy dòng riêng chính xác cho Ôn tập D thì dừng luôn
             }
-            
-            // Trường hợp B: Nếu dòng PPCT đó để trống phân môn (dùng chung cho mọi lớp)
-            if (!pPhanMon || pPhanMon === "" || pPhanMon === "chung") {
-                fallbackTenBai = String(pRow[6] || "").trim();
+
+            // Nếu không phải dòng riêng, kiểm tra xem có phải dòng chung áp dụng tất cả không
+            if (!pPhanMon || pPhanMon === "" || pPhanMon === "chung" || pPhanMon === "ôn tập") {
+                matchedRowGeneral = pRow;
             }
         }
     }
 
-    // 3. Gán kết quả: Ưu tiên tìm theo phân hóa riêng, nếu không có thì lấy bản dùng chung
-    tenBaiEl.value = foundTenBai || fallbackTenBai;
-    if (phanMonInput && foundPhanMon) {
-        phanMonInput.value = foundPhanMon;
+    // 3. Chốt kết quả: Ưu tiên dùng dòng riêng, nếu không có mới dùng dòng chung cho tất cả
+    let finalRow = matchedRowSpecific || matchedRowGeneral;
+
+    if (finalRow) {
+        tenBaiEl.value = String(finalRow[6] || "").trim();
+        
+        let rawPhanMon = String(finalRow[3] || "").trim();
+        if (phanMonInput) {
+            if (rawPhanMon && rawPhanMon.toLowerCase() !== "chung" && rawPhanMon.toLowerCase() !== "ôn tập") {
+                phanMonInput.value = rawPhanMon;
+            } else {
+                if (hasBDHSG) phanMonInput.value = "BDHSG";
+                else if (hasA) phanMonInput.value = "Ôn tập_A";
+                else if (hasD) phanMonInput.value = "Ôn tập_D";
+                else phanMonInput.value = rawPhanMon;
+            }
+        }
+    } else {
+        tenBaiEl.value = "";
+        if (phanMonInput) {
+            if (hasBDHSG) phanMonInput.value = "BDHSG";
+            else if (hasA) phanMonInput.value = "Ôn tập_A";
+            else if (hasD) phanMonInput.value = "Ôn tập_D";
+            else phanMonInput.value = "";
+        }
     }
 }
 
@@ -2317,30 +2338,29 @@ function thucHienKhoaTuan(loaiKhoa) {
 //Phân quyền
 // Hàm kiểm tra và ẩn các tab quản trị / báo cáo đối với giáo viên thường
 function phanQuyenGiaoDien() {
-    // Lấy thông tin vai trò hoặc mã nhân sự từ lúc đăng nhập (ví dụ lưu trong localStorage)
-    var vaiTroUser = (localStorage.getItem("vaiTroUser") || "").toLowerCase();
-    var maNhanSu = (localStorage.getItem("maNhanSu") || "").toLowerCase();
+    // Đọc thêm từ gói session chung nếu có
+    let sessionData = {};
+    try {
+        sessionData = JSON.parse(localStorage.getItem("kienona_session") || "{}");
+    } catch(e) {}
 
-    // Danh sách các từ khóa được phép xem báo cáo và tải TKB/PPCT
-    var dsQuyenQuanTri = ["bgh", "admin", "kythuat", "hieutruong", "phohieutruong", "it"];
+    var vaiTroUser = (localStorage.getItem("vaiTroUser") || sessionData.vaiTro || sessionData.role || "").toLowerCase();
+    var maNhanSu = (localStorage.getItem("maNhanSu") || sessionData.maNhanSu || "").toLowerCase();
+
+    // Danh sách từ khóa quản trị được phép xem
+    var dsQuyenQuanTri = ["bgh", "admin", "kythuat", "hieutruong", "phohieutruong", "it", "tai"]; // Đã thêm "tai" để test
     
-    // Kiểm tra xem user hiện tại có thuộc nhóm quản trị hay không
     var coQuyen = dsQuyenQuanTri.some(function(q) {
-        return vaiTroUser.includes(q) || maNhanSu.includes(q); // Tùy cách bạn lưu định danh
+        return vaiTroUser.includes(q) || maNhanSu.includes(q);
     });
 
-    // Nếu KHÔNG có quyền thì ẩn các tab/nút chức năng nhạy cảm
     if (!coQuyen) {
-        // Ẩn Tab Báo cáo (Thay 'tab-baocao' bằng ID thật của thẻ HTML tab báo cáo)
         var tabBaoCao = document.getElementById("tab-baocao");
         if (tabBaoCao) tabBaoCao.style.display = "none";
 
-        // Ẩn Nút Tải TKB / PPCT (Thay 'btn-taotkb' bằng ID nút thực tế của bạn)
         var btnTaiTKB = document.getElementById("tab-admin-tkb");
         if (btnTaiTKB) btnTaiTKB.style.display = "none";
 
-
-        // Ẩn tab tải PPCT (thay 'tab-tai-ppct' bằng ID thực tế trên giao diện HTML của bạn)
         var tabTaiPPCT = document.getElementById("tab-ppct");
         if (tabTaiPPCT) tabTaiPPCT.style.display = "none";
     }
