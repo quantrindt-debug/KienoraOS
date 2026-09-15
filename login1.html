@@ -35,12 +35,18 @@
             <div id="error-msg"></div>
         </form>
     </div>
-  <script>
-    // Khởi tạo kết nối Supabase (Đúng chuẩn, không có dấu ngoặc vuông)
-    const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+ <!-- 1. Nhúng thư viện Supabase vào đầu file HTML -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<script>
+    // 2. Khai báo URL chính xác từ dự án của bạn
+    const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
+    
+    // 3. Thay đoạn này bằng khóa Publishable key của bạn (dài, bắt đầu bằng sb_publishable...)
+    const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
+    
+    // 4. Khởi tạo client chuẩn cho trình duyệt
+     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     async function handleLogin(event) {
         event.preventDefault();
         
