@@ -35,44 +35,43 @@
             <div id="error-msg"></div>
         </form>
     </div>
+  <script>
+    // Khởi tạo kết nối Supabase (Đúng chuẩn, không có dấu ngoặc vuông)
+    const SUPABASE_URL = 'https://ywccbfpyiwdpokgllus.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    <script>
-          const SUPABASE_URL = 'https://ywccbfpyiwdpokgllus.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    async function handleLogin(event) {
+        event.preventDefault();
+        
+        const userIn = document.getElementById('username').value.trim();
+        const passIn = document.getElementById('password').value.trim();
+        const errorDiv = document.getElementById('error-msg');
+        
+        errorDiv.textContent = "Đang kiểm tra...";
 
-        async function handleLogin(event) {
-            event.preventDefault();
-            
-            const userIn = document.getElementById('username').value.trim();
-            const passIn = document.getElementById('password').value.trim();
-            const errorDiv = document.getElementById('error-msg');
-            
-            errorDiv.textContent = "Đang kiểm tra...";
+        try {
+            let { data, error } = await supabase
+                .from('user')
+                .select('*')
+                .eq('ma_nhan_su', userIn)
+                .eq('mat_khau', passIn);
 
-            try {
-                // Truy vấn bảng user (hoặc giao_vien tùy tên bảng bạn đặt)
-                let { data, error } = await supabase
-                    .from('user')
-                    .select('*')
-                    .eq('ma_nhan_su', userIn)
-                    .eq('mat_khau', passIn);
+            if (error) throw error;
 
-                if (error) throw error;
-
-                if (data && data.length > 0) {
-                    const user = data[0];
-                    sessionStorage.setItem('currentUser', JSON.stringify(user));
-                    alert("Đăng nhập thành công! Xin chào " + user.ho_va_ten);
-                    window.location.href = 'index.html'; 
-                } else {
-                    errorDiv.textContent = "Sai mã nhân sự hoặc mật khẩu!";
-                }
-            } catch (err) {
-                console.error("Lỗi đăng nhập:", err.message);
-                errorDiv.textContent = "Lỗi kết nối cơ sở dữ liệu!";
+            if (data && data.length > 0) {
+                const user = data[0];
+                sessionStorage.setItem('currentUser', JSON.stringify(user));
+                alert("Đăng nhập thành công! Xin chào " + user.ho_va_ten);
+                window.location.href = 'index.html'; 
+            } else {
+                errorDiv.textContent = "Sai mã nhân sự hoặc mật khẩu!";
             }
+        } catch (err) {
+            console.error("Lỗi đăng nhập:", err.message);
+            errorDiv.textContent = "Lỗi kết nối cơ sở dữ liệu!";
         }
-    </script>
+    }
+</script>
 </body>
 </html>
