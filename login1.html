@@ -3,201 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập Hệ thống - KienoraOS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Đăng nhập - Quản Lý Hồ Sơ Học Sinh</title>
+    <!-- Thư viện CSS cơ bản cho đẹp mắt -->
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+        .login-card h2 { text-align: center; color: #333; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: #666; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .btn-login { width: 100%; padding: 10px; background: #007bff; border: none; color: white; font-size: 16px; border-radius: 4px; cursor: pointer; }
+        .btn-login:hover { background: #0056b3; }
+        #error-msg { color: red; text-align: center; margin-top: 10px; font-size: 14px; }
+    </style>
+    <!-- Thư viện Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 min-h-screen flex items-center justify-center p-6 relative">
-    
-    <!-- BOX ĐĂNG NHẬP -->
-    <div class="max-w-md w-full bg-white/10 backdrop-blur-xl p-8 rounded-3xl shadow-2xl border border-white/20 text-white z-10">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold tracking-wider text-blue-400">KienoraOS</h1>
-            <p class="text-sm text-slate-300 mt-2">Hệ thống Quản lý Trường học Thông minh</p>
-        </div>
+<body>
 
-        <form onsubmit="doLogin(event)" class="space-y-5">
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Tên đăng nhập / Tài khoản</label>
-                <input type="text" id="accInput" required class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="VD: c3ndtnl.nan.hieu">
+    <div class="login-card">
+        <h2>Hệ Thống Quản Lý</h2>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Mã nhân sự / Tài khoản</label>
+                <input type="text" id="username" required placeholder="Nhập mã nhân sự...">
             </div>
-
-            <div>
-                <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Mật khẩu</label>
-                <input type="password" id="passInput" required class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="••••••••">
+            <div class="form-group">
+                <label>Mật khẩu</label>
+                <input type="password" id="password" required placeholder="Nhập mật khẩu...">
             </div>
-
-            <div id="thongBaoLoi" class="hidden text-xs font-medium text-center bg-black/30 p-2.5 rounded-lg border"></div>
-
-            <button type="submit" id="btnLogin" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/30 transition duration-200">
-                <span>XÁC THỰC & ĐĂNG NHẬP</span>
-            </button>
+            <button type="submit" class="btn-login">Đăng Nhập</button>
+            <div id="error-msg"></div>
         </form>
-
-        <div class="mt-8 text-center text-xs text-slate-500">
-            &copy; 2026 KienoraOS Education Management System.
-        </div>
-    </div>
-
-    <!-- MODAL ĐỔI MẬT KHẨU LẦN ĐẦU (Mặc định ẩn) -->
-    <div id="firstTimeModal" class="hidden absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-slate-900 border border-slate-700 p-8 rounded-3xl w-full max-w-sm text-white shadow-2xl">
-            <h2 class="text-xl font-bold text-emerald-400 mb-2 text-center">Đổi Mật Khẩu Lần Đầu</h2>
-            <p class="text-xs text-slate-400 mb-6 text-center">Vì lý do bảo mật, tài khoản này bắt buộc phải thay đổi mật khẩu ở lần đăng nhập đầu tiên.</p>
-            
-            <form onsubmit="doChangePassword(event)" class="space-y-4">
-                <div>
-                    <input type="password" id="newPassInput" required minlength="6" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none transition" placeholder="Nhập mật khẩu mới">
-                </div>
-                <div>
-                    <input type="password" id="confirmPassInput" required minlength="6" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 outline-none transition" placeholder="Xác nhận mật khẩu mới">
-                </div>
-                
-                <div id="msgModal" class="hidden text-xs text-rose-400 font-medium text-center"></div>
-
-                <button type="submit" id="btnChangePass" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-emerald-600/30 transition duration-200 mt-2">
-                    <span>XÁC NHẬN ĐỔI MẬT KHẨU</span>
-                </button>
-                <button type="button" onclick="cancelChangePass()" class="w-full py-2 text-sm text-slate-400 hover:text-white transition">Hủy & Trở lại</button>
-            </form>
-        </div>
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbwooJpIKe3OUg5aYnynu91SL0MgjzeJq1fA4-WjOf8_2lLjPrkl3_iGMzw0g9Sgutv4/exec";
-        let tempAccount = ""; // Biến lưu tạm tài khoản để thực hiện đổi mật khẩu
+        // Cấu hình kết nối Supabase (Thay thế bằng URL và Anon Key của bạn)
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        function doLogin(event) {
-            if (event) event.preventDefault();
-
-            const rawAcc = document.getElementById('accInput').value.trim();
-            const pass = document.getElementById('passInput').value.trim();
-            const btn = document.getElementById('btnLogin');
-
-            if (!rawAcc || !pass) {
-                showMsg("❌ Vui lòng nhập đầy đủ Mã Tài Khoản và Mật Khẩu!", "error");
-                return;
-            }
-
-            const parts = rawAcc.split('.');
-            if (parts.length < 2) {
-                showMsg("❌ Mẫu tài khoản chưa đúng! Phải có dấu chấm (VD: c3ndtnl.nan.hieu)", "error");
-                return;
-            }
-
-            const extractedMaTruong = parts[0].toUpperCase();
-            const extractedMaNS = rawAcc;
-
-            btn.disabled = true;
-            btn.innerHTML = '<span>Đang xác thực...</span>';
-
-            const requestUrl = `${API_URL}?action=login&account=${encodeURIComponent(rawAcc)}&password=${encodeURIComponent(pass)}&maTruong=${encodeURIComponent(extractedMaTruong)}`;
-
-            fetch(requestUrl)
-                .then(response => response.json())
-                .then(res => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>XÁC THỰC & ĐĂNG NHẬP</span>';
-
-                    if (res.status === 'success') {
-                        const sessionData = {
-                            maTruong: extractedMaTruong,
-                            maNhanSu: extractedMaNS, 
-                            token: res.token || (extractedMaTruong + "_" + new Date().getTime()),
-                            ...res.user
-                        };
-
-                        localStorage.setItem('kienona_session', JSON.stringify(sessionData));
-                        localStorage.setItem('kienona_school', JSON.stringify(res.school || { maTruong: extractedMaTruong }));
-
-                        localStorage.setItem('maTruong', extractedMaTruong);
-                        localStorage.setItem('maNhanSu', extractedMaNS);
-
-                        // 👇 THÊM 2 DÒNG NÀY ĐỂ LƯU CHUẨN XÁC VAI TRÒ CHO TRANG CHÍNH ĐỌC
-                        localStorage.setItem('vaiTroUser', res.user.vaiTro || res.user.role || '');
-                        localStorage.setItem('tenNhanSu', res.user.tenNhanSu || res.user.hoTen || '');
-
-                        showMsg("✅ Đăng nhập thành công! Đang chuyển hướng...", "success");
-
-                        
-
-                        setTimeout(() => {
-                            window.location.href = "KienoraOS1.html";
-                        }, 500);
-
-                    } else if (res.status === 'first_time') {
-                        // Kích hoạt Modal đổi mật khẩu lần đầu
-                        tempAccount = rawAcc;
-                        document.getElementById('firstTimeModal').classList.remove('hidden');
-                        showMsg("⚠️ " + (res.message || "Tài khoản đăng nhập lần đầu, bắt buộc đổi mật khẩu!"), "error");
-                    } else {
-                        showMsg("❌ " + (res.message || "Tài khoản hoặc mật khẩu không chính xác!"), "error");
-                    }
-                })
-                .catch(err => {
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>XÁC THỰC & ĐĂNG NHẬP</span>';
-                    showMsg("⚠️ Lỗi kết nối Máy chủ API: " + err.message, "error");
-                });
-        }
-
-        // Hàm xử lý đổi mật khẩu lần đầu gửi lên Apps Script qua phương thức GET
-        function doChangePassword(event) {
-            event.preventDefault();
-            const newPass = document.getElementById('newPassInput').value.trim();
-            const confirmPass = document.getElementById('confirmPassInput').value.trim();
-            const btnChange = document.getElementById('btnChangePass');
-            const msgEl = document.getElementById('msgModal');
-
-            if (newPass !== confirmPass) {
-                msgEl.innerText = "❌ Mật khẩu xác nhận không khớp!";
-                msgEl.classList.remove('hidden');
-                return;
-            }
-
-            btnChange.disabled = true;
-            btnChange.innerHTML = '<span>Đang cập nhật...</span>';
-            msgEl.classList.add('hidden');
-
-            const changeUrl = `${API_URL}?action=changePassword&account=${encodeURIComponent(tempAccount)}&newPassword=${encodeURIComponent(newPass)}`;
-
-            fetch(changeUrl)
-                .then(res => res.json())
-                .then(data => {
-                    btnChange.disabled = false;
-                    btnChange.innerHTML = '<span>XÁC NHẬN ĐỔI MẬT KHẨU</span>';
-
-                    if (data.status === 'success') {
-                        alert("✅ Đổi mật khẩu thành công! Vui lòng đăng nhập lại với mật khẩu mới.");
-                        window.location.reload();
-                    } else {
-                        msgEl.innerText = "❌ " + (data.message || "Không thể đổi mật khẩu lúc này!");
-                        msgEl.classList.remove('hidden');
-                    }
-                })
-                .catch(err => {
-                    btnChange.disabled = false;
-                    btnChange.innerHTML = '<span>XÁC NHẬN ĐỔI MẬT KHẨU</span>';
-                    msgEl.innerText = "⚠️ Lỗi kết nối hệ thống!";
-                    msgEl.classList.remove('hidden');
-                });
-        }
-
-        function cancelChangePass() {
-            document.getElementById('firstTimeModal').classList.add('hidden');
-            document.getElementById('passInput').value = "";
-        }
-
-        function showMsg(message, type) {
-            let thongBao = document.getElementById('thongBaoLoi');
-            if (!thongBao) return;
-            thongBao.classList.remove('hidden', 'text-rose-400', 'text-emerald-400', 'bg-rose-950/50', 'border-rose-800/50', 'bg-emerald-950/50', 'border-emerald-800/50');
+        async function handleLogin(event) {
+            event.preventDefault(); // Ngăn trang web load lại
             
-            if (type === 'error') {
-                thongBao.classList.add('text-rose-400', 'bg-rose-950/50', 'border', 'border-rose-800/50');
-            } else {
-                thongBao.classList.add('text-emerald-400', 'bg-emerald-950/50', 'border', 'border-emerald-800/50');
+            const userIn = document.getElementById('username').value.trim();
+            const passIn = document.getElementById('password').value.trim();
+            const errorDiv = document.getElementById('error-msg');
+            
+            errorDiv.textContent = "Đang kiểm tra...";
+
+            try {
+                // Truy vấn bảng giao_vien trên Supabase
+                let { data, error } = await supabase
+                    .from('giao_vien')
+                    .select('*')
+                    .eq('ma_nhan_su', userIn)
+                    .eq('mat_khau', passIn);
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    // Đăng nhập thành công! Lưu thông tin vào sessionStorage để dùng ở các trang sau
+                    const user = data[0];
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    
+                    alert("Đăng nhập thành công! Xin chào " + user.ho_ten);
+                    
+                    // Chuyển hướng sang trang quản lý chính (ví dụ: index.html)
+                    window.location.href = 'index.html'; 
+                } else {
+                    errorDiv.textContent = "Sai mã nhân sự hoặc mật khẩu!";
+                }
+            } catch (err) {
+                console.error("Lỗi đăng nhập:", err.message);
+                errorDiv.textContent = "Lỗi kết nối cơ sở dữ liệu!";
             }
-            thongBao.innerText = message;
         }
     </script>
 </body>
