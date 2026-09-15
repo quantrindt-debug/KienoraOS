@@ -368,7 +368,7 @@ if (pageType === 'admin-tkb') {
 
     // 5. Tab Kế hoạch dạy học hàng tuần
 // 5. Tab Kế hoạch dạy học hàng tuần
-    // 5. Tab Kế hoạch dạy học hàng tuần (Đã thêm ô chọn Phân môn)
+   // 5. Tab Kế hoạch dạy học hàng tuần (Đã thêm ô chọn Phân môn)
     if (pageType === 'ke-hoach') {
         contentDiv.innerHTML = `
             <div class="space-y-4">
@@ -443,7 +443,9 @@ if (pageType === 'admin-tkb') {
             </div>
         `;
 
-        // Các đoạn code fetch dữ liệu Số TKB, Thông tin nhân sự, Cấu hình tuần giữ nguyên như cũ của bạn...
+        // Gọi ngay hàm tải cache PPCT vào bộ nhớ khi mở tab Kế hoạch
+        loadPPCTDataToCache();
+
         try {
             if (typeof currentSession === 'undefined' || !currentSession.maTruong) return;
 
@@ -1237,21 +1239,25 @@ function initKeHoachWeekDropdown() {
 // 3. Xử lý khi thay đổi tuần hoặc số TKB trên Dropdown
 // 3. Xử lý khi thay đổi tuần hoặc số TKB trên Dropdown
 // 3. Xử lý khi thay đổi tuần hoặc số TKB trên Dropdown
+// Biến toàn cục để chặn xung đột gọi API dồn dập
+let isFetchingKeHoach = false;
+
+// 1. Hàm gọi khi thay đổi tuần hoặc số TKB
 function loadKeHoachByWeek() {
     const selectTuan = document.getElementById('filterKHTuan');
     const selectSoTKB = document.getElementById('selectSoTKBKeHoach');
     const selectPhanMon = document.getElementById('selectPhanMonKeHoach');
     
-    if (!selectTuan) return;
+    if (!selectTuan || !selectSoTKB) return;
     
     const selectedValue = selectTuan.value;
     const selectedOpt = selectTuan.options[selectTuan.selectedIndex];
-    const soTKB = selectSoTKB ? selectSoTKB.value : "";
+    const soTKB = selectSoTKB.value;
     const phanMon = selectPhanMon ? selectPhanMon.value : "";
     const dateRangeSpan = document.getElementById('khDateRange');
     const tbody = document.getElementById('keHoachTableBody');
     
-    // Nếu chưa chọn tuần hoặc chưa chọn số TKB thì dừng lại và báo hướng dẫn
+    // Nếu chưa chọn đủ thông tin thì báo hướng dẫn ngay
     if (!selectedValue || !soTKB) {
         if (dateRangeSpan) dateRangeSpan.textContent = '-- / -- / ---- đến -- / -- / ----';
         if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Vui lòng chọn đầy đủ số TKB và tuần học để hiển thị kế hoạch.</td></tr>`;
@@ -1262,20 +1268,22 @@ function loadKeHoachByWeek() {
     const end = selectedOpt ? selectedOpt.getAttribute('data-end') || '--' : '--';
     if (dateRangeSpan) dateRangeSpan.textContent = `${start} đến ${end}`;
 
-    if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Đang tải dữ liệu kế hoạch cho tuần ${selectedValue}...</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Đang tải dữ liệu kế hoạch cho tuần ${selectedValue} (${soTKB})...</td></tr>`;
 
     const maNhanSu = currentSession?.maNhanSu || "";
     const maTruong = currentSession?.maTruong || "";
 
-    // Gọi API lấy dữ liệu khung kế hoạch (có truyền kèm biến phanMon)
-    fetch(`${API_URL}?action=getKhungKeHoachTuan&tuan=${encodeURIComponent(selectedValue)}&soTKB=${encodeURIComponent(soTKB)}&phanMon=${encodeURIComponent(phanMon)}&maNhanSu=${encodeURIComponent(maNhanSu)}&maTruong=${encodeURIComponent(maTruong)}`)
+    // Xây dựng URL API chuẩn xác
+    const url = `${API_URL}?action=getKhungKeHoachTuan&tuan=${encodeURIComponent(selectedValue)}&soTKB=${encodeURIComponent(soTKB)}&phanMon=${encodeURIComponent(phanMon)}&maNhanSu=${encodeURIComponent(maNhanSu)}&maTruong=${encodeURIComponent(maTruong)}`;
+
+    fetch(url)
         .then(res => res.json())
         .then(res => {
             if (res.success && Array.isArray(res.data) && res.data.length > 0) {
                 window.allKeHoachData = res.data;
                 renderKeHoachTable(res.data);
                 
-                // Nếu server trả về danh sách phân môn có sẵn của giáo viên trong tuần này, ta cập nhật vào dropdown phân môn
+                // Cập nhật dropdown phân môn nếu có
                 if (res.danhSachPhanMon && selectPhanMon) {
                     let currentVal = selectPhanMon.value;
                     selectPhanMon.innerHTML = '<option value="">-- Tất cả phân môn --</option>';
@@ -1288,20 +1296,20 @@ function loadKeHoachByWeek() {
                     });
                 }
             } else {
-                // Nếu chưa có khung kế hoạch lưu sẵn, tiến hành nạp từ TKB
+                // Nếu chưa có khung lưu sẵn, tự động gọi hàm bóc TKB nhúng vào
                 if (typeof loadTKBIntoKeHoach === 'function') {
                     loadTKBIntoKeHoach();
-                } else if (typeof taiKeHoach === 'function') {
-                    taiKeHoach(''); 
+                } else {
+                    if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Không tìm thấy dữ liệu tiết dạy nào cho tuần này.</td></tr>`;
                 }
             }
         })
         .catch(err => {
-            console.error("Lỗi tải khung tuần, chuyển sang load TKB:", err);
+            console.error("Lỗi tải khung tuần:", err);
             if (typeof loadTKBIntoKeHoach === 'function') {
                 loadTKBIntoKeHoach();
-            } else if (typeof taiKeHoach === 'function') {
-                taiKeHoach(''); 
+            } else {
+                if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Lỗi kết nối máy chủ khi tải dữ liệu.</td></tr>`;
             }
         });
 }
@@ -1438,87 +1446,96 @@ function filterKeHoachData() {
 
     renderKeHoachTable(filtered);
 }
-// Tự động xác định phân môn
+// Tự động xác định phân môn dựa vào phần sau dấu "-" của tên lớp
+// Tự động xác định phân môn bằng cách lấy chính xác chuỗi sau dấu "-"// Hàm cập nhật lại phần duyệt mảng cho khớp với object trả về từ action=ppct
 function tuDongXacDinhPhanMonVaDienTenBai(row, khoi, mon, tietPPCT, tenLop) {
     if (!window.cachedPPCTData || window.cachedPPCTData.length === 0) return;
 
     let tenBaiEl = row.querySelector('.input-tenbai') || row.querySelector('.ten-bai');
     let phanMonInput = row.querySelector('.input-phanmon');
+    let tietPPCTInput = row.querySelector('.input-tietppct') || row.querySelector('.tiet-ppct'); // Ô nhập/hiển thị tiết PPCT trên bảng
+    
     if (!tenBaiEl) return;
 
-    let cleanMon = mon.trim().toLowerCase();       
+    let cleanMon = mon.trim().toLowerCase();        
     let cleanLop = tenLop.trim().toLowerCase();   
 
-    // 1. Xác định từ khóa phân hóa từ tên lớp trên TKB
-    let hasBDHSG = cleanLop.includes("bdhsg") || cleanLop.includes("bồi dưỡng");
-    let hasA = cleanLop.includes("ôn tập a") || cleanLop.includes("ôn tập_a");
-    let hasD = cleanLop.includes("ôn tập d") || cleanLop.includes("ôn tập_d");
+    let exactSubPhanMon = "";
+    if (cleanLop.includes("-")) {
+        let parts = cleanLop.split("-");
+        exactSubPhanMon = parts.slice(1).join("-").trim().toLowerCase(); 
+    }
 
     let matchedRowSpecific = null; 
     let matchedRowGeneral = null;  
 
-    // 2. Duyệt qua mảng PPCT
-    for (let p = 1; p < window.cachedPPCTData.length; p++) {
+    // Vì dữ liệu từ action=ppct trả về là mảng các Object (có key: pRow.khoi, pRow.mon, pRow.tiet...)
+    for (let p = 0; p < window.cachedPPCTData.length; p++) {
         let pRow = window.cachedPPCTData[p];
-        let pKhoi = String(pRow[1] || "").trim();           
-        let pMon = String(pRow[2] || "").trim().toLowerCase(); 
-        let pPhanMon = String(pRow[3] || "").trim().toLowerCase(); 
-        let pTiet = parseInt(pRow[5]) || parseInt(pRow[4]) || 0;    
+        let pKhoi = String(pRow.khoi || "").trim();         
+        let pMon = String(pRow.mon || "").trim().toLowerCase(); 
+        let pPhanMon = String(pRow.phanMon || "").trim().toLowerCase(); 
+        let pTiet = parseInt(pRow.tiet) || 0;    
 
         let matchKhoi = (pKhoi === "" || pKhoi === khoi || khoi.includes(pKhoi));
         let matchMon = (pMon === cleanMon || pMon.includes(cleanMon) || cleanMon.includes(pMon));
         let matchTiet = (pTiet === parseInt(tietPPCT));
 
         if (matchKhoi && matchMon && matchTiet) {
-            // Kiểm tra khớp riêng biệt cho từng loại lớp
-            if (hasBDHSG && (pPhanMon.includes("bdhsg") || pPhanMon.includes("bồi dưỡng"))) {
+            if (exactSubPhanMon !== "" && pPhanMon === exactSubPhanMon) {
                 matchedRowSpecific = pRow;
-                break; // Tìm thấy dòng riêng chính xác cho BDHSG thì dừng luôn
-            } 
-            if (hasA && (pPhanMon.includes("ôn tập a") || pPhanMon.includes("ôn tập_a"))) {
-                matchedRowSpecific = pRow;
-                break; // Tìm thấy dòng riêng chính xác cho Ôn tập A thì dừng luôn
-            } 
-            if (hasD && (pPhanMon.includes("ôn tập d") || pPhanMon.includes("ôn tập_d"))) {
-                matchedRowSpecific = pRow;
-                break; // Tìm thấy dòng riêng chính xác cho Ôn tập D thì dừng luôn
+                break; 
             }
-
-            // Nếu không phải dòng riêng, kiểm tra xem có phải dòng chung áp dụng tất cả không
             if (!pPhanMon || pPhanMon === "" || pPhanMon === "chung" || pPhanMon === "ôn tập") {
                 matchedRowGeneral = pRow;
             }
         }
     }
 
-    // 3. Chốt kết quả: Ưu tiên dùng dòng riêng, nếu không có mới dùng dòng chung cho tất cả
     let finalRow = matchedRowSpecific || matchedRowGeneral;
 
     if (finalRow) {
-        tenBaiEl.value = String(finalRow[6] || "").trim();
+        tenBaiEl.value = String(finalRow.tenBai || "").trim();
+        // Nếu có ô hiển thị tiết PPCT, tự động điền số tiết tương ứng từ PPCT vào
+        if (tietPPCTInput && !tietPPCTInput.value) {
+            tietPPCTInput.value = finalRow.stt || finalRow.tiet || tietPPCT;
+        }
         
-        let rawPhanMon = String(finalRow[3] || "").trim();
+        let rawPhanMon = String(finalRow.phanMon || "").trim();
         if (phanMonInput) {
             if (rawPhanMon && rawPhanMon.toLowerCase() !== "chung" && rawPhanMon.toLowerCase() !== "ôn tập") {
                 phanMonInput.value = rawPhanMon;
             } else {
-                if (hasBDHSG) phanMonInput.value = "BDHSG";
-                else if (hasA) phanMonInput.value = "Ôn tập_A";
-                else if (hasD) phanMonInput.value = "Ôn tập_D";
-                else phanMonInput.value = rawPhanMon;
+                if (exactSubPhanMon !== "") {
+                    phanMonInput.value = exactSubPhanMon.toUpperCase();
+                } else {
+                    phanMonInput.value = rawPhanMon;
+                }
             }
         }
     } else {
         tenBaiEl.value = "";
-        if (phanMonInput) {
-            if (hasBDHSG) phanMonInput.value = "BDHSG";
-            else if (hasA) phanMonInput.value = "Ôn tập_A";
-            else if (hasD) phanMonInput.value = "Ôn tập_D";
-            else phanMonInput.value = "";
-        }
     }
 }
+//Load ppct
+let cachedPPCTData = [];
 
+function loadPPCTDataToCache() {
+    if (cachedPPCTData.length > 0) return; // Nếu đã tải rồi thì bỏ qua
+
+    // Sửa 'getPPCT' thành 'ppct' cho khớp với Backend của bạn
+    fetch(`${API_URL}?action=ppct`) 
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && Array.isArray(res.data)) {
+                cachedPPCTData = res.data;
+                console.log("Đã cache thành công dữ liệu PPCT:", cachedPPCTData.length, "dòng.");
+            } else {
+                console.warn("Không thể tải PPCT:", res.message);
+            }
+        })
+        .catch(err => console.error("Lỗi tải cache PPCT:", err));
+}
 
 function onTietPPCTChange(input) {
     const tr = input.closest('tr');
@@ -1530,7 +1547,16 @@ function onTietPPCTChange(input) {
     const thu = tr.children[0]?.innerText.trim() || "";
     const tietPPCT = input.value.trim();
 
-    // Tìm đúng dòng tương ứng trong mảng gốc window.allKeHoachData dựa vào Lớp, Môn, Thứ và Tiết TKB
+    // 1. Tự động bóc tách khối lớp từ tên lớp (ví dụ "12A6..." -> khối "12")
+    let khoiMatch = lop.match(/\d+/);
+    let khoi = khoiMatch ? khoiMatch[0] : '';
+
+    // 2. Gọi trực tiếp hàm quét cục bộ thông minh đã có sẵn để điền tên bài và phân môn chuẩn xác tuyệt đối
+    if (khoi && mon && tietPPCT) {
+        tuDongXacDinhPhanMonVaDienTenBai(tr, khoi, mon, tietPPCT, lop);
+    }
+
+    // 3. Đồng bộ hóa dữ liệu đã chọn vào mảng bộ nhớ tạm window.allKeHoachData
     if (window.allKeHoachData) {
         const foundItem = window.allKeHoachData.find(item => 
             String(item.lop).trim() === lop && 
@@ -1538,38 +1564,14 @@ function onTietPPCTChange(input) {
             String(item.thu).trim() === thu && 
             String(item.tiet).trim() === tietTKB
         );
+        
         if (foundItem) {
             foundItem.tietPPCT = tietPPCT;
+            // Cập nhật lại giá trị mới nhất từ giao diện vào mảng lưu trữ
+            foundItem.phanMon = tr.querySelector('.input-phanmon')?.value.trim() || "";
+            foundItem.tenBai = tr.querySelector('.input-tenbai')?.value.trim() || "";
         }
     }
-
-    if (!tietPPCT || !lop || !mon) return;
-
-    fetch(`${API_URL}?action=getTenBai&lop=${encodeURIComponent(lop)}&mon=${encodeURIComponent(mon)}&tietPPCT=${encodeURIComponent(tietPPCT)}`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const inputPhanMon = tr.querySelector('.input-phanmon');
-                const inputTenBai = tr.querySelector('.input-tenbai');
-                
-                if (inputPhanMon) inputPhanMon.value = data.phanMon || '';
-                if (inputTenBai) inputTenBai.value = data.tenBai || '';
-
-                if (window.allKeHoachData) {
-                    const foundItem = window.allKeHoachData.find(item => 
-                        String(item.lop).trim() === lop && 
-                        String(item.mon).trim() === mon && 
-                        String(item.thu).trim() === thu && 
-                        String(item.tiet).trim() === tietTKB
-                    );
-                    if (foundItem) {
-                        foundItem.phanMon = data.phanMon || '';
-                        foundItem.tenBai = data.tenBai || '';
-                    }
-                }
-            }
-        })
-        .catch(err => console.error("Lỗi cập nhật tên bài:", err));
 }
 
 function collectTableDataForSave() {
@@ -1615,7 +1617,8 @@ function collectTableDataForSave() {
     return dataToSave;
 }
 // Hàm gọi API lấy dữ liệu khung kế hoạch tuần (Hỗ trợ truyền chế độ tùy biến)
-function taiKeHoach(cheDo = '') {
+// Hàm gọi API lấy dữ liệu khung kế hoạch tuần (Đã tích hợp nạp cache PPCT an toàn)
+async function taiKeHoach(cheDo = '') {
     const soTKB = document.getElementById('selectSoTKBKeHoach').value;
     const tuan = document.getElementById('filterKHTuan').value;
     const selectPhanMon = document.getElementById('selectPhanMonKeHoach');
@@ -1631,40 +1634,69 @@ function taiKeHoach(cheDo = '') {
 
     const tbody = document.getElementById('keHoachTableBody');
     if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Đang tải dữ liệu...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Đang chuẩn bị dữ liệu PPCT và kế hoạch...</td></tr>`;
     }
 
-    // Đã bổ sung &phanMon=... vào đường dẫn URL gọi API
+    // 1. QUAN TRỌNG: Đảm bảo dữ liệu PPCT đã được tải và lưu vào cache trước khi tiến hành render
+    if (!window.cachedPPCTData || window.cachedPPCTData.length === 0) {
+        console.log("Đang tải ngầm dữ liệu PPCT...");
+        await loadPPCTDataToCacheAsync();
+    }
+
+    // 2. Sau khi đã chắc chắn có dữ liệu PPCT, tiến hành gọi API lấy khung kế hoạch tuần
     const url = `${API_URL}?action=getKhungKeHoachTuan&tuan=${encodeURIComponent(tuan)}&maNhanSu=${encodeURIComponent(maNhanSu)}&maTruong=${encodeURIComponent(maTruong)}&soTKB=${encodeURIComponent(soTKB)}&phanMon=${encodeURIComponent(phanMon)}&cheDo=${encodeURIComponent(cheDo)}`;
 
-    fetch(url)
-        .then(res => res.json())
-        .then(response => {
-            if (response.success) {
-                renderKeHoachTable(response.data);
+    try {
+        const res = await fetch(url);
+        const response = await res.json();
 
-                // Tự động nạp danh sách Phân môn vào dropdown nếu server trả về danh sách này
-                if (response.danhSachPhanMon && selectPhanMon) {
-                    let currentVal = selectPhanMon.value;
-                    selectPhanMon.innerHTML = `<option value="">-- Tất cả phân môn --</option>`;
-                    response.danhSachPhanMon.forEach(pm => {
-                        let opt = document.createElement('option');
-                        opt.value = pm;
-                        opt.textContent = pm;
-                        if (pm === currentVal) opt.selected = true;
-                        selectPhanMon.appendChild(opt);
-                    });
-                }
-            } else {
-                alert("Lỗi: " + (response.message || "Không thể tải dữ liệu"));
-                if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
+        if (response.success) {
+            // Nếu việc khớp dữ liệu PPCT diễn ra bên trong hàm renderKeHoachTable, 
+            // nó sẽ có sẵn window.cachedPPCTData để tra cứu ngay lập tức.
+            renderKeHoachTable(response.data);
+
+            // Tự động nạp danh sách Phân môn vào dropdown nếu server trả về danh sách này
+            if (response.danhSachPhanMon && selectPhanMon) {
+                let currentVal = selectPhanMon.value;
+                selectPhanMon.innerHTML = `<option value="">-- Tất cả phân môn --</option>`;
+                response.danhSachPhanMon.forEach(pm => {
+                    let opt = document.createElement('option');
+                    opt.value = pm;
+                    opt.textContent = pm;
+                    if (pm === currentVal) opt.selected = true;
+                    selectPhanMon.appendChild(opt);
+                });
             }
-        })
-        .catch(err => {
-            console.error("Lỗi kết nối:", err);
-            alert("Lỗi kết nối đến máy chủ!");
-            if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Lỗi tải dữ liệu.</td></tr>`;
-        });
+        } else {
+            alert("Lỗi: " + (response.message || "Không thể tải dữ liệu"));
+            if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
+        }
+    } catch (err) {
+        console.error("Lỗi kết nối:", err);
+        alert("Lỗi kết nối đến máy chủ!");
+        if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Lỗi tải dữ liệu.</td></tr>`;
+    }
+}
+
+// Hàm hỗ trợ trả về Promise để dùng với await cho việc cache PPCT
+function loadPPCTDataToCacheAsync() {
+    return new Promise((resolve) => {
+        fetch(`${API_URL}?action=ppct`)
+            .then(res => res.json())
+            .then(res => {
+                if (res.success && Array.isArray(res.data)) {
+                    window.cachedPPCTData = res.data;
+                    console.log("Đã cache thành công dữ liệu PPCT:", window.cachedPPCTData.length, "dòng.");
+                } else {
+                    console.warn("Không lấy được dữ liệu PPCT:", res.message);
+                }
+                resolve();
+            })
+            .catch(err => {
+                console.error("Lỗi tải cache PPCT:", err);
+                resolve();
+            });
+    });
 }
 
 // Lưu kế hoạch tuần (Đã vá lỗi an toàn tránh sập khi rows undefined)
