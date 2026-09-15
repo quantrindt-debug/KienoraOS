@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - Quản Lý Hồ Sơ Học Sinh</title>
-    <!-- Thư viện CSS cơ bản cho đẹp mắt -->
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
@@ -25,7 +24,7 @@
         <h2>Hệ Thống Quản Lý</h2>
         <form id="loginForm" onsubmit="handleLogin(event)">
             <div class="form-group">
-                <label>Mã nhân sự / Tài khoản</label>
+                <label>Mã nhân sự</label>
                 <input type="text" id="username" required placeholder="Nhập mã nhân sự...">
             </div>
             <div class="form-group">
@@ -38,13 +37,13 @@
     </div>
 
     <script>
-        // Cấu hình kết nối Supabase (Thay thế bằng URL và Anon Key của bạn)
-        const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
+        // Khởi tạo kết nối Supabase (Chỉ khai báo duy nhất 1 lần ở đây)
+        const SUPABASE_URL = 'https://ywccbfpyiwdpokgllus.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function handleLogin(event) {
-            event.preventDefault(); // Ngăn trang web load lại
+            event.preventDefault();
             
             const userIn = document.getElementById('username').value.trim();
             const passIn = document.getElementById('password').value.trim();
@@ -53,9 +52,9 @@
             errorDiv.textContent = "Đang kiểm tra...";
 
             try {
-                // Truy vấn bảng giao_vien trên Supabase
+                // Truy vấn bảng user (hoặc giao_vien tùy tên bảng bạn đặt)
                 let { data, error } = await supabase
-                    .from('giao_vien')
+                    .from('user')
                     .select('*')
                     .eq('ma_nhan_su', userIn)
                     .eq('mat_khau', passIn);
@@ -63,14 +62,10 @@
                 if (error) throw error;
 
                 if (data && data.length > 0) {
-                    // Đăng nhập thành công! Lưu thông tin vào sessionStorage để dùng ở các trang sau
                     const user = data[0];
                     sessionStorage.setItem('currentUser', JSON.stringify(user));
-                    
-                    alert("Đăng nhập thành công! Xin chào " + user.ho_ten);
-                    
-                    // Chuyển hướng sang trang quản lý chính (ví dụ: index.html)
-                    window.location.href = 'KienoraOS1.html'; 
+                    alert("Đăng nhập thành công! Xin chào " + user.ho_va_ten);
+                    window.location.href = 'index.html'; 
                 } else {
                     errorDiv.textContent = "Sai mã nhân sự hoặc mật khẩu!";
                 }
