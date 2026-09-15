@@ -39,7 +39,7 @@
     <script>
         // Sử dụng cấu hình chuẩn từ dự án của bạn
         const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_YShqad87nsgJJT1TX5rbw_K5z048Jr';
+        const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
         
         // Đặt tên biến là 'db' để tránh hoàn toàn việc bị trùng lặp tên với thư viện gốc
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -67,7 +67,7 @@
                     const user = data[0];
                     sessionStorage.setItem('currentUser', JSON.stringify(user));
                     alert("Đăng nhập thành công! Xin chào " + user.ho_va_ten);
-                    window.location.href = 'KienronaOS1.html'; 
+                    window.location.href = 'index.html'; 
                 } else {
                     errorDiv.textContent = "Sai mã nhân sự hoặc mật khẩu!";
                 }
