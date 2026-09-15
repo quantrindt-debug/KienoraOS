@@ -21,7 +21,7 @@
 <body>
 
     <div class="login-card">
-        <h2>Hệ Thống Quản Lý</h2>
+        <h2>Đăng Nhập Hệ Thống</h2>
         <form id="loginForm" onsubmit="handleLogin(event)">
             <div class="form-group">
                 <label>Mã nhân sự</label>
@@ -35,49 +35,47 @@
             <div id="error-msg"></div>
         </form>
     </div>
- <!-- 1. Nhúng thư viện Supabase vào đầu file HTML -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script>
-    // 2. Khai báo URL chính xác từ dự án của bạn
-    const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
-    
-    // 3. Thay đoạn này bằng khóa Publishable key của bạn (dài, bắt đầu bằng sb_publishable...)
-    const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
-    
-    // 4. Khởi tạo client chuẩn cho trình duyệt
-     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    async function handleLogin(event) {
-        event.preventDefault();
+    <script>
+        // Sử dụng cấu hình chuẩn từ dự án của bạn
+        const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_YShqad87nsgJJT1TX5rbw_K5z048Jr';
         
-        const userIn = document.getElementById('username').value.trim();
-        const passIn = document.getElementById('password').value.trim();
-        const errorDiv = document.getElementById('error-msg');
-        
-        errorDiv.textContent = "Đang kiểm tra...";
+        // Đặt tên biến là 'db' để tránh hoàn toàn việc bị trùng lặp tên với thư viện gốc
+        const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        try {
-            let { data, error } = await supabase
-                .from('user')
-                .select('*')
-                .eq('ma_nhan_su', userIn)
-                .eq('mat_khau', passIn);
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const userIn = document.getElementById('username').value.trim();
+            const passIn = document.getElementById('password').value.trim();
+            const errorDiv = document.getElementById('error-msg');
+            
+            errorDiv.textContent = "Đang kiểm tra kết nối...";
 
-            if (error) throw error;
+            try {
+                // Truy vấn vào bảng chứa dữ liệu người dùng
+                let { data, error } = await db
+                    .from('user')
+                    .select('*')
+                    .eq('ma_nhan_su', userIn)
+                    .eq('mat_khau', passIn);
 
-            if (data && data.length > 0) {
-                const user = data[0];
-                sessionStorage.setItem('currentUser', JSON.stringify(user));
-                alert("Đăng nhập thành công! Xin chào " + user.ho_va_ten);
-                window.location.href = 'index.html'; 
-            } else {
-                errorDiv.textContent = "Sai mã nhân sự hoặc mật khẩu!";
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    const user = data[0];
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    alert("Đăng nhập thành công! Xin chào " + user.ho_va_ten);
+                    window.location.href = 'index.html'; 
+                } else {
+                    errorDiv.textContent = "Sai mã nhân sự hoặc mật khẩu!";
+                }
+            } catch (err) {
+                console.error("Lỗi đăng nhập:", err.message);
+                errorDiv.textContent = "Lỗi kết nối CSDL: " + err.message;
             }
-        } catch (err) {
-            console.error("Lỗi đăng nhập:", err.message);
-            errorDiv.textContent = "Lỗi kết nối cơ sở dữ liệu!";
         }
-    }
-</script>
+    </script>
 </body>
 </html>
