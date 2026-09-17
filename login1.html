@@ -36,7 +36,7 @@
         </form>
     </div>
 
-    <script>
+   <script>
         // Sử dụng cấu hình chuẩn từ dự án của bạn
         const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
@@ -56,7 +56,7 @@
             try {
                 // Truy vấn vào bảng chứa dữ liệu người dùng
                 let { data, error } = await db
-                    .from('user')
+                    .from('users')
                     .select('*')
                     .eq('ma_nhan_su', userIn)
                     .eq('mat_khau', passIn);
@@ -64,10 +64,33 @@
                 if (error) throw error;
 
                 if (data && data.length > 0) {
-                    const user = data[0];
-                    sessionStorage.setItem('currentUser', JSON.stringify(user));
-                    alert("Đăng nhập thành công! Xin chào " + user.ho_va_ten);
-                    window.location.href = 'index.html'; 
+                    const users = data[0];
+                    
+                    // 1. Lưu vào sessionStorage (để các trang con gọi nếu cần)
+                    sessionStorage.setItem('currentUser', JSON.stringify(users));
+                    
+                    // 2. Đóng gói dữ liệu chuẩn để trang KienoraOS nhận diện
+                    const sessionData = {
+                        maNhanSu: users.ma_nhan_su,
+                        fullName: users.ho_va_ten,
+                        vaiTro: users.quyen || 'Giáo viên' // Lấy cột 'quyen' làm vai trò
+                    };
+
+                    const schoolData = {
+                        maTruong: users.ma_truong || "THPT_NGUYENDUYTRINH", // Lấy từ cột ma_truong hoặc mặc định
+                        tenTruong: users.ten_truong || "Trường THPT Nguyễn Duy Trinh", // Tên trường
+                        dbUrl: users.db_url || ""
+                    };
+
+                    // Lưu vào localStorage theo đúng cơ chế bảo mật của trang OS
+                    localStorage.setItem('kienona_session', JSON.stringify(sessionData));
+                    localStorage.setItem('kienona_school', JSON.stringify(schoolData));
+
+                    // Thông báo đăng nhập thành công kèm vai trò
+                    alert("Đăng nhập thành công!\nXin chào: " + users.ho_va_ten + "\nVai trò: " + (users.quyen || 'Giáo viên'));
+                    
+                    // Chuyển hướng sang trang OS của bạn
+                    window.location.href = 'KienoraOS.html'; 
                 } else {
                     errorDiv.textContent = "Sai mã nhân sự hoặc mật khẩu!";
                 }
