@@ -48,10 +48,51 @@
         <!-- KHUNG CHỨA NỘI DUNG CHÍNH -->
         <main class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 md:p-6 min-h-[550px]">
             
-            <!-- Khu Vực Hiển Thị Bảng Dữ Liệu -->
+            <!-- Widget Thống kê nhanh ngay màn hình chính -->
+                <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="bg-blue-50 border border-blue-100 p-3 rounded-xl flex items-center justify-between">
+                        <div>
+                            <div class="text-[11px] font-semibold text-blue-600 uppercase">Kế Hoạch</div>
+                            <div id="mainStatKH" class="text-xl font-bold text-blue-900">0</div>
+                        </div>
+                        <div class="text-blue-400 text-lg">📅</div>
+                    </div>
+                    <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-xl flex items-center justify-between">
+                        <div>
+                            <div class="text-[11px] font-semibold text-emerald-600 uppercase">Đã Ký / Dạy</div>
+                            <div id="mainStatDaKy" class="text-xl font-bold text-emerald-900">0</div>
+                        </div>
+                        <div class="text-emerald-400 text-lg">✅</div>
+                    </div>
+                    <div class="bg-indigo-50 border border-indigo-100 p-3 rounded-xl flex items-center justify-between">
+                        <div>
+                            <div class="text-[11px] font-semibold text-indigo-600 uppercase">Tiến Độ</div>
+                            <div id="mainStatPercent" class="text-xl font-bold text-indigo-900">0%</div>
+                        </div>
+                        <div class="text-indigo-400 text-lg">📊</div>
+                    </div>
+                </div>
+                <!-- Khu Vực Hiển Thị Bảng Dữ Liệu -->
             <div id="tabContent" class="overflow-x-auto">
-                <!-- Nội dung tab sẽ được render động -->
+                <!-- Bảng chi tiết theo tuần -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-700">
+                                    <th class="p-2.5 border">Tuần</th>
+                                    <th class="p-2.5 border text-center">Kế Hoạch</th>
+                                    <th class="p-2.5 border text-center">Đã Thực Hiện</th>
+                                    <th class="p-2.5 border text-center">Tiến Độ</th>
+                                    <th class="p-2.5 border text-center">Trạng Thái Khóa (Cột H)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quanTriTableBody">
+                                <!-- Render tự động -->
+                            </tbody>
+                        </table>
+                    </div>
             </div>
+
         </main>
     </div>
 
@@ -159,7 +200,8 @@
         document.addEventListener("DOMContentLoaded", function() {
             taiVaiTro();         
             // Mặc định load tab Đăng TKB ngay khi vào trang
-            switchTab('admin-tkb');
+            // 👉 Tự động cập nhật widget thống kê ngay khi tải xong dữ liệu
+            capNhatWidgetThongKe(globalBaoCaoData);
         });
 // Hàm kiểm tra và ẩn các tab quản trị nếu user là Giáo viên
 function checkUserPermission() {
@@ -193,7 +235,34 @@ function checkUserPermission() {
 // Gọi hàm này ngay sau khi load xong thông tin session / đăng nhập
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(checkUserPermission, 500); // Đợi 0.5s để session load ổn định rồi check
+
 });
+//Tự động hiện thống kê trên màn hình chính
+function capNhatWidgetThongKe(data) {
+    const totalKH = data.length;
+    let daKyCount = 0;
+
+    data.forEach(item => {
+        // Kiểm tra đúng cột trang_thai_ky trong CSDL của bạn
+        const rawTrangThai = item.trang_thai_ky || '';
+        const isDaKy = String(rawTrangThai).trim().toLowerCase().includes('đã ký');
+        if (isDaKy) {
+            daKyCount++;
+        }
+    });
+
+    // Tính phần trăm tiến độ
+    const percent = totalKH > 0 ? Math.round((daKyCount / totalKH) * 100) : 0;
+
+    // Gắn giá trị vào các thẻ ID trên giao diện của bạn
+    const elKH = document.getElementById('mainStatKH');
+    const elDaKy = document.getElementById('mainStatDaKy');
+    const elPercent = document.getElementById('mainStatPercent');
+
+    if (elKH) elKH.innerText = totalKH;
+    if (elDaKy) elDaKy.innerText = daKyCount;
+    if (elPercent) elPercent.innerText = percent + '%';
+}
         // ============================================================
         // ĐIỀU HƯỚNG TAB
         // ============================================================
@@ -2029,7 +2098,7 @@ function renderSoDauBaiTable(data) {
                 <div class="text-slate-700 font-medium">${item.ten_bai || item.tenBai || ''}</div>
             </td>
             <td class="p-3 text-center">
-                <input type="number" min="0" max="50" class="input-siso-vang w-16 text-center border border-slate-200 rounded p-1 text-xs" value="${(item.si_so_vang !== undefined && item.si_so_vang !== null && item.si_so_vang !== '') ? item.si_so_vang : 0}">
+                <input type="number" min="0" max="50" class="input-siso-vang w-16 text-center border border-slate-200 rounded p-1 text-xs" value="${item.si_so_vang !== undefined ? item.si_so_vang : (item.siSoVang || 0)}">
             </td>
             <td class="p-3">
                 <input type="text" class="input-ten-hvang w-full border border-slate-200 rounded p-1 text-xs" placeholder="HS vắng..." value="${item.ten_hs_vang || item.tenHSVang || ""}">
@@ -2135,95 +2204,157 @@ async function saveSoDauBai() {
 
 //=====================Thống kê và khoá sổ đầu bài
 
-function loadQuanTriThongKe() {
-    // 1. Kiểm tra mã nhân sự
-    const inputGv = document.getElementById('inputGiaoVien');
-    const maNhanSu = inputGv ? inputGv.getAttribute('data-manhansu') : (typeof currentSession !== 'undefined' ? currentSession.maNhanSu : '');
-    console.log("👉 1. Mã nhân sự đang lấy được:", maNhanSu);
-    
-    // 2. Kiểm tra tuần
-    const tuanSelect = document.getElementById('filterSDBTuan');
-    const tuan = tuanSelect ? tuanSelect.value : '';  
-    console.log("👉 2. Tuần đang chọn:", tuan);
-    
-    // 3. Kiểm tra đường dẫn API URL
-    const finalUrl = `${API_URL}?action=getQuanTriVaThongKe&maNhanSu=${encodeURIComponent(maNhanSu)}&tuan=${encodeURIComponent(tuan)}`;
-    console.log("👉 3. URL gọi lên Server:", finalUrl);
-
-    fetch(finalUrl)
-    .then(res => res.json())
-    .then(res => {
-        console.log("👉 4. Dữ liệu JSON Server trả về:", res);
+// ==========================================
+// 1. QUẢN TRỊ VÀ THỐNG KÊ (loadQuanTriThongKe)
+// ==========================================
+async function loadQuanTriThongKe() {
+    try {
+        const inputGv = document.getElementById('inputGiaoVien');
+        const maNhanSu = inputGv ? inputGv.getAttribute('data-manhansu') : (typeof currentSession !== 'undefined' ? currentSession.maNhanSu : '');
+        console.log("👉 1. Mã nhân sự đang lấy được:", maNhanSu);
         
-        if(res && res.success) {
-            const statKH = document.getElementById('mainStatKH');
-            const statDaKy = document.getElementById('mainStatDaKy');
-            const statPercent = document.getElementById('mainStatPercent');
-            
-            if (statKH) statKH.innerText = res.tongKeHoach || 0;
-            if (statDaKy) statDaKy.innerText = res.tongDaKy || 0;
-            
-            if (statPercent) {
-                const percent = res.tongKeHoach > 0 ? Math.round((res.tongDaKy / res.tongKeHoach) * 100) : 0;
-                statPercent.innerText = percent + "%";
-            }
-            
-            const tbody = document.getElementById('quanTriTableBody');
-            if (!tbody) return;
-            
-            tbody.innerHTML = "";
-            
-            if(!res.chiTietTuan || res.chiTietTuan.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Không có dữ liệu cho phạm vi này.</td></tr>`;
-                return;
-            }
-            
-            res.chiTietTuan.forEach(item => {
-                const percent = item.keHoach > 0 ? Math.round((item.daDay / item.keHoach) * 100) : 0;
-                tbody.innerHTML += `
-                    <tr class="hover:bg-slate-50">
-                        <td class="p-2.5 border font-semibold text-slate-800">${item.tuan}</td>
-                        <td class="p-2.5 border text-center">${item.keHoach}</td>
-                        <td class="p-2.5 border text-center text-emerald-600 font-bold">${item.daDay}</td>
-                        <td class="p-2.5 border text-center">
-                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${percent >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${percent}%</span>
-                        </td>
-                        <td class="p-2.5 border text-center">
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">
-                                ${item.isLocked ? '🔒 Đã khóa' : '🔓 Đang mở'}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            });
-        } else {
-            console.warn("⚠️ Server báo lỗi hoặc success không phải true:", res);
-        }
-    })
-    .catch(err => console.error("❌ Lỗi kết nối fetch:", err));
-}
-//Báo cáo
-let globalBaoCaoData = [];
+        const tuanSelect = document.getElementById('filterSDBTuan');
+        const tuan = tuanSelect ? tuanSelect.value : '';  
+        console.log("👉 2. Tuần đang chọn:", tuan);
 
-function taiBaoCaoChiTiet() {
-    fetch(`${API_URL}?action=getBaoCaoChiTiet`)
-    .then(res => res.json())
-    .then(res => {
-        if(res.success) {
-            globalBaoCaoData = res.data;
-            
-            // Tự động nạp dữ liệu vào các bộ lọc Dropdown
-            populateDropdowns(globalBaoCaoData);
-            
-            renderBaoCaoTable(globalBaoCaoData);
+        // Truy vấn trực tiếp từ bảng Supabase (Giả sử bảng tên là 'so_dau_bai' hoặc 'tiet_day')
+        let query = _supabase.from('so_dau_bai').select('*');
+        
+        if (maNhanSu) {
+            query = query.eq('ma_nhan_su', maNhanSu); // Hoặc cột tương ứng trong bảng của bạn
         }
-    })
-    .catch(err => console.error("Lỗi tải báo cáo chi tiết:", err));
+        if (tuan) {
+            query = query.eq('tuan', tuan);
+        }
+
+        let { data, error } = await query;
+        if (error) throw error;
+
+        const danhSachTiet = data || [];
+        
+        // Tính toán thống kê
+        let tongKeHoach = danhSachTiet.length;
+        let tongDaKy = danhSachTiet.filter(item => item.da_ky === true).length;
+
+        const statKH = document.getElementById('mainStatKH');
+        const statDaKy = document.getElementById('mainStatDaKy');
+        const statPercent = document.getElementById('mainStatPercent');
+        
+        if (statKH) statKH.innerText = tongKeHoach;
+        if (statDaKy) statDaKy.innerText = tongDaKy;
+        
+        if (statPercent) {
+            const percent = tongKeHoach > 0 ? Math.round((tongDaKy / tongKeHoach) * 100) : 0;
+            statPercent.innerText = percent + "%";
+        }
+        
+        const tbody = document.getElementById('quanTriTableBody');
+        if (!tbody) return;
+        
+        tbody.innerHTML = "";
+        
+        if(danhSachTiet.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Không có dữ liệu cho phạm vi này.</td></tr>`;
+            return;
+        }
+
+        // Gom nhóm theo tuần để hiển thị chi tiết bảng
+        const groupTuanMap = {};
+        danhSachTiet.forEach(item => {
+            const t = item.tuan || "Khác";
+            if (!groupTuanMap[t]) {
+                groupTuanMap[t] = { tuan: t, keHoach: 0, daDay: 0, isLocked: item.is_locked || false };
+            }
+            groupTuanMap[t].keHoach += 1;
+            if (item.da_ky) groupTuanMap[t].daDay += 1;
+        });
+
+        Object.values(groupTuanMap).forEach(item => {
+            const percent = item.keHoach > 0 ? Math.round((item.daDay / item.keHoach) * 100) : 0;
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-2.5 border font-semibold text-slate-800">${item.tuan}</td>
+                    <td class="p-2.5 border text-center">${item.keHoach}</td>
+                    <td class="p-2.5 border text-center text-emerald-600 font-bold">${item.daDay}</td>
+                    <td class="p-2.5 border text-center">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${percent >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${percent}%</span>
+                    </td>
+                    <td class="p-2.5 border text-center">
+                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">
+                            ${item.isLocked ? '🔒 Đã khóa' : '🔓 Đang mở'}
+                        </span>
+                    </td>
+                </tr>
+            `;
+        });
+
+    } catch (err) {
+        console.error("❌ Lỗi loadQuanTriThongKe từ Supabase:", err);
+    }
 }
+
+
+// ==========================================
+// 2. BÁO CÁO VÀ THỐNG KÊ CHI TIẾT
+// ==========================================
+let globalBaoCaoData = [];
+let currentFilteredData = [];
+let usersMap = {}; // Từ điển lưu thông tin giáo viên theo ma_nhan_su
+
+async function taiBaoCaoChiTiet() {
+    try {
+        const [resKeHoach, resUsers] = await Promise.all([
+            db.from('ke_hoach_tuan').select('*'),
+            db.from('users').select('*')
+        ]);
+
+        if (resKeHoach.error) throw resKeHoach.error;
+        if (resUsers.error) throw resUsers.error;
+
+        // Xây dựng bản đồ tra cứu giáo viên từ ma_nhan_su
+        usersMap = {};
+        (resUsers.data || []).forEach(u => {
+            const ma = String(u.ma_nhan_su || '').trim();
+            if (ma) {
+                usersMap[ma] = {
+                    hoVaTen: u.ho_va_ten || ''
+                };
+            }
+        });
+
+        // Ánh xạ dữ liệu khớp chuẩn với cấu trúc thực tế của bạn
+        globalBaoCaoData = (resKeHoach.data || []).map(item => {
+            const maNS = String(item.ma_nhan_su || '').trim();
+            const userInfo = usersMap[maNS] || { hoVaTen: maNS };
+
+            // Quét tất cả các biến thể tên cột trạng thái trong database của bạn
+            const trangThaiVal = item.trang_thai_ky || item.trang_thai || item.trang_thai_sdb || 'Chưa ký';
+
+            return {
+                ...item,
+                giao_vien: userInfo.hoVaTen || maNS,
+                mon_hoc: item.mon_hoc || item.ten_mon || item.mon || '',
+                phan_mon: item.phan_mon || item.phanMon || '',
+                noi_dung_ke_hoach: item.ten_bai || '', 
+                // Ép chuẩn giá trị trạng thái để hiển thị đúng nhãn giao diện
+                trang_thai_sdb: trangThaiVal,
+                thoi_gian_ky: item.thoi_gian_ky || ''
+            };
+        });
+
+        populateDropdowns(globalBaoCaoData);
+        filterBaoCaoTable(); 
+
+    } catch (err) {
+        console.error("❌ Lỗi tải báo cáo chi tiết từ Supabase:", err);
+    }
+}
+
+
 
 // Hàm tự động nạp danh sách vào các dropdown bộ lọc
 function populateDropdowns(data) {
-    const tuanSet = new Set(); // Set cho Tuần
+    const tuanSet = new Set();
     const gvSet = new Set();
     const monSet = new Set();
     const phanMonSet = new Set();
@@ -2231,18 +2362,17 @@ function populateDropdowns(data) {
     
     data.forEach(item => {
         if(item.tuan) tuanSet.add(item.tuan);
-        if(item.giaoVien) gvSet.add(item.giaoVien);
-        if(item.monHoc) monSet.add(item.monHoc);
-        if(item.phanMon) phanMonSet.add(item.phanMon);
+        if(item.giao_vien || item.giaoVien) gvSet.add(item.giao_vien || item.giaoVien);
+        if(item.mon_hoc || item.monHoc) monSet.add(item.mon_hoc || item.monHoc);
+        if(item.phan_mon || item.phanMon) phanMonSet.add(item.phan_mon || item.phanMon);
         if(item.lop) lopSet.add(item.lop);
     });
     
-    // Nạp dropdown Tuần (Sắp xếp theo thứ tự số nếu có)
+    // Nạp dropdown Tuần
     const selectTuan = document.getElementById('filterBCCoGiTuan');
     if(selectTuan) {
         selectTuan.innerHTML = '<option value="">-- Tất cả Tuần --</option>';
         Array.from(tuanSet).sort((a, b) => {
-            // Cố gắng tách số từ chuỗi tuần (VD: "Tuần 1", "1"...) để sắp xếp tự nhiên
             let numA = parseInt(a.toString().replace(/\D/g, '')) || 0;
             let numB = parseInt(b.toString().replace(/\D/g, '')) || 0;
             return numA - numB;
@@ -2251,7 +2381,7 @@ function populateDropdowns(data) {
         });
     }
 
-    // Nạp các dropdown khác như cũ...
+    // Nạp dropdown Giáo Viên
     const selectGV = document.getElementById('filterBCCoGiGV');
     if(selectGV) {
         selectGV.innerHTML = '<option value="">-- Tất cả Giáo Viên --</option>';
@@ -2260,6 +2390,7 @@ function populateDropdowns(data) {
         });
     }
     
+    // Nạp dropdown Môn Học
     const selectMon = document.getElementById('filterBCCoGiMon');
     if(selectMon) {
         selectMon.innerHTML = '<option value="">-- Tất cả Môn Học --</option>';
@@ -2268,6 +2399,7 @@ function populateDropdowns(data) {
         });
     }
 
+    // Nạp dropdown Phân Môn
     const selectPhanMon = document.getElementById('filterBCCoGiPhanMon');
     if(selectPhanMon) {
         selectPhanMon.innerHTML = '<option value="">-- Tất cả Phân Môn --</option>';
@@ -2276,6 +2408,7 @@ function populateDropdowns(data) {
         });
     }
     
+    // Nạp dropdown Lớp
     const selectLop = document.getElementById('filterBCCoGiLop');
     if(selectLop) {
         selectLop.innerHTML = '<option value="">-- Tất cả Lớp --</option>';
@@ -2285,67 +2418,73 @@ function populateDropdowns(data) {
     }
 }
 
-// Hàm lọc cập nhật thêm điều kiện Tuần
+// Hàm lọc cập nhật theo các điều kiện
 function filterBaoCaoTable() {
-    const tuanKey = document.getElementById('filterBCCoGiTuan').value; // Lấy giá trị Tuần lọc
-    const gvKey = document.getElementById('filterBCCoGiGV').value;
-    const monKey = document.getElementById('filterBCCoGiMon').value;
-    const phanMonKey = document.getElementById('filterBCCoGiPhanMon').value;
-    const lopKey = document.getElementById('filterBCCoGiLop').value;
-    const ttKey = document.getElementById('filterBCCoGiTrangThai').value;
+    const tuanKey = document.getElementById('filterBCCoGiTuan')?.value || '';
+    const gvKey = document.getElementById('filterBCCoGiGV')?.value || '';
+    const monKey = document.getElementById('filterBCCoGiMon')?.value || '';
+    const phanMonKey = document.getElementById('filterBCCoGiPhanMon')?.value || '';
+    const lopKey = document.getElementById('filterBCCoGiLop')?.value || '';
+    const ttKey = document.getElementById('filterBCCoGiTrangThai')?.value || '';
     
     currentFilteredData = globalBaoCaoData.filter(item => {
-        const matchTuan = !tuanKey || String(item.tuan) === String(tuanKey); // So khớp Tuần
-        const matchGV = !gvKey || item.giaoVien === gvKey;
-        const matchMon = !monKey || item.monHoc === monKey;
-        const matchPhanMon = !phanMonKey || item.phanMon === phanMonKey;
+        const gvVal = item.giao_vien || item.giaoVien || '';
+        const monVal = item.mon_hoc || item.monHoc || '';
+        const phanMonVal = item.phan_mon || item.phanMon || '';
+        const daKyVal = item.da_ky !== undefined ? item.da_ky : item.daKy;
+
+        const matchTuan = !tuanKey || String(item.tuan) === String(tuanKey);
+        const matchGV = !gvKey || gvVal === gvKey;
+        const matchMon = !monKey || monVal === monKey;
+        const matchPhanMon = !phanMonKey || phanMonVal === phanMonKey;
         const matchLop = !lopKey || item.lop === lopKey;
         
         let matchTT = true;
-        if(ttKey === 'chua-ky') matchTT = !item.daKy;
-        if(ttKey === 'da-ky') matchTT = item.daKy;
+        if(ttKey === 'chua-ky') matchTT = !daKyVal;
+        if(ttKey === 'da-ky') matchTT = daKyVal;
         
         return matchTuan && matchGV && matchMon && matchPhanMon && matchLop && matchTT;
     });
     
-    document.getElementById('countBaoCao').innerText = currentFilteredData.length;
+    const countEl = document.getElementById('countBaoCao');
+    if(countEl) countEl.innerText = currentFilteredData.length;
     renderBaoCaoTable(currentFilteredData);
 }
-// Cập nhật lại hàm render để lưu luôn vào biến currentFilteredData lúc ban đầu tải xong
-function taiBaoCaoChiTiet() {
-    fetch(`${API_URL}?action=getBaoCaoChiTiet`)
-    .then(res => res.json())
-    .then(res => {
-        if(res.success) {
-            globalBaoCaoData = res.data;
-            populateDropdowns(globalBaoCaoData);
-            filterBaoCaoTable(); // Dùng hàm lọc để khởi tạo bảng và đếm số lượng chuẩn
-        }
-    })
-    .catch(err => console.error("Lỗi tải báo cáo chi tiết:", err));
-}
+
 function renderBaoCaoTable(data) {
     const tbody = document.getElementById('baoCaoTableBody');
+    if(!tbody) return;
     tbody.innerHTML = "";
     
     if(data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
         return;
     }
     
     data.forEach(item => {
+        const gvVal = item.giao_vien || item.giaoVien || '';
+        const monVal = item.mon_hoc || item.monHoc || '';
+        const phanMonVal = item.phan_mon || item.phanMon || '';
+        
+        // Sửa lại lấy đúng cột ten_bai làm nội dung
+        const noiDungVal = item.noi_dung_ke_hoach || item.ten_bai || item.noi_dung || ''; 
+        
+        // Kiểm tra chính xác chuỗi trạng thái từ cột trang_thai_ của database
+        const trangThaiStr = String(item.trang_thai_sdb || item.trang_thai_ky || item.trang_thai || '').trim();
+        const isDaKy = trangThaiStr.toLowerCase().includes('đã ký');
+
         tbody.innerHTML += `
             <tr class="hover:bg-slate-50">
-                <td class="p-2.5 border font-semibold text-slate-800">${item.tuan}</td>
-                <td class="p-2.5 border">${item.giaoVien}</td>
-                <td class="p-2.5 border">${item.monHoc}</td>
-                <td class="p-2.5 border font-medium text-indigo-600">${item.phanMon}</td>
-                <td class="p-2.5 border font-semibold">${item.lop}</td>
-                <td class="p-2.5 border text-center">${item.tiet}</td>
-                <td class="p-2.5 border text-slate-600">${item.noiDung}</td>
+                <td class="p-2.5 border font-semibold text-slate-800">${item.tuan || ''}</td>
+                <td class="p-2.5 border">${gvVal}</td>
+                <td class="p-2.5 border">${monVal}</td>
+                <td class="p-2.5 border font-medium text-indigo-600">${phanMonVal}</td>
+                <td class="p-2.5 border font-semibold">${item.lop || ''}</td>
+                <td class="p-2.5 border text-center">${item.tiet || ''}</td>
+                <td class="p-2.5 border text-slate-600">${noiDungVal}</td>
                 <td class="p-2.5 border text-center">
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.daKy ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
-                        ${item.daKy ? '✅ Đã ký' : '⚠️ Chưa ký SĐB'}
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${isDaKy ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                        ${isDaKy ? '✅ Đã ký' : '⚠️ Chưa ký SĐB'}
                     </span>
                 </td>
             </tr>
@@ -2354,58 +2493,54 @@ function renderBaoCaoTable(data) {
 }
 
 
-
+// ==========================================
+// 3. XUẤT EXCEL CHI TIẾT & TỔNG HỢP
+// ==========================================
 function xuatExcelBaoCao() {
-    if(globalBaoCaoData.length === 0) {
+    const dataToExport = currentFilteredData.length > 0 ? currentFilteredData : globalBaoCaoData;
+    if(dataToExport.length === 0) {
         alert("Không có dữ liệu để xuất file!");
         return;
     }
     
-    // Chuẩn hóa mảng dữ liệu sang định dạng SheetJS
-    const exportData = globalBaoCaoData.map((item, index) => ({
+    const exportData = dataToExport.map((item, index) => ({
         "STT": index + 1,
-        "Tuần": item.tuan,
-        "Giáo Viên": item.giaoVien,
-        "Môn Học": item.monHoc,
-        "Phân Môn Học": item.phanmonHoc,
-        "Lớp": item.lop,
-        "Tiết": item.tiet,
-        "Nội Dung Kế Hoạch": item.noiDung,
-        "Trạng Thái Ký Sổ": item.daKy ? "Đã ký sổ đầu bài" : "Chưa ký sổ đầu bài"
+        "Tuần": item.tuan || '',
+        "Giáo Viên": item.giao_vien || item.giaoVien || '',
+        "Môn Học": item.mon_hoc || item.monHoc || '',
+        "Phân Môn Học": item.phan_mon || item.phanMon || '',
+        "Lớp": item.lop || '',
+        "Tiết": item.tiet || '',
+        "Nội Dung Kế Hoạch": item.noi_dung || item.noiDung || '',
+        "Trạng Thái Ký Sổ": (item.da_ky !== undefined ? item.da_ky : item.daKy) ? "Đã ký sổ đầu bài" : "Chưa ký sổ đầu bài"
     }));
     
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "BaoCaoTietDay");
-    
-    // Xuất file Excel (.xlsx)
     XLSX.writeFile(workbook, "Bao_Cao_Thuc_Hien_Day_Hoc.xlsx");
 }
-// Hàm mới: Thống kê tổng số tiết theo từng Giáo Viên và Phân Môn dựa trên kết quả đang lọc
+
 function xuatBaoCaoTongHopGV() {
-    // Nếu chưa lọc hoặc danh sách trống
     const dataToProcess = currentFilteredData.length > 0 ? currentFilteredData : globalBaoCaoData;
-    
     if(dataToProcess.length === 0) {
         alert("Không có dữ liệu để tổng hợp!");
         return;
     }
     
-    // Gom nhóm theo Cặp Khóa: Giáo Viên + Phân Môn (để tách bạch Chính khóa, Ôn tập, BDHSG...)
     const summaryMap = {};
-    
     dataToProcess.forEach(item => {
-        const ten_tkb = item.giaoVien || "Chưa xác định";
-        const phanMon = item.phanMon || "Chính khóa / Mặc định"; // Tránh để trống
+        const ten_tkb = item.giao_vien || item.giaoVien || "Chưa xác định";
+        const phanMon = item.phan_mon || item.phanMon || "Chính khóa / Mặc định";
+        const monVal = item.mon_hoc || item.monHoc || "";
+        const daKyVal = item.da_ky !== undefined ? item.da_ky : item.daKy;
         
-        // Tạo khóa duy nhất cho mỗi giáo viên theo từng phân môn
         const key = ten_tkb + "_" + phanMon;
-        
         if (!summaryMap[key]) {
             summaryMap[key] = {
                 giaoVien: ten_tkb,
                 phanMon: phanMon,
-                monHoc: item.monHoc || "",
+                monHoc: monVal,
                 tongTiet: 0,
                 daKy: 0,
                 chuaKy: 0
@@ -2413,95 +2548,74 @@ function xuatBaoCaoTongHopGV() {
         }
         
         summaryMap[key].tongTiet += 1;
-        if (item.daKy) {
+        if (daKyVal) {
             summaryMap[key].daKy += 1;
         } else {
             summaryMap[key].chuaKy += 1;
         }
     });
     
-    // Chuyển đổi thành mảng để xuất Excel
     const summaryArray = Object.values(summaryMap).map((item, index) => ({
         "STT": index + 1,
         "Giáo Viên": item.giaoVien,
         "Môn Học": item.monHoc,
-        "Phân Môn": item.phanMon, // Thêm cột Phân môn vào file thống kê
+        "Phân Môn": item.phanMon,
         "Tổng Số Tiết": item.tongTiet,
         "Đã Ký SĐB": item.daKy,
         "Chưa Ký SĐB": item.chuaKy,
-        "Tỷ Lệ Hoàn Thành": ((item.daKy / item.tongTiet) * 100).toFixed(1) + "%"
+        "Tỷ Lệ Hoàn Thành": item.tongTiet > 0 ? ((item.daKy / item.tongTiet) * 100).toFixed(1) + "%" : "0%"
     }));
     
-    // Tạo file Excel tổng hợp
     const worksheet = XLSX.utils.json_to_sheet(summaryArray);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "TongHopTheoGV_PhanMon");
     XLSX.writeFile(workbook, "Thong_Ke_Tong_Hop_Giao_Vien_Theo_Phan_Mon.xlsx");
 }
-//Khoá 
-function khóaSDBTheoTuần() {
-    const tuanKey = document.getElementById('filterBCCoGiTuan').value;
-    
+
+
+// ==========================================
+// CHỨC NĂNG KHÓA TUẦN (CẬP NHẬT TRỰC TIẾP BẢNG CauHinhTuan)
+// ==========================================
+async function thucHienKhoaTuan(loaiKhoa) {
+    const tuanKey = document.getElementById('filterBCCoGiTuan')?.value;
     if (!tuanKey) {
         alert("Vui lòng chọn cụ thể một Tuần cần khóa ở ô bộ lọc bên trái!");
         return;
     }
     
-    if (!confirm(`Bạn có chắc chắn muốn khóa Sổ Đầu Bài và Kế Hoạch của [ Tuần ${tuanKey} ] không? Thao tác này sẽ ghi nhận trạng thái khóa vào sheet CauHinhTuan.`)) {
-        return;
-    }
-    
-    // Gọi API thực hiện khóa trên Google Apps Script
-    fetch(`${API_URL}?action=khoaTuanSDB&tuan=${encodeURIComponent(tuanKey)}`, {
-        method: 'POST'
-    })
-    .then(res => res.json())
-    .then(res => {
-        if(res.success) {
-            alert(`Đã khóa thành công tuần ${tuanKey} vào cột H của sheet CauHinhTuan!`);
-        } else {
-            alert("Lỗi: " + (res.message || "Không thể thực hiện khóa tuần."));
-        }
-    })
-    .catch(err => {
-        console.error("Lỗi kết nối:", err);
-        alert("Có lỗi xảy ra khi gửi yêu cầu khóa tuần.");
-    });
-}
-function thucHienKhoaTuan(loaiKhoa) {
-    const tuanKey = document.getElementById('filterBCCoGiTuan').value;
-    
-    if (!tuanKey) {
-        alert("Vui lòng chọn cụ thể một Tuần cần khóa ở ô bộ lọc bên trái!");
-        return;
-    }
-    
-    const tenLoai = loaiKhoa === 'KeHoach' ? 'Kế Hoạch (Cột H)' : 'Sổ Đầu Bài (Cột I)';
+    const tenLoai = loaiKhoa === 'KeHoach' ? 'Kế Hoạch' : 'Sổ Đầu Bài';
+    const tenCotDb = loaiKhoa === 'KeHoach' ? 'khoa_ke_hoach' : 'khoa_sdb';
     
     if (!confirm(`Bạn có chắc chắn muốn khóa ${tenLoai} của [ Tuần ${tuanKey} ] không?`)) {
         return;
     }
     
-    fetch(`${API_URL}?action=khoaTuanTheoLoai&tuan=${encodeURIComponent(tuanKey)}&loai=${encodeURIComponent(loaiKhoa)}`, {
-        method: 'POST'
-    })
-    .then(res => res.json())
-    .then(res => {
-        if(res.success) {
-            alert(`Đã khóa ${tenLoai} thành công cho tuần ${tuanKey}!`);
-        } else {
-            alert("Lỗi từ Server: " + (res.message || "Không rõ nguyên nhân"));
-        }
-    })
-    .catch(err => {
-        console.error("Lỗi kết nối chi tiết:", err);
-        alert("Lỗi kết nối hoặc phản hồi không phải định dạng JSON: " + err.toString());
-    });
+    try {
+        let updatePayload = {};
+        updatePayload[tenCotDb] = "Khoá";
+        
+        // Thay _supabase bằng db, tên bảng 'CauHinhTuan' đúng như trong cơ sở dữ liệu của bạn
+        let { error } = await db
+            .from('CauHinhTuan')
+            .update(updatePayload)
+            .eq('ten_tuan', tuanKey);
+
+        if (error) throw error;
+
+        alert(`Đã khóa ${tenLoai} thành công cho ${tuanKey}!`);
+        taiBaoCaoChiTiet();
+
+    } catch (err) {
+        console.error("❌ Lỗi khi thực hiện khóa tuần:", err);
+        alert("Lỗi thực hiện khóa tuần trên cơ sở dữ liệu: " + err.message);
+    }
 }
-//Phân quyền
-// Hàm kiểm tra và ẩn các tab quản trị / báo cáo đối với giáo viên thường
+
+
+// ==========================================
+// 5. PHÂN QUYỀN GIAO DIỆN & KHỞI TẠO
+// ==========================================
 function phanQuyenGiaoDien() {
-    // Đọc thêm từ gói session chung nếu có
     let sessionData = {};
     try {
         sessionData = JSON.parse(localStorage.getItem("kienona_session") || "{}");
@@ -2510,9 +2624,7 @@ function phanQuyenGiaoDien() {
     var vaiTroUser = (localStorage.getItem("vaiTroUser") || sessionData.vaiTro || sessionData.role || "").toLowerCase();
     var maNhanSu = (localStorage.getItem("maNhanSu") || sessionData.maNhanSu || "").toLowerCase();
 
-    // Danh sách từ khóa quản trị được phép xem
-    var dsQuyenQuanTri = ["bgh", "admin", "kythuat", "hieutruong", "phohieutruong", "it", "tai"]; // Đã thêm "tai" để test
-    
+    var dsQuyenQuanTri = ["bgh", "admin", "kythuat", "hieutruong", "phohieutruong", "it", "tai"];
     var coQuyen = dsQuyenQuanTri.some(function(q) {
         return vaiTroUser.includes(q) || maNhanSu.includes(q);
     });
@@ -2529,11 +2641,13 @@ function phanQuyenGiaoDien() {
     }
 }
 
-// Gọi hàm này ngay khi trang vừa tải xong
 document.addEventListener("DOMContentLoaded", function() {
     phanQuyenGiaoDien();
+    // Tự động tải dữ liệu báo cáo nếu đang ở trang quản trị báo cáo
+    if (document.getElementById('baoCaoTableBody')) {
+        taiBaoCaoChiTiet();
+    }
 });
-
     </script>
 </body>
 </html>
