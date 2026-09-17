@@ -2029,13 +2029,14 @@ function renderSoDauBaiTable(data) {
                 <div class="text-slate-700 font-medium">${item.ten_bai || item.tenBai || ''}</div>
             </td>
             <td class="p-3 text-center">
-                <input type="number" min="0" max="50" class="input-siso-vang w-16 text-center border border-slate-200 rounded p-1 text-xs" value="${item.si_so_vang !== undefined ? item.si_so_vang : (item.siSoVang || 0)}">
+                <input type="number" min="0" max="50" class="input-siso-vang w-16 text-center border border-slate-200 rounded p-1 text-xs" value="${(item.si_so_vang !== undefined && item.si_so_vang !== null && item.si_so_vang !== '') ? item.si_so_vang : 0}">
             </td>
             <td class="p-3">
                 <input type="text" class="input-ten-hvang w-full border border-slate-200 rounded p-1 text-xs" placeholder="HS vắng..." value="${item.ten_hs_vang || item.tenHSVang || ""}">
             </td>
             <td class="p-3">
-                <input type="text" class="input-nhanxet w-full border border-slate-200 rounded p-1 text-xs" value="${item.nhan_xet !== undefined ? item.nhan_xet : (item.nhanXet !== undefined ? item.nhanXet : "Lớp học bình thường")}">
+                
+                <input type="text" class="input-nhanxet w-full border border-slate-200 rounded p-1 text-xs" value="${(item.nhan_xet !== undefined && item.nhan_xet !== null && item.nhan_xet !== '') ? item.nhan_xet : "Lớp học bình thường"}">
             </td>
             <td class="p-3 text-center">
                 <input type="number" min="1" max="10" step="1" class="input-diem w-14 text-center border border-slate-200 rounded p-1 text-xs font-bold text-emerald-700" value="${item.diem || ""}" placeholder="VD: 9">
