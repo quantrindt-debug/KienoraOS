@@ -8,6 +8,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Các thẻ meta, css khác -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Tailwind CSS (nếu dùng cdn) -->
+    <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .desktop-bg {
       background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1920') no-repeat center center fixed;
@@ -15,7 +19,11 @@
     }
     .custom-scrollbar::-webkit-scrollbar { width: 5px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    
+    
+
   </style>
+
 </head>
 <body class="desktop-bg h-screen w-screen overflow-hidden font-sans select-none relative" onclick="closeStartMenuOnOutside(event)">
 
@@ -266,7 +274,18 @@
 
   <!-- ================= 5. SCRIPT XỬ LÝ HỆ THỐNG & CHẶN TRUY CẬP TRỰC TIẾP ================= -->
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbwooJpIKe3OUg5aYnynu91SL0MgjzeJq1fA4-WjOf8_2lLjPrkl3_iGMzw0g9Sgutv4/exec"; 
+  // ============================================================
+    // CẤU HÌNH KẾT NỐI SUPABASE (Thay thế hoàn toàn Google Apps Script)
+    // ============================================================
+    const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_YShqad87nsgJJTlTX5rbw_K5zO48Jr';
+    let db = null;
+
+    if (window.supabase) {
+        db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } else {
+        console.error("Thư viện Supabase chưa được tải vào trang!");
+    }
 
     const APP_REGISTRY = {
       'tuyensinh10': { title: 'Tuyển sinh Lớp 10', icon: 'fa-solid fa-user-plus text-rose-400' },
@@ -307,13 +326,23 @@
           school: schoolData
         };
 
-        // Hiển thị thông tin lên Start Menu và Taskbar
+        // Hiển thị thông tin lên Start Menu và Taskbar (Có kiểm tra tồn tại ID để tránh lỗi)
         const extractedMaNS = userData.maNhanSu || '';
-        document.getElementById('userFullName').innerText = (userData.fullName || 'Cán bộ') + (extractedMaNS ? " (" + extractedMaNS + ")" : "");
-        document.getElementById('userSchoolName').innerText = schoolData.tenTruong || ('Trường: ' + schoolData.maTruong);
-        document.getElementById('userSchoolCode').innerText = "MÃ: " + schoolData.maTruong;
-        document.getElementById('userRole').innerText = userData.vaiTro || 'Giáo viên';
-        document.getElementById('taskbarUser').innerText = userData.fullName || schoolData.maTruong;
+        
+        const elFullName = document.getElementById('userFullName');
+        if (elFullName) elFullName.innerText = (userData.fullName || 'Cán bộ') + (extractedMaNS ? " (" + extractedMaNS + ")" : "");
+
+        const elSchoolName = document.getElementById('userSchoolName');
+        if (elSchoolName) elSchoolName.innerText = schoolData.tenTruong || ('Trường: ' + schoolData.maTruong);
+
+        const elSchoolCode = document.getElementById('userSchoolCode');
+        if (elSchoolCode) elSchoolCode.innerText = "MÃ: " + schoolData.maTruong;
+
+        const elRole = document.getElementById('userRole');
+        if (elRole) elRole.innerText = userData.vaiTro || 'Giáo viên';
+
+        const elTaskbarUser = document.getElementById('taskbarUser');
+        if (elTaskbarUser) elTaskbarUser.innerText = userData.fullName || schoolData.maTruong;
 
       } catch (e) {
         localStorage.removeItem('kienona_session');
@@ -325,7 +354,6 @@
 
     // Chạy kiểm tra ngay khi tải trang
     checkSessionAndInit();
-
     function launchApp(appId) {
   if (!currentSession.maTruong) {
     alert("Vui lòng đăng nhập hệ thống trước!");
@@ -395,7 +423,7 @@
     'quantridaucap': "quantridaucap.html",
     'xeplop': "xeplop.html",
     'QuanLyHoSoHocSinh': "QuanLyHoSoHocSinh.html",
-    'sdb': "sdb.html",
+    'sdb': "sdbv2.html",
     'KeHoachChamCong': "KeHoachChamCong.html",
     'SoChuNhiem': "SoChuNhiem.html",
     'ThiDuaLop': "THPT_NguyenDuyTrinh/ThiDuaLop.html", // Đường dẫn chính xác tới thư mục con
