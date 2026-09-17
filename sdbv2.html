@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Dạy Học - Royal Blue & Indigo Theme</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS cho Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Thư viện Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800">
+
+    <div class="max-w-7xl mx-auto p-4 md:p-6">
+        
+        <!-- HEADER THANH XANH ĐẬM (Royal Blue / Indigo chuẩn giao diện mẫu) -->
+        <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-800 rounded-2xl shadow-lg p-5 mb-6 text-white flex flex-col md:flex-row items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl font-extrabold tracking-wide">Quản Lý Dạy Học</h1>
+                <p class="text-xs text-indigo-200 mt-0.5">Hệ thống số hóa kế hoạch và hồ sơ chuyên môn điện tử</p>
+            </div>
+
+            <!-- Các Tab Điều Hướng Ngay Trên Header -->
+            <nav class="flex flex-wrap items-center gap-2 bg-indigo-950/30 p-1.5 rounded-xl backdrop-blur-sm border border-indigo-500/30">
+                <button onclick="switchTab('baocao')" id="tab-baocao" class="tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all text-indigo-100 hover:bg-white/10">
+                    Báo Cáo & Thống Kê
+                </button>
+                <button onclick="switchTab('admin-tkb')" id="tab-admin-tkb" class="tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all bg-white text-indigo-900 shadow-md">
+                    Đăng TKB
+                </button>
+                <button onclick="switchTab('ppct')" id="tab-ppct" class="tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all text-indigo-100 hover:bg-white/10">
+                    Phân Phối CT
+                </button>
+                <button onclick="switchTab('ke-hoach')" id="tab-ke-hoach" class="tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all text-indigo-100 hover:bg-white/10">
+                    Kế Hoạch Dạy Học
+                </button>
+                <button onclick="switchTab('so-dau-bai')" id="tab-so-dau-bai" class="tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all text-indigo-100 hover:bg-white/10">
+                    Sổ Đầu Bài
+                </button>
+            </nav>
+            <div id="userInfoBadge" class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-medium border border-blue-100 shadow-sm">
+                Đang tải định danh...
+            </div>
+        </header>
+
+        <!-- KHUNG CHỨA NỘI DUNG CHÍNH -->
+        <main class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 md:p-6 min-h-[550px]">
+            
+            <!-- Khu Vực Hiển Thị Bảng Dữ Liệu -->
+            <div id="tabContent" class="overflow-x-auto">
+                <!-- Nội dung tab sẽ được render động -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ============================================================
+        // CẤU HÌNH KẾT NỐI HỆ THỐNG & SUPABASE
+        // ============================================================
+        const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
+        let db = null;
+
+        if (window.supabase) {
+            db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } else {
+            console.error("Thư viện Supabase chưa được tải vào trang!");
+        }
+
+        let currentRole = "";
+        let isAdmin = false;
+
+        // Lấy thông tin từ localStorage đồng nhất với OS (Hỗ trợ cả 2 chuẩn lưu trữ)
+        let currentSession = {
+            maNhanSu: localStorage.getItem('maNhanSu') || 
+                      localStorage.getItem('taiKhoan') || 
+                      localStorage.getItem('user') || '',
+            
+            maTruong: function() {
+                const sessionStr = localStorage.getItem('kienona_school');
+                if (sessionStr) {
+                    try {
+                        const sData = JSON.parse(sessionStr);
+                        if (sData.maTruong) return sData.maTruong;
+                    } catch(e){}
+                }
+                const parts = this.maNhanSu.split('.');
+                return parts.length >= 2 ? parts[0] + "." + parts[1] : "c3ndtnl.nan";
+            }(),
+
+            hoVaTen: "",
+            tenTKB: "",
+            vaiTro: "Giáo viên"
+        };
+
+        // 2. Truy vấn thông tin nhân sự, quyền và tên TKB từ Supabase
+        async function taiVaiTro() {
+    // 1. Lấy thông tin từ localStorage nếu có sẵn
+    const savedSession = localStorage.getItem('kienona_session');
+    if (savedSession) {
+        try {
+            const uData = JSON.parse(savedSession);
+            if (uData.maNhanSu) currentSession.maNhanSu = uData.maNhanSu;
+            if (uData.fullName) currentSession.hoVaTen = uData.fullName;
+            if (uData.vaiTro) currentSession.vaiTro = uData.vaiTro;
+        } catch(e){}
+    }
+
+    if (!db) return;
+
+    try {
+        // 2. Truy vấn trực tiếp vào bảng chứa thông tin nhân sự/user
+        // (Nếu tên bảng của bạn là 'users' thì để 'users', nếu là tên khác như 'nhansu' thì thay vào đây)
+        let { data, error } = await db
+            .from('users') 
+            .select('ma_nhan_su, ho_va_ten, quyen, ten_tkb')
+            .eq('ma_nhan_su', currentSession.maNhanSu)
+            .single();
+
+        if (data && !error) {
+            currentRole = String(data.quyen || "Giáo viên").trim();
+            currentSession.vaiTro = currentRole;
+            currentSession.hoVaTen = String(data.ho_va_ten || "").trim();
+            
+            // Lấy chính xác cột ten_tkb từ CSDL, nếu trống thì tự lấy phần đuôi mã nhân sự
+            currentSession.tenTKB = String(data.ten_tkb || currentSession.maNhanSu.split('.').pop()).trim();
+            
+            const roleLower = currentRole.toLowerCase();
+            isAdmin = roleLower.includes("admin") || roleLower.includes("quản trị");
+            
+            // Đưa thông tin lên giao diện ô input
+            const inputGiaoVien = document.getElementById('inputGiaoVien');
+            if (inputGiaoVien) {
+                inputGiaoVien.value = currentSession.hoVaTen;
+                inputGiaoVien.setAttribute('data-tentkb', currentSession.tenTKB);
+            }
+        }
+    } catch (err) {
+        console.warn("Không lấy được chi tiết từ CSDL, dùng giá trị mặc định:", err);
+        currentSession.tenTKB = currentSession.maNhanSu ? currentSession.maNhanSu.split('.').pop() : '';
+        currentRole = currentSession.vaiTro;
+    }
+
+    // 3. Kích hoạt hiển thị quyền và nạp TKB sau khi đã có dữ liệu chuẩn
+    if (typeof hienThiQuyen === 'function') hienThiQuyen();
+    if (typeof loadTKBIntoKeHoach === 'function') loadTKBIntoKeHoach();
+}
+        // 3. Hiển thị thông tin định danh và quyền lên giao diện
+        function hienThiQuyen() {
+            const badge = document.getElementById('userInfoBadge');
+            if (badge) {
+                badge.innerText = `Trường: ${currentSession.maTruong} | Tài khoản: ${currentSession.maNhanSu} | Tên: ${currentSession.hoVaTen || 'Cán bộ'} | Quyền: ${currentRole || 'Giáo viên'}`;
+            }
+        }
+
+        // 4. Khởi chạy duy nhất 1 lần khi tải trang xong
+        document.addEventListener("DOMContentLoaded", function() {
+            taiVaiTro();         
+            // Mặc định load tab Đăng TKB ngay khi vào trang
+            switchTab('admin-tkb');
+        });
+// Hàm kiểm tra và ẩn các tab quản trị nếu user là Giáo viên
+function checkUserPermission() {
+    // Kiểm tra xem đã có thông tin session chưa
+    if (typeof currentSession === 'undefined') return;
+
+    // Lấy thông tin quyền (tùy thuộc vào cách bạn lưu, ví dụ 'quyen' hoặc 'role')
+    const userRole = String(currentSession.quyen || currentSession.role || "").trim().toLowerCase();
+    
+    // Nếu là giáo viên (không phải admin/quản trị viên)
+    if (userRole.includes('giáo viên') || userRole === 'gv' || userRole === 'teacher') {
+        
+        // 1. Ẩn nút/tab "Đăng TKB" trên giao diện (nếu có class hoặc id tương ứng)
+        const tabDangTKB = document.querySelector('[data-tab="dang-tkb"]') || document.getElementById('btnDangTKB');
+        if (tabDangTKB) {
+            tabDangTKB.style.display = 'none'; // Ẩn hẳn đi
+        }
+
+        // 2. Ẩn menu quản trị bên trái (ví dụ mục Quản trị, phân cấp,...)
+        const menuQuanTri = document.querySelectorAll('.admin-only, [data-role="admin"]');
+        menuQuanTri.forEach(el => {
+            el.style.display = 'none';
+        });
+
+        // 3. Nếu người dùng đang cố tình đứng ở tab quản trị, tự động chuyển về tab mặc định cho phép (ví dụ tab Kế hoạch Dạy Học)
+        const currentActiveTab = document.querySelector('.tab-pane.active, .content-active');
+        // Bạn có thể check nếu tab hiện tại là tab quản trị thì gọi hàm chuyển tab về Kế hoạch Dạy Học
+    }
+}
+
+// Gọi hàm này ngay sau khi load xong thông tin session / đăng nhập
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(checkUserPermission, 500); // Đợi 0.5s để session load ổn định rồi check
+});
+        // ============================================================
+        // ĐIỀU HƯỚNG TAB
+        // ============================================================
+        function switchTab(pageType) {
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all text-indigo-100 hover:bg-white/10";
+            });
+
+            const activeBtn = document.getElementById(`tab-${pageType}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all bg-white text-indigo-900 shadow-md";
+            }
+
+            const contentDiv = document.getElementById('tabContent');
+
+            // 3. Nếu là tab Đăng TKB
+            if (pageType === 'admin-tkb') {
+                contentDiv.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div class="flex flex-wrap items-center gap-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chọn hoặc Tạo Số TKB Áp Dụng</label>
+                                    <select id="selectSoTKB" onchange="loadTKBData()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <!-- Các option được sinh tự động bởi initTKBWeekDropdown -->
+                                    </select>   
+                                </div>
+                                <button onclick="downloadTKBTemplate()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 self-end">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    Tải Mẫu TKB Excel
+                                </button>
+                            </div>
+                            <div class="self-end">
+                                <input type="file" id="tkbFileInput" accept=".xlsx, .xls" class="hidden" onchange="handleUploadTKB(this)">
+                                <button onclick="document.getElementById('tkbFileInput').click()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    Đăng / Đồng Bộ TKB
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="tkbTableContainer" class="overflow-x-auto border border-slate-200 rounded-xl bg-white max-h-[450px]">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0">
+                                    <tr>
+                                        <th class="p-3">STT</th>
+                                        <th class="p-3">Số TKB</th>
+                                        <th class="p-3">Thứ</th>
+                                        <th class="p-3">Buổi</th>
+                                        <th class="p-3">Tiết</th>
+                                        <th class="p-3">Lớp</th>
+                                        <th class="p-3">Môn học</th>
+                                        <th class="p-3">Giáo viên</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tkbTableBody" class="divide-y divide-slate-100 text-slate-600">
+                                    <tr><td colspan="8" class="text-center py-10 text-slate-400">Chưa có dữ liệu thời khóa biểu được hiển thị. Vui lòng chọn file Excel để tải lên.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                initTKBWeekDropdown();
+                return;
+            } else {
+                contentDiv.innerHTML = `<div class="p-10 text-center text-slate-400">Nội dung của tab [${pageType}] đang được cập nhật...</div>`;
+            }
+
+        // Các hàm giả lập bổ trợ để không bị lỗi console nếu gọi thiếu
+      //  function loadTKBData() {}
+      //  function downloadTKBTemplate() { alert("Đang tải xuống mẫu Excel..."); }
+    //    function handleUploadTKB(input) { alert("Đã chọn file: " + (input.files[0] ? input.files[0].name : "")); }
+    
+    // 4. Tab Phân phối chương trình (PPCT)
+    if (pageType === 'ppct') {
+    contentDiv.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <div class="flex flex-wrap items-center gap-2">
+                    <select id="filterKhoi" onchange="filterPPCTData()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                        <option value="">-- Tất cả Khối --</option>
+                        <option value="Khối 10">Khối 10</option>
+                        <option value="Khối 11">Khối 11</option>
+                        <option value="Khối 12">Khối 12</option>
+                    </select>
+                    <select id="filterMon" onchange="filterPPCTData()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                        <option value="">-- Tất cả Môn học --</option>
+                        <option value="Toán">Toán học</option>
+                        <option value="văn">Ngữ văn</option>
+                        <option value="Anh">Tiếng Anh</option>
+                        <option value="Lí">Vật lý</option>
+                        <option value="Hoá">Hoá học</option>                        
+                        <option value="Sinh">Sinh học</option>                        
+                        <option value="Sử">Lịch sử</option>                        
+                        <option value="Địa">Địa lí</option>                        
+                        <option value="GDKT">GDKT - PL</option>
+                        <option value="Tin">Tin học</option>
+                        
+                    </select>
+                    <!-- Thêm ô chọn Phân môn ở đây -->
+                    <select id="filterPhanMon" onchange="filterPPCTData()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                        <option value="">-- Tất cả Phân môn --</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="downloadPPCTTemplate()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Tải Mẫu PPCT
+                    </button>
+                    <input type="file" id="ppctFileInput" accept=".xlsx, .xls" class="hidden" onchange="handleUploadPPCT(this)">
+                    <button onclick="document.getElementById('ppctFileInput').click()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        Đăng / Đồng Bộ
+                    </button>
+                </div>
+            </div>
+
+            <div id="ppctTableContainer" class="overflow-x-auto border border-slate-200 rounded-xl bg-white max-h-[450px]">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0">
+                        <tr>
+                            <th class="p-3">STT</th>
+                            <th class="p-3">Khối</th>
+                            <th class="p-3">Môn học</th>
+                            <th class="p-3">Phân môn</th>
+                            <th class="p-3">Tuần PPCT</th>
+                            <th class="p-3">Tiết</th>
+                            <th class="p-3">Tên bài</th>
+                            <th class="p-3">Ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ppctTableBody" class="divide-y divide-slate-100 text-slate-600">
+                        <tr><td colspan="8" class="text-center py-10 text-slate-400">Đang tải dữ liệu Phân phối chương trình...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+  
+        loadPPCTFromSupabase();
+    return;
+}
+
+    // 5. Tab Kế hoạch dạy học hàng tuần
+// 5. Tab Kế hoạch dạy học hàng tuần
+   // 5. Tab Kế hoạch dạy học hàng tuần (Đã thêm ô chọn Phân môn)
+    if (pageType === 'ke-hoach') {
+        contentDiv.innerHTML = `
+            <div class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 items-end">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Số TKB áp dụng</label>
+                        <select id="selectSoTKBKeHoach" onchange="loadKeHoachByWeek()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                            <option value="">-- Chọn số TKB --</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Giáo viên</label>
+                        <input type="text" id="inputGiaoVien" readonly data-manhansu="${currentSession.maNhanSu || ''}" class="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 cursor-not-allowed" value="Đang tải...">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tuần hiện tại</label>
+                        <select id="filterKHTuan" onchange="loadKeHoachByWeek()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                            <option value="">-- Chọn tuần học --</option>
+                        </select>
+                    </div>
+
+                    <!-- Ô CHỌN PHÂN MÔN MỚI THÊM -->
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Phân môn</label>
+                        <select id="selectPhanMonKeHoach" onchange="loadKeHoachByWeek()" class="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                            <option value="">-- Tất cả phân môn --</option>
+                        </select>
+                    </div>
+
+                    <div class="flex gap-2 mb-0 items-end">
+                        <button type="button" onclick="taiKeHoach('tuan_cu')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded border">
+                            🔄 Kế thừa tuần cũ
+                        </button>
+                        <button type="button" onclick="taiKeHoach('tkb_hien_tai')" class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-medium rounded border border-indigo-200">
+                            ⚡ Lấy từ TKB
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center px-1">
+                    <div class="text-xs text-slate-500 font-medium">Thời gian tuần: <span id="khDateRange" class="font-bold text-slate-700">-- / -- / ---- đến -- / -- / ----</span></div>
+                    <button onclick="saveKeHoachTuan()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-1.5">
+                        💾 Lưu kế hoạch
+                    </button>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white max-h-[500px]">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0 z-10">
+                            <tr>
+                                <th class="p-2.5 text-center border-r">Thứ, ngày</th>
+                                <th class="p-2.5 text-center border-r">Buổi</th>
+                                <th class="p-2.5 text-center border-r">Tiết TKB</th>
+                                <th class="p-2.5 text-center border-r">Lớp</th>
+                                <th class="p-2.5 text-center border-r">Môn học</th>                                
+                                <th class="p-2.5 text-center border-r">Tiết PPCT</th>
+                                <th class="p-2.5 text-center border-r">Phân môn</th>
+                                <th class="p-2.5 text-center border-r">Tên bài dạy</th>
+                                <th class="p-2.5 text-center border-r">Trang thiết bị</th>
+                                <th class="p-2.5 text-center border-r">Ghi chú</th>
+                                <th class="p-2.5 text-center border-r">Giáo án</th>
+                                <th class="p-2.5 text-center">Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody id="keHoachTableBody" class="divide-y divide-slate-100 text-slate-600">
+                            <tr><td colspan="12" class="text-center py-10 text-slate-400">Vui lòng chọn đầy đủ số TKB và tuần học để hiển thị kế hoạch.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        // Gọi ngay hàm tải cache PPCT vào bộ nhớ khi mở tab Kế hoạch
+    // Gọi ngay hàm tải cache PPCT vào bộ nhớ khi mở tab Kế hoạch
+        if (typeof loadPPCTDataToCache === 'function') loadPPCTDataToCache();
+
+        try {
+            if (typeof currentSession === 'undefined' || !currentSession.maTruong) return;
+
+            if (!db) {
+                console.error("Chưa kết nối Supabase!");
+                return;
+            }
+
+            // 1. Tải danh sách Số TKB (Lấy từ bảng thời khóa biểu hoặc cấu hình chung - tùy thuộc vào tên bảng TKB của bạn)
+            // Ví dụ lấy các số TKB độc lập từ bảng thoi_khoa_bieu
+            db.from('thoi_khoa_bieu')
+                .select('so_tkb')
+                .then(({ data, error }) => {
+                    if (error) throw error;
+                    const soTKBSelect = document.getElementById('selectSoTKBKeHoach');
+                    if (soTKBSelect && data) {
+                        // Lọc các số TKB duy nhất (distinct)
+                        const uniqueSoTKB = [...new Set(data.map(item => item.so_tkb || item.soTKB))].filter(Boolean);
+                        uniqueSoTKB.sort((a, b) => b - a); // Sắp xếp mới nhất lên đầu nếu cần
+                        
+                        uniqueSoTKB.forEach(stkb => {
+                            let opt = document.createElement('option');
+                            opt.value = stkb;
+                            opt.textContent = `Số TKB: ${stkb}`;
+                            soTKBSelect.appendChild(opt);
+                        });
+                    }
+                }).catch(err => console.warn("Lỗi tải danh sách số TKB:", err.message));
+
+            // 2. Tải thông tin nhân sự / giáo viên (Lấy từ bảng nhân sự/giáo viên trên Supabase)
+            db.from('nhan_su') // Hoặc tên bảng chứa thông tin giáo viên của bạn
+                .select('*')
+                .eq('ma_nhan_su', currentSession.maNhanSu)
+                .single()
+                .then(({ data, error }) => {
+                    const inputGv = document.getElementById('inputGiaoVien');
+                    if (inputGv) {
+                        if (data && (data.ten_tkb || data.ho_ten)) {
+                            inputGv.value = data.ten_tkb || data.ho_ten;
+                        } else {
+                            inputGv.value = currentSession.maNhanSu || '';
+                        }
+                    }
+                }).catch(() => {
+                    const inputGv = document.getElementById('inputGiaoVien');
+                    if (inputGv) inputGv.value = currentSession.maNhanSu || '';
+                });
+
+            // 3. Tải danh sách tuần học (Lấy từ bảng cau_hinh_tuan hoặc tuan_hoc trên Supabase)
+            // 3. Tải danh sách tuần học (Đã sửa lại đúng tên bảng CauHinhTuan và cột ten_tuan)
+            db.from('CauHinhTuan') 
+                .select('*')
+                .order('id', { ascending: true }) // Sắp xếp theo id chuẩn
+                .then(({ data, error }) => {
+                    if (error) throw error;
+                    const tuanSelect = document.getElementById('filterKHTuan');
+                    if (tuanSelect && data && data.length > 0) {
+                        tuanSelect.innerHTML = '<option value="">-- Chọn tuần học --</option>';
+                        data.forEach(w => {
+                            let tenTuanVal = w.ten_tuan; // Dùng đúng cột ten_tuan
+                            let start = w.ngay_bat_dau || w.ngayBatDau || '';
+                            let end = w.ngay_ket_thuc || w.ngayKetThuc || '';
+
+                            let opt = document.createElement('option');
+                            opt.value = tenTuanVal;
+                            opt.textContent = `${tenTuanVal} (${start} - ${end})`;
+                            opt.setAttribute('data-start', start);
+                            opt.setAttribute('data-end', end);
+                            tuanSelect.appendChild(opt);
+                        });
+                        if (tuanSelect.options.length > 1) {
+                            tuanSelect.selectedIndex = 1;
+                            if (typeof loadKeHoachByWeek === 'function') loadKeHoachByWeek();
+                        }
+                    }
+                }).catch(err => console.warn("Lỗi tải danh sách tuần học:", err.message));
+
+        } catch (e) {
+            console.error("Lỗi khởi tạo tab Kế hoạch:", e);
+        }
+        return;
+    }
+// 6. Tab Sổ đầu bài
+    if (pageType === 'so-dau-bai') {
+        contentDiv.innerHTML = `
+            <!-- Khung giao diện Sổ Đầu Bài -->
+            <div class="p-6 bg-white rounded-xl shadow-sm border border-slate-100 mt-6">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            📖 Ký Sổ Đầu Bài Trực Tuyến
+                        </h2>
+                        <p class="text-xs text-slate-500">Ghi nhận sĩ số, nhận xét lớp học và ký xác nhận tiến độ giảng dạy hàng tuần.</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select id="filterSDBTuan" class="px-3 py-2 border border-slate-200 rounded-lg text-xs bg-slate-50 font-medium focus:ring-2 focus:ring-emerald-500">
+                            <!-- Danh sách tuần sẽ được sinh tự động bằng JS -->
+                        </select>
+                        <button onclick="loadSoDauBai()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold shadow-sm transition-all">
+                            🔄 Tải Sổ Đầu Bài
+                        </button>
+                        <button onclick="saveSoDauBai()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1">
+                            ✍️ Ký & Lưu Sổ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Bảng Sổ Đầu Bài -->
+                <!-- Bảng Sổ Đầu Bài đã bổ sung cột Điểm và Xếp Loại -->
+                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-50 text-slate-700 uppercase font-semibold border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">Thứ / Buổi / Tiết</th>
+                                <th class="p-3">Lớp & Môn</th>
+                                <th class="p-3">Tiết PPCT & Phân Môn / Tên Bài</th>
+                                <th class="p-3 text-center">Sĩ Số Vắng</th>
+                                <th class="p-3">Họ Tên HS Vắng</th>
+                                <th class="p-3">Nhận Xét</th>
+                                <th class="p-3 text-center">Điểm</th>
+                                <th class="p-3">Xếp Loại</th>
+                                <th class="p-3 text-center">Trạng Thái Ký</th>
+                            </tr>
+                        </thead>
+                        <tbody id="soDauBaiTableBody" class="divide-y divide-slate-100 text-slate-600">
+                            <tr>
+                                <td colspan="9" class="text-center py-8 text-slate-400">Vui lòng chọn tuần và bấm "Tải Sổ Đầu Bài" để hiển thị dữ liệu.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        // Gọi hàm này ngay khi tải trang hoặc khi bấm vào tab Sổ Đầu Bài
+
+    initSDBTuanDropdown();
+        return;
+    }
+if (pageType === 'baocao') {
+    contentDiv.innerHTML = `
+        <div class="space-y-5 bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+            
+            <!-- TIÊU ĐỀ & CÁC NÚT THAO TÁC CHÍNH -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <span>📊</span> Quản Trị Báo Cáo Chi Tiết Tiết Dạy
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-0.5">Theo dõi, lọc dữ liệu và khóa tuần thao tác hệ thống</p>
+                </div>
+                
+                <div class="flex items-center gap-2 flex-wrap">
+                    <!-- Badge tổng số tiết -->
+                    <div class="px-3 py-2 bg-indigo-50 border border-indigo-100 rounded-xl text-xs font-semibold text-indigo-700 flex items-center gap-1.5 shadow-xs">
+                        <span>Tổng số tiết:</span>
+                        <span id="countBaoCao" class="text-base font-bold text-indigo-600">0</span>
+                    </div>
+
+                    <button onclick="taiBaoCaoChiTiet()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shadow-xs">
+                        <span>🔄</span> Tải Lại
+                    </button>
+                    
+                    <button onclick="thucHienKhoaTuan('KeHoach')" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shadow-xs">
+                        <span>🔒</span> Khóa Kế Hoạch <span class="text-[10px] opacity-75">(Cột H)</span>
+                    </button>
+                    
+                    <button onclick="thucHienKhoaTuan('SoDauBai')" class="px-3 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shadow-xs">
+                        <span>🔒</span> Khóa SĐB <span class="text-[10px] opacity-75">(Cột I)</span>
+                    </button>
+                    
+                    <button onclick="xuatBaoCaoTongHopGV()" class="px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shadow-xs">
+                        <span>📊</span> Xuất Thống Kê GV
+                    </button>
+                    
+                    <button onclick="xuatExcelBaoCao()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shadow-xs">
+                        <span>📥</span> Xuất Excel Chi Tiết
+                    </button>
+                </div>
+            </div>
+
+            <!-- THANH BỘ LỌC NÂNG CAO -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80">
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">📅 Tuần</label>
+                    <select id="filterBCCoGiTuan" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Tất cả Tuần --</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">👨‍🏫 Giáo Viên</label>
+                    <select id="filterBCCoGiGV" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Tất cả Giáo Viên --</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">📚 Môn Học</label>
+                    <select id="filterBCCoGiMon" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Tất cả Môn --</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">🎯 Phân Môn</label>
+                    <select id="filterBCCoGiPhanMon" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Tất cả Phân Môn --</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">🏫 Lớp</label>
+                    <select id="filterBCCoGiLop" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">-- Tất cả Lớp --</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-[11px] font-bold text-slate-600 px-1">⚡ Trạng Thái SĐB</label>
+                    <select id="filterBCCoGiTrangThai" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="chua-ky">Chưa ký SĐB</option>
+                        <option value="da-ky">Đã ký SĐB</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- BẢNG HIỂN THỊ DỮ LIỆU -->
+            <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-xs">
+                <table id="tableBaoCao" class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
+                            <th class="p-3">Tuần</th>
+                            <th class="p-3">Giáo Viên</th>
+                            <th class="p-3">Môn</th>
+                            <th class="p-3">Phân Môn</th>
+                            <th class="p-3">Lớp</th>
+                            <th class="p-3 text-center">Tiết</th>
+                            <th class="p-3">Nội Dung Kế Hoạch</th>
+                            <th class="p-3 text-center">Trạng Thái Sổ Đầu Bài</th>
+                        </tr>
+                    </thead>
+                    <tbody id="baoCaoTableBody" class="divide-y divide-slate-100">
+                        <tr><td colspan="8" class="p-6 text-center text-slate-400">Đang tải dữ liệu báo cáo...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    taiBaoCaoChiTiet();
+}
+
+
+    }
+
+       function handleAddNew() {
+    alert("Mở modal thêm mới dữ liệu chuyên môn.");
+}
+
+// ===================================================================
+// ======================= ĐĂNG TKB (SUPABASE) ======================
+// ===================================================================
+
+// 1. Tạo và tải file mẫu TKB Excel chuẩn cấu trúc
+function downloadTKBTemplate() {
+    const templateData = [
+        ["STT", "Tuần học", "Thứ", "Buổi", "Tiết", "Lớp", "Môn học", "Giáo viên dạy"],
+        [1, "TKB số 1", "Thứ 2", "Sáng", "Tiết 1", "12A", "Toán", "Nguyễn Văn A"]
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "TKB");
+    XLSX.writeFile(wb, "Mau_Dang_TKB_Chuan.xlsx");
+}
+
+// 2. Xử lý khi chọn file Excel TKB để bóc tách và hiển thị xem trước
+function handleUploadTKB(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const selectSoTKB = document.getElementById('selectSoTKB');
+    let targetSoTKB = selectSoTKB ? selectSoTKB.value.trim() : "TKB số 1";
+    
+    // Bóc tách tên TKB nếu dính tiền tố hiển thị
+    if (targetSoTKB.includes("Thêm mới:")) {
+        targetSoTKB = targetSoTKB.replace("➕ Thêm mới:", "").trim();
+    } else if (targetSoTKB.includes("Xem / Ghi đè:")) {
+        targetSoTKB = targetSoTKB.replace("📂 Xem / Ghi đè:", "").trim();
+    }
+
+    if (!targetSoTKB) {
+        alert("Vui lòng chọn hoặc tạo Số TKB áp dụng ở phía trên trước khi tải file TKB lên!");
+        input.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            if (rows.length < 6) {
+                alert("File Excel không đúng cấu trúc TKB!");
+                return;
+            }
+
+            const rowLop = rows[3]; 
+            const rowBuoi = rows[4]; 
+            
+            let tkbParsedData = [];
+            let sttCount = 1;
+            const danhSachThu = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"];
+
+            for (let i = 5; i < rows.length; i++) {
+                let r = rows[i];
+                if (!r || r.length === 0) continue;
+
+                let relativeRow = i - 5;
+                let dayIndex = Math.floor(relativeRow / 5);
+                let tietNum = (relativeRow % 5) + 1;
+
+                if (dayIndex >= danhSachThu.length) break;
+
+                let currentThu = danhSachThu[dayIndex];
+                let tietHoc = "Tiết " + tietNum;
+
+                for (let colIdx = 2; colIdx < r.length; colIdx++) {
+                    let cellValue = r[colIdx];
+                    if (cellValue && cellValue.toString().trim() !== "") {
+                        let tenLop = rowLop[colIdx] || rowLop[colIdx - 1] || "";
+                        if (!tenLop) continue;
+
+                        let buoi = rowBuoi[colIdx] || (colIdx % 2 === 0 ? "Sáng" : "Chiều");
+                        let parts = cellValue.toString().split('-');
+                        let monHoc = parts[0] ? parts[0].trim() : cellValue;
+                        let gvDich = parts[1] ? parts[1].trim() : "";
+
+                        tkbParsedData.push({
+                            stt: sttCount++,
+                            so_tkb: targetSoTKB,
+                            thu: currentThu,
+                            buoi: buoi.trim(),
+                            tiet: tietHoc,
+                            lop: tenLop.toString().trim(),
+                            mon: monHoc,
+                            ten_tkb: gvDich,
+                            ma_truong: (typeof currentSession !== 'undefined' && currentSession.maTruong) ? currentSession.maTruong : "c3ndtnl.nan"
+                        });
+                    }
+                }
+            }
+
+            // Hiển thị xem trước lên bảng giao diện
+            renderTKBTable(tkbParsedData);
+
+            // Hỏi xác nhận trước khi đẩy lên Supabase
+            if (confirm(`Đã bóc tách thành công ${tkbParsedData.length} tiết cho [${targetSoTKB}]. Bạn có muốn đồng bộ lưu lên hệ thống ngay không?`)) {
+                uploadTKBToSupabase(tkbParsedData, targetSoTKB);
+            }
+        } catch (err) {
+            alert("Lỗi xử lý file Excel: " + err.message);
+        } finally {
+            input.value = "";
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+// 3. Đẩy dữ liệu TKB trực tiếp lên Supabase
+// 3. Đẩy dữ liệu TKB trực tiếp lên Supabase (Đã sửa bỏ ma_truong)
+async function uploadTKBToSupabase(tkbArray, targetSoTKB) {
+    if (!db) {
+        alert("Chưa kết nối được cơ sở dữ liệu Supabase!");
+        return;
+    }
+
+    const tbody = document.getElementById('tkbTableBody');
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-indigo-600 font-medium animate-pulse">Đang đẩy dữ liệu lên hệ thống Supabase...</td></tr>`;
+    }
+
+    try {
+        // Bước 1: Xóa dữ liệu cũ của TKB này (theo tuần/tên TKB) để ghi đè
+        const { error: deleteError } = await db
+            .from('thoi_khoa_bieu')
+            .delete()
+            .eq('so_tkb', targetSoTKB);
+
+        if (deleteError) {
+            console.warn("Cảnh báo khi xóa dữ liệu cũ:", deleteError.message);
+        }
+
+        // Bước 2: Chuẩn bị dữ liệu insert sang các cột chuẩn trong bảng thoi_khoa_bieu
+        const recordsToInsert = tkbArray.map(item => ({
+            so_tkb: item.so_tkb,
+            thu: item.thu,
+            buoi: item.buoi,
+            tiet: item.tiet,
+            lop: item.lop,
+            mon: item.mon,
+            ten_tkb: item.ten_tkb
+        }));
+
+        // Thực hiện Insert theo lô (chunks khoảng 500 bản ghi để tránh quá giới hạn)
+        const batchSize = 500;
+        for (let i = 0; i < recordsToInsert.length; i += batchSize) {
+            const batch = recordsToInsert.slice(i, i + batchSize);
+            const { error: insertError } = await db
+                .from('thoi_khoa_bieu')
+                .insert(batch);
+
+            if (insertError) throw insertError;
+        }
+
+        alert("Đã lưu " + targetSoTKB + " lên hệ thống thành công!");
+        initTKBWeekDropdown(); // Tải lại danh sách dropdown và dữ liệu mới nhất
+    } catch (err) {
+        alert("Lỗi khi lưu TKB lên Supabase: " + err.message);
+        loadTKBData(); // Tải lại dữ liệu nếu lỗi
+    }
+}
+
+// 6. Tải dữ liệu TKB từ Supabase xuống bảng theo lựa chọn (Đã sửa bỏ ma_truong)
+async function loadTKBData() {
+    const tbody = document.getElementById('tkbTableBody');
+    const selectSoTKB = document.getElementById('selectSoTKB');
+    let selectedVal = selectSoTKB ? selectSoTKB.value.trim() : "";
+    
+    if (!tbody) return;
+
+    if (selectedVal.includes("Thêm mới:")) {
+        selectedVal = selectedVal.replace("➕ Thêm mới:", "").trim();
+    } else if (selectedVal.includes("Xem / Ghi đè:")) {
+        selectedVal = selectedVal.replace("📂 Xem / Ghi đè:", "").trim();
+    }
+
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-slate-400">Đang tải dữ liệu thời khóa biểu [${selectedVal || "Mặc định"}] từ hệ thống...</td></tr>`;
+
+    if (!db) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-rose-500">Chưa kết nối được cơ sở dữ liệu.</td></tr>`;
+        return;
+    }
+
+    try {
+        let query = db
+            .from('thoi_khoa_bieu')
+            .select('*');
+
+        if (selectedVal) {
+            // ĐÃ SỬA: Lọc theo cột 'so_tkb' thay vì 'tuan'
+            query = query.eq('so_tkb', selectedVal);
+        }
+
+        let { data, error } = await query;
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            renderTKBTable(data);
+        } else {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-slate-400">Chưa có dữ liệu cho mục [${selectedVal}]. Bạn có thể tải file Excel lên để thêm mới.</td></tr>`;
+        }
+    } catch (err) {
+        console.error("Lỗi tải TKB:", err);
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-rose-500">Lỗi kết nối khi tải TKB: ${err.message}</td></tr>`;
+    }
+}
+// 4. Hàm vẽ bảng hiển thị dữ liệu ra màn hình
+function renderTKBTable(dataArray) {
+    const tbody = document.getElementById('tkbTableBody');
+    if (!tbody) return;
+
+    if (!dataArray || dataArray.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-slate-400">Không có dữ liệu hiển thị.</td></tr>`;
+        return;
+    }
+
+    let html = "";
+    dataArray.forEach((item, index) => {
+        html += `
+            <tr class="hover:bg-slate-50/80 transition-all">
+                <td class="p-3 font-medium text-slate-500">${index + 1}</td>
+                <td class="p-3 font-semibold text-indigo-600">${item.so_tkb || item.tuan_hoc || ''}</td>
+                <td class="p-3 font-semibold text-indigo-900">${item.thu || ''}</td>
+                <td class="p-3">${item.buoi || ''}</td>
+                <td class="p-3">${item.tiet || ''}</td>
+                <td class="p-3 font-bold text-slate-700">${item.lop || ''}</td>
+                <td class="p-3 text-emerald-700 font-medium">${item.mon || item.mon_hoc || ''}</td>
+                <td class="p-3 text-slate-600">${item.ten_tkb || item.giao_vien_day || ''}</td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+// 5. Tải danh sách TKB từ Supabase lên Dropdown
+// 5. Tải danh sách tuần / số TKB trực tiếp từ bảng thoi_khoa_bieu lên Dropdown
+async function initTKBWeekDropdown() {
+    const select = document.getElementById('selectSoTKB');
+    if (!select) return;
+
+    const currentSelectedValue = select.value;
+
+    try {
+        if (!db) throw new Error("Chưa kết nối Supabase");
+
+        // ĐÃ SỬA: Truy vấn lấy danh sách cột 'so_tkb' thay vì 'tuan'
+        let { data, error } = await db
+            .from('thoi_khoa_bieu')
+            .select('so_tkb');
+
+        if (error) throw error;
+
+        // Lọc lấy danh sách các số TKB duy nhất (không trùng lặp)
+        let listSoTKB = [];
+        if (data && data.length > 0) {
+            const uniqueSoTKB = [...new Set(data.map(item => item.so_tkb || item.soTKB).filter(Boolean))];
+            // Sắp xếp danh sách số TKB
+            listSoTKB = uniqueSoTKB.sort((a, b) => {
+                // Sắp xếp theo số nếu có, hoặc chuỗi thông thường
+                return String(a).localeCompare(String(b), undefined, { numeric: true });
+            });
+        }
+
+        let optionsHtml = '';
+        
+        // Đưa các số TKB đã có vào dropdown dưới dạng "Xem / Ghi đè"
+        listSoTKB.forEach(item => {
+            optionsHtml += `<option value="${item}">📂 Xem / Ghi đè: ${item}</option>`;
+        });
+
+        // Gợi ý tạo TKB tiếp theo dựa trên số lượng hiện có
+        let nextNum = listSoTKB.length + 1;
+        let goiYMoi = `TKB số ${nextNum}`;
+        
+        // Đưa tùy chọn "Thêm mới" lên đầu tiên
+        optionsHtml = `<option value="${goiYMoi}">➕ Thêm mới: ${goiYMoi}</option>` + optionsHtml;
+        select.innerHTML = optionsHtml;
+
+        // Khôi phục lại lựa chọn cũ của người dùng nếu vẫn tồn tại
+        if (currentSelectedValue && select.querySelector(`option[value="${CSS.escape(currentSelectedValue)}"]`)) {
+            select.value = currentSelectedValue;
+        } else {
+            select.selectedIndex = 0;
+        }
+
+        // Tải dữ liệu của mục đang được chọn lên bảng
+        if (typeof loadTKBData === 'function') loadTKBData();
+
+    } catch (err) {
+        console.warn("Không tải được danh sách TKB từ cơ sở dữ liệu, dùng mặc định:", err);
+        select.innerHTML = `
+            <option value="TKB số 1">➕ Thêm mới: TKB số 1</option>
+            <option value="TKB số 2">📂 Xem / Ghi đè: TKB số 2</option>
+        `;
+        if (typeof loadTKBData === 'function') loadTKBData();
+    }
+}
+//===================================================================
+//====================== PHÂN PHỐI CHƯƠNG TRÌNH ======================
+//===================================================================
+// 1. Đẩy dữ liệu PPCT lên Supabase (Thay thế hàm uploadPPCTToGAS cũ)
+async function uploadPPCTToSupabase(ppctArray) {
+    const tbody = document.getElementById('ppctTableBody');
+    if (tbody) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-indigo-600 font-medium animate-pulse">Đang đẩy dữ liệu PPCT lên Supabase...</td></tr>`;
+    }
+
+    if (!db) {
+        alert("Chưa kết nối được cơ sở dữ liệu Supabase!");
+        loadPPCTFromSupabase();
+        return;
+    }
+
+    try {
+        if (!ppctArray || ppctArray.length === 0) return;
+
+        // Lấy thông tin khối và môn của bộ dữ liệu đang upload để xóa dữ liệu cũ cùng khối/môn trước khi ghi đè mới
+        const sample = ppctArray[0];
+        const targetKhoi = sample.khoi;
+        const targetMon = sample.mon;
+        const targetPhanMon = sample.phanMon || "";
+
+        // Bước 1: Xóa dữ liệu cũ trùng Khối, Môn, Phân môn (nếu có) để tránh bị trùng lặp
+        let deleteQuery = db.from('phan_phoi_chuong_trinh').delete().eq('khoi', targetKhoi).eq('mon', targetMon);
+        if (targetPhanMon) {
+            deleteQuery = deleteQuery.eq('phan_mon', targetPhanMon);
+        }
+        
+        const { error: deleteError } = await deleteQuery;
+        if (deleteError) {
+            console.warn("Cảnh báo khi xóa dữ liệu PPCT cũ:", deleteError.message);
+        }
+
+        // Bước 2: Chuẩn bị dữ liệu insert khớp với các cột trong bảng Supabase
+        const recordsToInsert = ppctArray.map(item => ({
+            khoi: item.khoi,
+            mon: item.mon,
+            phan_mon: item.phanMon,
+            tuan: item.tuan,
+            tiet: item.tiet,
+            ten_bai: item.tenBai,
+            ghi_chu: item.ghiChu
+        }));
+
+        // Thực hiện Insert theo lô (chunks 500 bản ghi)
+        const batchSize = 500;
+        for (let i = 0; i < recordsToInsert.length; i += batchSize) {
+            const batch = recordsToInsert.slice(i, i + batchSize);
+            const { error: insertError } = await db
+                .from('phan_phoi_chuong_trinh')
+                .insert(batch);
+
+            if (insertError) throw insertError;
+        }
+
+        alert("Đã lưu Phân phối chương trình lên hệ thống thành công!");
+        loadPPCTFromSupabase(); // Tải lại toàn bộ dữ liệu mới nhất từ Supabase
+
+    } catch (err) {
+        alert("Lỗi khi lưu PPCT lên Supabase: " + err.message);
+        loadPPCTFromSupabase();
+    }
+}
+
+// 2. Hàm tải dữ liệu PPCT trực tiếp từ Supabase
+async function loadPPCTFromSupabase() {
+    const tbody = document.getElementById('ppctTableBody');
+    if (!tbody) return;
+
+    if (!db) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-rose-500">Chưa kết nối được cơ sở dữ liệu Supabase.</td></tr>`;
+        return;
+    }
+
+    try {
+        let { data, error } = await db
+            .from('phan_phoi_chuong_trinh')
+            .select('*');
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            // Chuẩn hóa lại tên trường từ database (snake_case) sang camelCase cho khớp với code lọc hiện tại của bạn
+            window.allPPCTData = data.map((item, index) => ({
+                stt: index + 1,
+                khoi: item.khoi,
+                mon: item.mon,
+                phanMon: item.phan_mon || item.phanMon || "",
+                tuan: item.tuan,
+                tiet: item.tiet,
+                tenBai: item.ten_bai || item.tenBai || "",
+                ghiChu: item.ghi_chu || item.ghiChu || ""
+            }));
+
+            filterPPCTData(); // Tự động thiết lập dropdown phân môn và render bảng
+        } else {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-slate-400">Chưa có dữ liệu Phân phối chương trình. Bạn có thể tải file Excel lên để đồng bộ.</td></tr>`;
+        }
+    } catch (err) {
+        console.error("Lỗi tải PPCT:", err);
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-rose-500">Lỗi tải dữ liệu PPCT: ${err.message}</td></tr>`;
+    }
+}
+
+function downloadPPCTTemplate() {
+    const templateData = [
+        ["PHÂN PHỐI CHƯƠNG TRÌNH", "", "", ""],
+        ["Khối", "Khối 10", "", "10"],
+        ["Môn", "Toán học", "", "1"],
+        ["Phân môn", "", "", "-1"],
+        ["", "", "", ""],
+        ["Tuần PPCT", "Tiết", "Tên bài", "Ghi chú"],
+        ["Tuần 1", 1, "Bài 1: Mệnh đề", ""],
+        ["Tuần 1", 2, "Bài 1: Mệnh đề", ""]
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "PPCT");
+    XLSX.writeFile(wb, "Mau_PPCT_Chuan.xlsx");
+}
+
+function handleUploadPPCT(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            
+            if (rows.length < 7) {
+                alert("File Excel không đúng cấu trúc PPCT!");
+                return;
+            }
+
+            
+            // Lấy trực tiếp tên tường minh ở cột B (index 1) hoặc fallback sang cột D (index 3) nếu cần
+            let rawKhoi = rows[1] ? (rows[1][1] || rows[1][3] || "") : "";
+            let rawMon = rows[2] ? (rows[2][1] || rows[2][3] || "") : "";
+            let rawPhanMon = rows[3] ? (rows[3][1] || rows[3][3] || "") : "";
+
+            // Làm sạch chuỗi, nếu ô chứa chuỗi "Khối 10" thì có thể giữ nguyên hoặc rút gọn thành "10" cho khớp logic khối
+            let khoi = rawKhoi.toString().replace(/[^0-9]/g, ""); // Lấy ra số khối (vd: "10") nếu muốn, hoặc để nguyên rawKhoi
+            if (!khoi) khoi = rawKhoi.toString().trim();
+            
+            // Lấy tên môn tường minh (Ví: "Toán học" hoặc "Toán")
+            let mon = rawMon.toString().trim();
+            let phanMon = rawPhanMon.toString().trim();
+            let ppctParsedData = [];
+            let currentTuan = "";
+
+            for (let i = 6; i < rows.length; i++) {
+                let r = rows[i];
+                if (!r || r.length === 0) continue;
+
+                if (r[0] !== undefined && r[0] !== "" && r[0] !== null) {
+                    currentTuan = r[0].toString().trim();
+                }
+
+                let tiet = r[1] !== undefined ? r[1] : "";
+                let tenBai = r[2] !== undefined ? r[2] : "";
+                let ghiChu = r[3] !== undefined ? r[3] : "";
+
+                if (tiet !== "" || tenBai !== "") {
+                    ppctParsedData.push({
+                        stt: ppctParsedData.length + 1,
+                        khoi: khoi.toString().trim(),
+                        mon: mon.toString().trim(),
+                        phanMon: phanMon.toString().trim(),
+                        tuan: currentTuan,
+                        tiet: tiet.toString().trim(),
+                        tenBai: tenBai.toString().trim(),
+                        ghiChu: ghiChu.toString().trim()
+                    });
+                }
+            }
+
+            if (ppctParsedData.length === 0) {
+                alert("Không tìm thấy dữ liệu chi tiết bài học từ dòng 7 trở đi!");
+                return;
+            }
+
+            if (confirm(`Đã bóc tách thành công ${ppctParsedData.length} dòng PPCT (Khối: ${khoi}, Môn: ${mon}). Bạn có muốn đồng bộ lên hệ thống không?`)) {
+                uploadPPCTToSupabase(ppctParsedData);
+            }
+
+        } catch (err) {
+            alert("Lỗi đọc file PPCT: " + err.message);
+        } finally {
+            input.value = "";
+        }
+    };
+    reader.readAsArrayBuffer(file);
+}
+
+
+
+function renderPPCTTable(dataArray) {
+    const tbody = document.getElementById('ppctTableBody');
+    if (!tbody) return;
+
+    if (!dataArray || dataArray.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-10 text-slate-400">Không có dữ liệu PPCT.</td></tr>`;
+        return;
+    }
+
+    let html = "";
+    dataArray.forEach((item, index) => {
+        html += `
+            <tr class="hover:bg-slate-50/80 transition-all">
+                <td class="p-3 font-medium text-slate-500">${index + 1}</td>
+                <td class="p-3 font-bold text-indigo-900">${item.khoi}</td>
+                <td class="p-3 font-medium text-slate-700">${item.mon}</td>
+                <td class="p-3 text-slate-500">${item.phanMon}</td>
+                <td class="p-3 text-indigo-600 font-semibold">${item.tuan}</td>
+                <td class="p-3 font-bold">Tiết ${item.tiet}</td>
+                <td class="p-3 text-slate-800 font-medium">${item.tenBai}</td>
+                <td class="p-3 text-slate-500 italic">${item.ghiChu}</td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}
+
+let allPPCTData = []; 
+
+function filterPPCTData() {
+    const selectedKhoi = document.getElementById('filterKhoi').value.trim().toLowerCase();
+    const selectedMon = document.getElementById('filterMon').value.trim().toLowerCase();
+    const selectPM = document.getElementById('filterPhanMon'); // ID của thẻ select Phân môn (bạn đổi tên nếu ID khác)
+
+    if (!window.allPPCTData) return;
+
+    // 1. Lọc dữ liệu theo Khối và Môn để tìm ra các Phân môn tương ứng
+    let filtered = window.allPPCTData.filter(item => {
+        let itemKhoi = item.khoi ? item.khoi.toString().trim().toLowerCase() : "";
+        let itemMon = item.mon ? item.mon.toString().trim().toLowerCase() : "";
+
+        let cleanSelectedKhoi = selectedKhoi.replace("khối", "").trim();
+        let cleanItemKhoi = itemKhoi.replace("khối", "").trim();
+
+        let matchKhoi = selectedKhoi === "" || cleanItemKhoi === cleanSelectedKhoi || itemKhoi.includes(selectedKhoi);
+        let matchMon = selectedMon === "" || itemMon.includes(selectedMon);
+        
+        return matchKhoi && matchMon;
+    });
+
+    // 2. Cập nhật lại danh sách Phân môn đổ xuống theo Khối/Môn đang chọn
+    if (selectPM) {
+        let currentSelectedPM = selectPM.value; // Giữ lại giá trị đang chọn nếu có
+        selectPM.innerHTML = '<option value="">-- Tất cả Phân môn --</option>';
+        
+        let uniquePhanMon = {};
+        filtered.forEach(item => {
+            let pm = item.phanMon ? item.phanMon.trim() : "";
+            if (pm !== "") {
+                uniquePhanMon[pm] = true;
+            }
+        });
+
+        Object.keys(uniquePhanMon).forEach(pm => {
+            let opt = document.createElement("option");
+            opt.value = pm;
+            opt.textContent = pm;
+            selectPM.appendChild(opt);
+        });
+
+        // Khôi phục lại giá trị cũ nếu nó vẫn tồn tại trong danh sách mới
+        if (uniquePhanMon[currentSelectedPM]) {
+            selectPM.value = currentSelectedPM;
+        }
+    }
+
+    // 3. Lọc tiếp theo Phân môn nếu có chọn cụ thể và vẽ lại bảng
+    const selectedPhanMon = selectPM ? selectPM.value.trim().toLowerCase() : "";
+    let finalFiltered = filtered.filter(item => {
+        let itemPM = item.phanMon ? item.phanMon.trim().toLowerCase() : "";
+        return selectedPhanMon === "" || itemPM === selectedPhanMon;
+    });
+
+    renderPPCTTable(finalFiltered);
+}
+
+//===================================================================
+//====================== KẾ HOẠCH DẠY HỌC ============================
+//===================================================================
+
+let allKeHoachData = [];
+let cachedPPCTData = [];
+
+// 1. Hàm khởi tạo Tab Kế hoạch dạy học
+function initKeHoachTab() {
+    const gvInput = document.getElementById('inputGiaoVien');
+    if (gvInput) {
+        let tenGiaoVien = "";
+        if (typeof currentSession !== 'undefined') {
+            tenGiaoVien = currentSession.username || currentSession.maNhanSu || currentSession.hoTen || "";
+        }
+        if (!tenGiaoVien) {
+            tenGiaoVien = "hait"; // Fallback mặc định
+        }
+
+        if (gvInput.tagName === 'INPUT' || gvInput.tagName === 'SELECT') {
+            gvInput.value = tenGiaoVien;
+        } else {
+            gvInput.textContent = tenGiaoVien;
+        }
+    }
+
+    // Tải cache PPCT và danh sách tuần từ Supabase
+    loadPPCTDataToCache();
+}
+
+// 2. Tải danh sách PPCT vào bộ nhớ cache từ Supabase
+function loadPPCTDataToCache() {
+    if (cachedPPCTData.length > 0) return;
+
+    if (typeof db === 'undefined' || !db) {
+        console.warn("Chưa kết nối Supabase cho cache PPCT!");
+        return;
+    }
+
+    db.from('phan_phoi_chuong_trinh') // Thay tên bảng PPCT nếu cần
+        .select('*')
+        .then(({ data, error }) => {
+            if (error) throw error;
+            if (data && Array.isArray(data)) {
+                // Ánh xạ lại dữ liệu sang dạng mảng/object tương thích với logic cũ nếu cần
+                cachedPPCTData = data.map(item => [
+                    item.id,
+                    item.khoi || item.Khoi,
+                    item.mon_hoc || item.mon || item.MonHoc,
+                    item.phan_mon || item.phanMon || "",
+                    item.tuan_ppct || item.tuanPPCT || "",
+                    item.tiet || item.tietPPCT || 0,
+                    item.ten_bai || item.tenBai || ""
+                ]);
+                console.log("Đã cache thành công dữ liệu PPCT từ Supabase:", cachedPPCTData.length, "dòng.");
+            }
+        })
+        .catch(err => console.error("Lỗi tải cache PPCT:", err));
+}
+
+// 3. Hàm gọi khi thay đổi tuần hoặc số TKB
+function loadKeHoachByWeek() {
+    const selectTuan = document.getElementById('filterKHTuan');
+    const selectSoTKB = document.getElementById('selectSoTKBKeHoach');
+    const selectPhanMon = document.getElementById('selectPhanMonKeHoach');
+    
+    if (!selectTuan || !selectSoTKB) return;
+    
+    const selectedValue = selectTuan.value;
+    const selectedOpt = selectTuan.options[selectTuan.selectedIndex];
+    const soTKB = selectSoTKB.value;
+    const dateRangeSpan = document.getElementById('khDateRange');
+    const tbody = document.getElementById('keHoachTableBody');
+    
+    if (!selectedValue || !soTKB) {
+        if (dateRangeSpan) dateRangeSpan.textContent = '-- / -- / ---- đến -- / -- / ----';
+        if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Vui lòng chọn đầy đủ số TKB và tuần học để hiển thị kế hoạch.</td></tr>`;
+        return;
+    }
+
+    const start = selectedOpt ? selectedOpt.getAttribute('data-start') || '--' : '--';
+    const end = selectedOpt ? selectedOpt.getAttribute('data-end') || '--' : '--';
+    if (dateRangeSpan) dateRangeSpan.textContent = `${start} đến ${end}`;
+
+    if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Đang tải dữ liệu kế hoạch cho tuần ${selectedValue} (${soTKB})...</td></tr>`;
+
+    // Gọi hàm lấy dữ liệu từ Supabase (bạn có thể viết hàm truy vấn bảng ke_hoach_tuan tương ứng ở đây)
+    fetchKeHoachFromSupabase(selectedValue, soTKB);
+}
+
+// 4. Lấy dữ liệu kế hoạch từ Supabase
+
+// 5. Đồng bộ TKB vào bảng Kế hoạch nếu chưa có dữ liệu
+// 1. Tải danh sách cấu hình tuần từ bảng CauHinhTuan vào thẻ <select> tuần
+
+// Hàm tải danh sách tuần từ bảng CauHinhTuan vào ô chọn tuần trong tab Kế hoạch
+function loadCauHinhTuanVaoKeHoach() {
+    db.from('CauHinhTuan')
+        .select('*')
+        .order('id', { ascending: true })
+        .then(({ data, error }) => {
+            if (error) throw error;
+
+            const tuanSelect = document.getElementById('filterKHTuan');
+            if (!tuanSelect) return;
+
+            // Giữ lại option mặc định đầu tiên
+            tuanSelect.innerHTML = '<option value="">-- Chọn tuần học --</option>';
+
+            if (data && data.length > 0) {
+                data.forEach(w => {
+                    let tenTuanVal = w.ten_tuan; // Lấy đúng tên cột ten_tuan
+                    let start = w.ngay_bat_dau || '';
+                    let end = w.ngay_ket_thuc || '';
+
+                    let opt = document.createElement('option');
+                    opt.value = tenTuanVal; // Giá trị để so khớp/lưu
+                    opt.textContent = `${tenTuanVal} (${start} - ${end})`; // Hiển thị đẹp kèm ngày tháng
+                    
+                    // Gắn thêm data attribute để khi chọn có thể hiển thị dòng "Thời gian tuần: ... đến ..."
+                    opt.setAttribute('data-start', start);
+                    opt.setAttribute('data-end', end);
+
+                    tuanSelect.appendChild(opt);
+                });
+
+                // Nếu có sẵn dữ liệu, tự động chọn tuần đầu tiên hoặc tuần hiện tại nếu cần
+                if (tuanSelect.options.length > 1) {
+                    tuanSelect.selectedIndex = 1;
+                    // Kích hoạt sự kiện thay đổi để load thông tin thời gian tuần tương ứng
+                    tuanSelect.dispatchEvent(new Event('change'));
+                }
+            }
+        })
+        .catch(err => {
+            console.warn("Lỗi tải danh sách tuần học cho Kế hoạch:", err.message);
+        });
+}
+
+// 2. Tải TKB chỉ dựa vào so_tkb (Tuyệt đối không dùng cột tuan)
+// 4. Lấy dữ liệu kế hoạch từ Supabase (Đã sửa lại logic lọc an toàn hơn)
+async function fetchKeHoachFromSupabase(tuan, soTKB) {
+    const tbody = document.getElementById('keHoachTableBody');
+    const tenTKB = currentSession?.tenTKB || "";
+
+    try {
+        if (typeof db === 'undefined' || !db) throw new Error("Chưa kết nối Supabase");
+
+        // Truy vấn cơ bản theo tuần và số TKB
+        let query = db
+            .from('ke_hoach_tuan')
+            .select('*')
+            .eq('tuan', tuan)
+            .eq('so_tkb', soTKB);
+
+        // Nếu không phải admin, lọc thêm theo tên TKB hoặc mã nhân sự của giáo viên đang đăng nhập
+        if (!isAdmin && tenTKB) {
+            // Hoặc bạn có thể dùng ma_nhan_su nếu bảng ke_hoach_tuan lưu cột ma_nhan_su
+            query = query.eq('ten_tkb', tenTKB);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            window.allKeHoachData = data;
+            renderKeHoachTable(data);
+        } else {
+            // Nếu chưa có kế hoạch lưu sẵn, tự động chuyển sang nạp từ TKB gốc
+            loadTKBIntoKeHoach();
+        }
+    } catch (err) {
+        console.error("Lỗi tải kế hoạch từ Supabase:", err);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-rose-500">Lỗi tải dữ liệu kế hoạch: ${err.message}</td></tr>`;
+    }
+}
+
+// 5. Tải TKB và đồng bộ vào Kế hoạch (Đã sửa lỗi lọc đúng số TKB và đúng tuần)
+async function loadTKBIntoKeHoach() {
+    const selectSoTKB = document.getElementById('selectSoTKBKeHoach'); 
+    const selectTuan = document.getElementById('filterKHTuan');         
+    const tbody = document.getElementById('keHoachTableBody');
+    
+    const soTKBValue = selectSoTKB ? selectSoTKB.value : ""; 
+    const tuanApDungStr = selectTuan ? selectTuan.value : "";        
+    
+    const matchTuanHienTai = tuanApDungStr.match(/\d+/);
+    const tuanHienTaiNum = matchTuanHienTai ? parseInt(matchTuanHienTai[0]) : 1;
+    
+    const inputGiaoVien = document.getElementById('inputGiaoVien');
+    const tenTKBHienTai = (
+        inputGiaoVien?.getAttribute('data-tentkb') || 
+        inputGiaoVien?.value || 
+        currentSession?.tenTKB || 
+        currentSession?.maNhanSu || 
+        ""
+    ).trim().toLowerCase();
+
+    if (!soTKBValue) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-6 text-slate-400">Vui lòng chọn số TKB cần lên kế hoạch.</td></tr>`;
+        return;
+    }
+
+    if (!db) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-6 text-rose-500">Lỗi: Chưa kết nối được cơ sở dữ liệu Supabase.</td></tr>`;
+        return;
+    }
+
+    if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-6 text-slate-400">Đang tải TKB số ${soTKBValue} (Tuần ${tuanHienTaiNum}) và đồng bộ PPCT...</td></tr>`;
+
+    const processTKBData = async () => {
+        try {
+            const normalizeStr = (str) => {
+                return String(str || "").replace(/_/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
+            };
+
+            // 1. Quét dữ liệu tiết lớn nhất từ các tuần trước (BẮT BUỘC KHỚP CHÍNH XÁC so_tkb và nhỏ hơn tuần hiện tại)
+ // 1. Quét dữ liệu tiết lớn nhất từ tuần ngay trước đó (Không phân biệt so_tkb là số 1 hay số 2)
+let maxTietTuanTruocMap = {}; 
+
+if (tuanHienTaiNum > 1) {
+    let maNS = currentSession?.maNhanSu || "";
+    let tuanTruocCanTim = tuanHienTaiNum - 1; // Chỉ lấy đúng tuần ngay trước đó
+
+    let queryTruoc = db
+        .from('ke_hoach_tuan')
+        .select('lop, mon, phan_mon, tiet_ppct, tuan, so_tkb')
+        .eq('tuan', tuanTruocCanTim); // Lấy chính xác tuần liền kề trước (VD: đang ở tuần 2 thì lấy tuần 1)
+
+    if (maNS) {
+        queryTruoc = queryTruoc.eq('ma_nhan_su', maNS);
+    }
+
+    const { data: dataTuanTruoc, error: errTruoc } = await queryTruoc;
+    
+    if (!errTruoc && dataTuanTruoc && dataTuanTruoc.length > 0) {
+        dataTuanTruoc.forEach(item => {
+            let rawLop = String(item.lop || "").trim();
+            let monTKB = String(item.mon || "").trim().toLowerCase();
+            
+            let tenLopChinh = rawLop;
+            let phanMonTuanTruoc = "";
+            if (rawLop.includes('-')) {
+                let parts = rawLop.split('-');
+                tenLopChinh = parts[0].trim();
+                phanMonTuanTruoc = parts.slice(1).join('-').trim();
+            }
+
+            let normTenLopChinh = normalizeStr(tenLopChinh);
+            let normPhanMon = normalizeStr(phanMonTuanTruoc || item.phan_mon);
+
+            // Tạo key tổng quát để mapping sang TKB hiện tại (không phụ thuộc so_tkb cũ)
+            let gKey = `${normTenLopChinh}_${monTKB}_${normPhanMon}`;
+            let tVal = parseInt(item.tiet_ppct);
+
+            if (!isNaN(tVal)) {
+                if (!maxTietTuanTruocMap[gKey] || tVal > maxTietTuanTruocMap[gKey]) {
+                    maxTietTuanTruocMap[gKey] = tVal;
+                }
+            }
+        });
+    }
+}
+
+            // 2. Tải thời khóa biểu gốc từ bảng thoi_khoa_bieu theo đúng so_tkb đang chọn
+            // 2. Tải thời khóa biểu gốc từ bảng thoi_khoa_bieu (Đã tối ưu chuẩn hóa so_tkb)
+const cleanSoTKB = soTKBValue.replace(/\D/g, ''); // Lọc lấy số (VD: "TKB số 2" -> "2")
+
+const { data, error } = await db
+    .from('thoi_khoa_bieu')
+    .select('*')
+    .or(`so_tkb.eq.${soTKBValue},so_tkb.eq.${cleanSoTKB}`); // Thử tìm cả dạng đầy đủ lẫn dạng số thuần túy
+
+if (error) throw error;
+
+if (data && data.length > 0) {
+    let filteredData = data;
+    
+    // Nới lỏng lọc giáo viên (Khớp theo tên, mã nhân sự hoặc bỏ qua nếu là admin)
+    // Lọc chuẩn xác giáo viên bằng so sánh tuyệt đối (tránh dùng includes bị bắt nhầm)
+if (!isAdmin && tenTKBHienTai && tenTKBHienTai !== 'đang tải...') {
+    filteredData = data.filter(item => {
+        let gvTKB = String(item.ten_tkb || "").trim().toLowerCase();
+        let maNS = String(item.ma_nhan_su || "").trim().toLowerCase();
+        let sessionMaNS = String(currentSession?.maNhanSu || "").trim().toLowerCase();
+        let sessionTenTKB = String(currentSession?.tenTKB || "").trim().toLowerCase();
+
+        // Chỉ nhận khi khớp đúng tên TKB hoặc đúng mã nhân sự
+        let matchTen = (gvTKB && tenTKBHienTai && gvTKB === tenTKBHienTai) || (gvTKB && sessionTenTKB && gvTKB === sessionTenTKB);
+        let matchMa = (maNS && sessionMaNS && maNS === sessionMaNS);
+
+        return matchTen || matchMa;
+    });
+}
+    // ... các bước xử lý tiếp theo giữ nguyên
+
+                if (filteredData.length === 0) {
+                    if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-6 text-slate-400">Không tìm thấy tiết dạy nào trong "${soTKBValue}" ứng với giáo viên này.</td></tr>`;
+                    return;
+                }
+
+                // Sắp xếp thứ tự thời khóa biểu trong tuần
+                let tietCounterMap = {};
+                const thuOrder = { 'Thứ 2': 2, 'Thứ 3': 3, 'Thứ 4': 4, 'Thứ 5': 5, 'Thứ 6': 6, 'Thứ 7': 7, 'Chủ nhật': 8 };
+                const buoiOrder = { 'Sáng': 1, 'Chiều': 2, 'Tối': 3 };
+
+                filteredData.sort((a, b) => {
+                    let thuA = thuOrder[String(a.thu || "").trim()] || 99;
+                    let thuB = thuOrder[String(b.thu || "").trim()] || 99;
+                    if (thuA !== thuB) return thuA - thuB;
+
+                    let buoiA = buoiOrder[String(a.buoi || "").trim()] || 99;
+                    let buoiB = buoiOrder[String(b.buoi || "").trim()] || 99;
+                    if (buoiA !== buoiB) return buoiA - buoiB;
+
+                    let tietA = parseInt(String(a.tiet || "").replace(/\D/g, "")) || 0;
+                    let tietB = parseInt(String(b.tiet || "").replace(/\D/g, "")) || 0;
+                    return tietA - tietB;
+                });
+
+                // Thay thế đoạn map filteredData thành finalTKB bằng đoạn code chuẩn hóa này:
+
+let finalTKB = filteredData.map(item => {
+    let tietPPCT = "";
+    let phanMon = "";
+    let tenBaiDay = "";
+
+    let rawLop = String(item.lop || "").trim();
+    let monTKB = String(item.mon || "").trim().toLowerCase();
+    
+    let matchKhoi = rawLop.match(/\d+/);
+    let khoiTKB = matchKhoi ? matchKhoi[0] : "";
+
+    let tenLopChinh = rawLop;
+    let loaiLopTKB = "";
+    if (rawLop.includes('-')) {
+        let parts = rawLop.split('-');
+        tenLopChinh = parts[0].trim();
+        loaiLopTKB = parts.slice(1).join('-').trim();
+    }
+
+    let normTenLopChinh = normalizeStr(tenLopChinh);
+    let normLoaiLopTKB = normalizeStr(loaiLopTKB);
+    
+    let groupKey = `${soTKBValue}_${normTenLopChinh}_${monTKB}_${normLoaiLopTKB}`;
+
+    if (tietCounterMap[groupKey] === undefined) {
+        let baseOffset = maxTietTuanTruocMap[groupKey] || 0;
+        tietCounterMap[groupKey] = baseOffset;
+    }
+    
+    let currentTietIndex = ++tietCounterMap[groupKey];
+
+    // Khớp PPCT chính xác, chỉ lấy 1 dòng tương ứng
+    if (window.allPPCTCache && Array.isArray(window.allPPCTCache)) {
+        let matchedList = window.allPPCTCache.filter(p => {
+            let pKhoi = String(p.khoi || "").trim();
+            let pMon = String(p.mon || "").trim().toLowerCase();
+            let pPhanMon = normalizeStr(p.phan_mon || p.phanMon || p.phan_hoc || "");
+
+            let checkKhoi = (pKhoi === khoiTKB);
+            let checkMon = (pMon === monTKB) || pMon.includes(monTKB);
+            let checkPhanMon = true;
+
+            if (normLoaiLopTKB) {
+                checkPhanMon = pPhanMon.includes(normLoaiLopTKB) || normLoaiLopTKB.includes(pPhanMon);
+            }
+
+            return checkKhoi && checkMon && checkPhanMon;
+        });
+
+        // Lấy đúng phần tử theo chỉ mục tiết hiện tại, nếu vượt quá thì lấy phần tử cuối cùng
+        let matchedPPCT = matchedList[currentTietIndex - 1] || matchedList[0];
+
+        if (matchedPPCT) {
+            tietPPCT = matchedPPCT.tiet || matchedPPCT.tiet_ppct || currentTietIndex;
+            phanMon = matchedPPCT.phan_mon || matchedPPCT.phanMon || matchedPPCT.phan_hoc || loaiLopTKB;
+            tenBaiDay = matchedPPCT.ten_bai || matchedPPCT.ten_bai_hoc || matchedPPCT.noi_dung || "";
+        } else {
+            tietPPCT = currentTietIndex;
+            phanMon = loaiLopTKB; 
+            tenBaiDay = "";
+        }
+    }
+
+    return {
+        ...item,
+        tuan: tuanHienTaiNum,
+        so_tkb: soTKBValue,
+        ten_tkb: item.ten_tkb || tenTKBHienTai,
+        tiet_ppct: item.tiet_ppct || tietPPCT || "",
+        phan_mon: item.phan_mon || phanMon || "",
+        ten_bai: item.ten_bai || tenBaiDay || "",
+        thiet_bi: item.thiet_bi || "",
+        ghi_chu: item.ghi_chu || "",
+        trang_thai: "Bình thường"
+    };
+});
+
+                window.allKeHoachData = finalTKB;
+                if (typeof renderKeHoachTable === 'function') {
+                    renderKeHoachTable(finalTKB);
+                }
+            } else {
+                if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-6 text-slate-400">Không tìm thấy dữ liệu TKB cho số: "${soTKBValue}".</td></tr>`;
+            }
+        } catch (err) {
+            console.error("Lỗi tải TKB:", err);
+            if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-6 text-rose-500">Lỗi kết nối khi tải TKB: ${err.message}</td></tr>`;
+        }
+    };
+
+    if (!window.allPPCTCache || window.allPPCTCache.length === 0) {
+        db.from('phan_phoi_chuong_trinh')
+          .select('*')
+          .limit(2000)
+          .then(({ data, error }) => {
+              if (!error && data) {
+                  window.allPPCTCache = data;
+              }
+              processTKBData();
+          });
+    } else {
+        processTKBData();
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    // Gọi hàm load tuần khi khởi tạo tab Kế hoạch
+    loadCauHinhTuanVaoKeHoach();
+
+    // Lắng nghe sự kiện đổi tuần để cập nhật dòng thời gian
+    const selectTuan = document.getElementById('filterKHTuan');
+    if (selectTuan) {
+        selectTuan.addEventListener('change', function() {
+            const selectedOpt = this.options[this.selectedIndex];
+            const start = selectedOpt.getAttribute('data-start') || '-- / -- / ----';
+            const end = selectedOpt.getAttribute('data-end') || '-- / -- / ----';
+            
+            // Tìm và điền vào dòng hiển thị thời gian (tùy theo id element hiển thị trên HTML của bạn)
+            const timeDisplay = document.getElementById('thoiGianTuanHienThi'); 
+            if (timeDisplay) {
+                timeDisplay.textContent = `${start} đến ${end}`;
+            }
+        });
+    }
+});
+
+// 6. Render dữ liệu ra bảng giao diện
+// 6. Render dữ liệu ra bảng giao diện
+function renderKeHoachTable(data) {
+    const tbody = document.getElementById('keHoachTableBody');
+    if (!tbody) return;
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
+        return;
+    }
+
+    let html = '';
+    data.forEach((item) => {
+        html += `
+            <tr class="hover:bg-slate-50 transition-colors text-slate-600" data-lop="${item.lop || ""}" data-mon="${item.mon || ""}" data-tiet="${item.tiet || ""}" data-thu="${item.thu || ""}">
+                <td class="p-2 text-center font-medium border-r">${item.thu || ""}</td>
+                <td class="p-2 text-center border-r">${item.buoi || ""}</td>
+                <td class="p-2 text-center border-r font-semibold text-indigo-600">${item.tiet || ""}</td>
+                <td class="p-2 border-r font-bold text-slate-800 td-lop" data-val="${item.lop || ""}">${item.lop || ""}</td>
+                <td class="p-2 border-r td-mon" data-val="${item.mon || ""}">${item.mon || ""}</td>
+                <td class="p-2 border-r text-center">
+                    <input type="text" class="input-tietppct w-full text-center bg-transparent px-1 py-0.5 border border-slate-200 focus:border-indigo-500 rounded text-xs" value="${item.tiet_ppct || item.tietPPCT || ""}" placeholder="..." onchange="onTietPPCTChange(this)">
+                </td>
+                <td class="p-2 border-r">
+                    <input type="text" class="input-phanmon w-full bg-transparent px-1 py-0.5 border border-slate-200 focus:border-indigo-500 rounded text-xs" value="${item.phan_mon || item.phanMon || ""}" placeholder="...">
+                </td>
+                <td class="p-2 border-r">
+                    <input type="text" class="input-tenbai w-full bg-transparent px-1 py-0.5 border border-slate-200 focus:border-indigo-500 rounded text-xs" value="${item.ten_bai || item.tenBai || ""}" placeholder="Nhập tên bài dạy...">
+                </td>
+                <td class="p-2 border-r">
+                    <input type="text" class="input-thietbi w-full bg-transparent px-1 py-0.5 border border-slate-200 focus:border-indigo-500 rounded text-xs" value="${item.thiet_bi || item.thietBi || ""}" placeholder="Thiết bị...">
+                </td>
+                <td class="p-2 border-r">
+                    <input type="text" class="input-ghichu w-full bg-transparent px-1 py-0.5 border border-slate-200 focus:border-indigo-500 rounded text-xs" value="${item.ghi_chu || item.ghiChu || ""}" placeholder="Ghi chú...">
+                </td>
+                <td class="p-2 border-r text-center">
+                    <a href="#" class="text-indigo-600 underline text-[11px]">${item.giao_an || item.giaoAn || "Chọn giáo án"}</a>
+                </td>
+                <td class="p-2 text-center">
+                    <select class="select-trangthai bg-transparent text-xs font-medium border border-slate-200 rounded px-1 py-0.5 text-emerald-600 focus:outline-none">
+                        <option value="Bình thường" ${(!item.trang_thai && !item.trangThai || item.trang_thai === 'Bình thường' || item.trangThai === 'Bình thường') ? 'selected' : ''}>Bình thường</option>
+                        <option value="Nghỉ" ${item.trang_thai === 'Nghỉ' || item.trangThai === 'Nghỉ' ? 'selected' : ''}>Nghỉ</option>
+                        <option value="Bù" ${item.trang_thai === 'Bù' || item.trangThai === 'Bù' ? 'selected' : ''}>Bù</option>
+                        <option value="Đổi tiết" ${item.trang_thai === 'Đổi tiết' || item.trangThai === 'Đổi tiết' ? 'selected' : ''}>Đổi tiết</option>
+                    </select>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = html;
+}    
+
+    
+
+
+// 8. Xử lý khi thay đổi tiết PPCT trực tiếp trên ô nhập
+function onTietPPCTChange(input) {
+    const tr = input.closest('tr');
+    if (!tr) return;
+
+    const lop = tr.querySelector('.td-lop')?.innerText.trim() || "";
+    const mon = tr.querySelector('.td-mon')?.innerText.trim() || "";
+    const tietTKB = tr.children[2]?.innerText.trim() || "";
+    const thu = tr.children[0]?.innerText.trim() || "";
+    const tietPPCT = input.value.trim();
+
+    let khoiMatch = lop.match(/\d+/);
+    let khoi = khoiMatch ? khoiMatch[0] : '';
+
+    if (khoi && mon && tietPPCT) {
+        tuDongXacDinhPhanMonVaDienTenBai(tr, khoi, mon, tietPPCT, lop);
+    }
+
+    if (window.allKeHoachData) {
+        const foundItem = window.allKeHoachData.find(item => 
+            String(item.lop).trim() === lop && 
+            String(item.mon).trim() === mon && 
+            String(item.thu).trim() === thu && 
+            String(item.tiet).trim() === tietTKB
+        );
+        
+        if (foundItem) {
+            foundItem.tietPPCT = tietPPCT;
+            foundItem.phanMon = tr.querySelector('.input-phanmon')?.value.trim() || "";
+            foundItem.tenBai = tr.querySelector('.input-tenbai')?.value.trim() || "";
+        }
+    }
+}
+
+// 9. Lưu kế hoạch tuần lên Supabase
+async function saveKeHoachTuan() {
+    console.log("==> Bắt đầu thực hiện lưu kế hoạch lên Supabase...");
+
+    const tuanElement = document.getElementById('filterKHTuan');
+    const tuanRaw = tuanElement ? tuanElement.value : '';
+    
+    // Tự động lọc lấy con số từ chuỗi tuần (Ví dụ: "Tuần 1 (07/09/2026...)" sẽ lấy ra số 1)
+    const matchTuan = tuanRaw.match(/\d+/);
+    const tuanNum = matchTuan ? parseInt(matchTuan[0]) : 1;
+
+    const selectSoTKB = document.getElementById('selectSoTKBKeHoach');
+    const soTKB = selectSoTKB ? selectSoTKB.value : '';
+
+    if (!soTKB) {
+        alert("❌ Vui lòng chọn số TKB cần lưu!");
+        return;
+    }
+
+    const maNhanSu = currentSession?.maNhanSu || "";
+    const trElements = document.querySelectorAll('#keHoachTableBody tr');
+    
+    if (trElements.length === 0) {
+        alert("❌ Không có dữ liệu dòng nào trên bảng để lưu!");
+        return;
+    }
+
+    const rowsToInsert = [];
+
+    trElements.forEach(tr => {
+        if (tr.querySelector('td') && tr.querySelector('td').getAttribute('colspan')) return;
+
+        const lopEl = tr.querySelector('.td-lop');
+        const monEl = tr.querySelector('.td-mon');
+        const tietPPCTEl = tr.querySelector('.input-tietppct');
+        const phanMonEl = tr.querySelector('.input-phanmon');
+        const tenBaiEl = tr.querySelector('.input-tenbai');
+        const thietBiEl = tr.querySelector('.input-thietbi');
+        const ghiChuEl = tr.querySelector('.input-ghichu');
+        const trangThaiEl = tr.querySelector('.select-trangthai');
+        
+        rowsToInsert.push({
+            tuan: tuanNum, // Đảm bảo luôn là số nguyên hợp lệ (1, 2, 3...)
+            so_tkb: soTKB,
+            ma_nhan_su: maNhanSu,
+            thu: tr.querySelector('td:nth-child(1)') ? tr.querySelector('td:nth-child(1)').innerText.trim() : '',
+            buoi: tr.querySelector('td:nth-child(2)') ? tr.querySelector('td:nth-child(2)').innerText.trim() : '',
+            tiet: tr.querySelector('td:nth-child(3)') ? tr.querySelector('td:nth-child(3)').innerText.trim() : '',
+            lop: lopEl ? (lopEl.getAttribute('data-val') || lopEl.innerText.trim()) : '',
+            mon: monEl ? (monEl.getAttribute('data-val') || monEl.innerText.trim()) : '',
+            tiet_ppct: tietPPCTEl ? tietPPCTEl.value.trim() : '',
+            phan_mon: phanMonEl ? phanMonEl.value.trim() : '',
+            ten_bai: tenBaiEl ? tenBaiEl.value.trim() : '',
+            thiet_bi: thietBiEl ? thietBiEl.value.trim() : '',
+            ghi_chu: ghiChuEl ? ghiChuEl.value.trim() : '',
+            trang_thai: trangThaiEl ? trangThaiEl.value : 'Bình thường'
+        });
+    });
+
+    try {
+        if (typeof db === 'undefined' || !db) throw new Error("Chưa kết nối Supabase");
+
+        // 1. Xóa dữ liệu cũ của đúng tuần, số TKB và giáo viên này trước khi ghi mới
+        const { error: deleteError } = await db
+            .from('ke_hoach_tuan')
+            .delete()
+            .eq('tuan', tuanNum)
+            .eq('so_tkb', soTKB)
+            .eq('ma_nhan_su', maNhanSu);
+
+        if (deleteError) {
+            console.warn("Cảnh báo khi xóa dữ liệu cũ:", deleteError.message);
+        }
+
+        // 2. Chèn mới toàn bộ danh sách dữ liệu hiện tại lên bảng
+        const { error: insertError } = await db
+            .from('ke_hoach_tuan')
+            .insert(rowsToInsert);
+
+        if (insertError) throw insertError;
+
+        alert("💾 Lưu kế hoạch thành công lên Supabase!");
+    } catch (err) {
+        console.error("Lỗi khi lưu kế hoạch:", err);
+        alert("❌ Lỗi khi lưu kế hoạch lên cơ sở dữ liệu: " + err.message);
+    }
+}
+//==========================================Ký sổ đầu bài ================================
+// Hàm tự động đổ dữ liệu danh sách tuần vào dropdown của Sổ đầu bài
+function initSDBTuanDropdown() {
+    const selectTuan = document.getElementById('filterSDBTuan');
+    if (!selectTuan) return;
+    
+    // Nếu dropdown đang trống, ta sao chép các option từ dropdown kế hoạch tuần qua (hoặc tự sinh)
+    const sourceTuan = document.getElementById('filterKHTuan');
+    if (sourceTuan && sourceTuan.options.length > 0) {
+        selectTuan.innerHTML = sourceTuan.innerHTML;
+        selectTuan.value = sourceTuan.value; // Đồng bộ luôn tuần đang chọn
+    } else {
+        // Dự phòng nếu chưa có nguồn, tự tạo danh sách tuần mẫu từ 1 đến 35
+        selectTuan.innerHTML = "";
+        for (let i = 1; i <= 35; i++) {
+            const opt = document.createElement('option');
+            opt.value = `Tuần ${i}`;
+            opt.innerText = `Tuần ${i}`;
+            selectTuan.appendChild(opt);
+        }
+    }
+}
+
+
+// Hàm tải dữ liệu Sổ đầu bài từ Server
+function loadSoDauBai() {
+    const tuan = document.getElementById('filterSDBTuan').value;
+    const inputGv = document.getElementById('inputGiaoVien');
+    const maNhanSu = inputGv ? inputGv.getAttribute('data-manhansu') : (typeof currentSession !== 'undefined' ? currentSession.maNhanSu : '');
+    
+    const url = `${API_URL}?action=getSoDauBaiTuan&tuan=${encodeURIComponent(tuan)}&maNhanSu=${encodeURIComponent(maNhanSu)}`;
+    
+    fetch(url)
+    .then(res => res.json())
+    .then(res => {
+        console.log("Dữ liệu load về từ server:", res); // <-- Thêm dòng này để kiểm tra qua Console (F12)
+        if (res.success) {
+            renderSoDauBaiTable(res.data);
+        } else {
+            console.error("Lỗi load:", res.message);
+        }
+    })
+    .catch(err => console.error("Lỗi kết nối load:", err));
+}
+
+// Hiển thị dữ liệu lên bảng
+function renderSoDauBaiTable(data) {
+    const tbody = document.getElementById('soDauBaiTableBody');
+    tbody.innerHTML = "";
+
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">Không có tiết dạy nào trong tuần này.</td></tr>`;
+        return;
+    }
+
+    data.forEach((item) => {
+    const trangThai = item.trangThaiKy ? String(item.trangThaiKy).trim() : "";
+    const isSigned = (trangThai === "Đã ký" || trangThai === "true" || trangThai === "1");
+    
+    const tr = document.createElement('tr');
+    tr.className = "hover:bg-slate-50/50 transition-colors";
+    tr.innerHTML = `
+            <td class="p-3 font-medium text-slate-800">
+                <div>${item.thu} (${item.buoi})</div>
+                <div class="text-slate-400 text-[11px]">Tiết ${item.tiet}</div>
+            </td>
+            <td class="p-3">
+                <span class="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">${item.lop}</span>
+                <div class="text-slate-500 mt-1">${item.mon}</div>
+            </td>
+            <td class="p-3">
+                <div class="flex items-center gap-1.5 mb-1">
+                    <span class="text-slate-500 font-semibold">Tiết ${item.tietPPCT}:</span>
+                    ${item.phanMon ? `<span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-blue-100">${item.phanMon}</span>` : ''}
+                </div>
+                <div class="text-slate-700 font-medium">${item.tenBai}</div>
+            </td>
+            <td class="p-3 text-center">
+                <input type="number" min="0" max="50" class="input-siso-vang w-16 text-center border border-slate-200 rounded p-1 text-xs" value="${item.siSoVang || 0}">
+            </td>
+            <td class="p-3">
+                <input type="text" class="input-ten-hvang w-full border border-slate-200 rounded p-1 text-xs" placeholder="HS vắng..." value="${item.tenHSVang || ""}">
+            </td>
+            <td class="p-3">
+                <input type="text" class="input-nhanxet w-full border border-slate-200 rounded p-1 text-xs" value="${item.nhanXet !== undefined ? item.nhanXet : "Lớp học bình thường"}">
+            </td>
+            <td class="p-3 text-center">
+                <input type="number" min="1" max="10" step="1" class="input-diem w-14 text-center border border-slate-200 rounded p-1 text-xs font-bold text-emerald-700" value="${item.diem || ""}" placeholder="VD: 9">
+            </td>
+            <td class="p-3">
+                <select class="input-xeploai border border-slate-200 rounded p-1 text-xs bg-white">
+                    <option value="Tốt" ${item.xepLoai === 'Tốt' ? 'selected' : ''}>Tốt</option>
+                    <option value="Khá" ${item.xepLoai === 'Khá' ? 'selected' : ''}>Khá</option>
+                    <option value="Đạt" ${item.xepLoai === 'Đạt' ? 'selected' : ''}>Đạt</option>
+                    <option value="Chưa đạt" ${item.xepLoai === 'Chưa đạt' ? 'selected' : ''}>Chưa đạt</option>
+                </select>
+            </td>
+            <td class="p-3 text-center">
+                <div class="flex flex-col items-center gap-1">
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" class="checkbox-ky sr-only peer" ${isSigned ? 'checked' : ''}>
+                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600 relative"></div>
+                    </label>
+                    <span class="status-text text-[10px] font-semibold ${isSigned ? 'text-emerald-600' : 'text-slate-400'}">${isSigned ? 'Đã ký' : 'Chưa ký'}</span>
+                    ${item.thoiGianKy ? `<span class="text-[9px] text-slate-400">${item.thoiGianKy}</span>` : ''}
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function saveSoDauBai() {
+    const tuan = document.getElementById('filterSDBTuan').value;
+    const inputGv = document.getElementById('inputGiaoVien');
+    const maNhanSu = inputGv ? inputGv.getAttribute('data-manhansu') : (typeof currentSession !== 'undefined' ? currentSession.maNhanSu : '');
+    
+    const rows = [];
+    document.querySelectorAll('#soDauBaiTableBody tr').forEach(tr => {
+        const checkbox = tr.querySelector('.checkbox-ky');
+        if (!checkbox) return;
+
+        const isChecked = checkbox.checked;
+        const siSoVangEl = tr.querySelector('.input-siso-vang');
+        const tenHSVangEl = tr.querySelector('.input-ten-hvang');
+        const nhanXetEl = tr.querySelector('.input-nhanxet');
+        const diemEl = tr.querySelector('.input-diem');
+        const xepLoaiEl = tr.querySelector('.input-xeploai');
+        
+        // Lấy thông tin thô từ cột 0 và 1
+        const colThuBuoi = tr.children[0] ? tr.children[0].innerText.split('\n') : [];
+        // Lấy toàn bộ phần trước dấu ngoặc đơn (Ví dụ: "Thứ 4 (Chiều)" -> lấy "Thứ 4")
+        const thu = colThuBuoi[0] ? colThuBuoi[0].split('(')[0].trim() : '';
+        const buoi = colThuBuoi[0] && colThuBuoi[0].includes('(') ? colThuBuoi[0].match(/\((.*?)\)/)[1] : '';
+        const tiet = colThuBuoi[1] ? colThuBuoi[1].replace('Tiết ', '').trim() : '';
+        
+        const lopSpan = tr.children[1] ? tr.children[1].querySelector('span') : null;
+        const monDiv = tr.children[1] ? tr.children[1].querySelector('div') : null;
+        const lop = lopSpan ? lopSpan.innerText.trim() : '';
+        const mon = monDiv ? monDiv.innerText.trim() : '';
+        
+        // Lấy thông tin tiết PPCT và tên bài từ cột 2
+        const tietPPCTEl = tr.children[2] ? tr.children[2].querySelector('.font-semibold') : null;
+        const tietPPCT = tietPPCTEl ? tietPPCTEl.innerText.replace('Tiết ', '').replace(':', '').trim() : '';
+        
+        const phanMonEl = tr.children[2] ? tr.children[2].querySelector('span.bg-blue-50') : null;
+        const phanMon = phanMonEl ? phanMonEl.innerText.trim() : '';
+
+        const tenBaiDiv = tr.children[2] ? tr.children[2].querySelector('.text-slate-700') : null;
+        const tenBai = tenBaiDiv ? tenBaiDiv.innerText.trim() : '';
+
+        rows.push({
+            tuan: tuan,
+            maNhanSu: maNhanSu,
+            thu: thu,
+            buoi: buoi,
+            tiet: tiet,
+            lop: lop,
+            mon: mon,
+            tietPPCT: tietPPCT,
+            phanMon: phanMon,
+            tenBai: tenBai,
+            siSoVang: siSoVangEl ? siSoVangEl.value : "0",
+            tenHSVang: tenHSVangEl ? tenHSVangEl.value : "",
+            nhanXet: nhanXetEl ? nhanXetEl.value : "",
+            diem: diemEl ? diemEl.value : "",
+            xepLoai: xepLoaiEl ? xepLoaiEl.value : "Tốt",
+            trangThaiKy: isChecked ? "Đã ký" : "Chưa ký",
+            giaoVienKy: maNhanSu,
+            thoiGianKy: new Date().toLocaleString("vi-VN")
+        });
+    });
+
+    const payload = {
+        action: "saveSoDauBai",
+        tuan: tuan,
+        maNhanSu: maNhanSu,
+        rows: rows
+    };
+
+    fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+    })
+    .then(async res => {
+        const text = await res.text();
+        try {
+            return JSON.parse(text);
+        } catch (e) {
+            console.error("Dữ liệu trả về không phải JSON thuần:", text);
+            throw new Error("Server trả về dữ liệu lỗi (không phải định dạng JSON).");
+        }
+    })
+    .then(res => {
+        if (res && res.success) {
+            alert("💾 " + res.message);
+            loadSoDauBai(); 
+        } else {
+            alert("❌ Lỗi khi ký sổ: " + (res ? res.message : "Không rõ nguyên nhân"));
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Lỗi kết nối hoặc xử lý dữ liệu: " + err.message);
+    });
+}
+
+//Thống kê và khoá sổ đầu bài
+
+function loadQuanTriThongKe() {
+    // 1. Kiểm tra mã nhân sự
+    const inputGv = document.getElementById('inputGiaoVien');
+    const maNhanSu = inputGv ? inputGv.getAttribute('data-manhansu') : (typeof currentSession !== 'undefined' ? currentSession.maNhanSu : '');
+    console.log("👉 1. Mã nhân sự đang lấy được:", maNhanSu);
+    
+    // 2. Kiểm tra tuần
+    const tuanSelect = document.getElementById('filterSDBTuan');
+    const tuan = tuanSelect ? tuanSelect.value : '';  
+    console.log("👉 2. Tuần đang chọn:", tuan);
+    
+    // 3. Kiểm tra đường dẫn API URL
+    const finalUrl = `${API_URL}?action=getQuanTriVaThongKe&maNhanSu=${encodeURIComponent(maNhanSu)}&tuan=${encodeURIComponent(tuan)}`;
+    console.log("👉 3. URL gọi lên Server:", finalUrl);
+
+    fetch(finalUrl)
+    .then(res => res.json())
+    .then(res => {
+        console.log("👉 4. Dữ liệu JSON Server trả về:", res);
+        
+        if(res && res.success) {
+            const statKH = document.getElementById('mainStatKH');
+            const statDaKy = document.getElementById('mainStatDaKy');
+            const statPercent = document.getElementById('mainStatPercent');
+            
+            if (statKH) statKH.innerText = res.tongKeHoach || 0;
+            if (statDaKy) statDaKy.innerText = res.tongDaKy || 0;
+            
+            if (statPercent) {
+                const percent = res.tongKeHoach > 0 ? Math.round((res.tongDaKy / res.tongKeHoach) * 100) : 0;
+                statPercent.innerText = percent + "%";
+            }
+            
+            const tbody = document.getElementById('quanTriTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = "";
+            
+            if(!res.chiTietTuan || res.chiTietTuan.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Không có dữ liệu cho phạm vi này.</td></tr>`;
+                return;
+            }
+            
+            res.chiTietTuan.forEach(item => {
+                const percent = item.keHoach > 0 ? Math.round((item.daDay / item.keHoach) * 100) : 0;
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-2.5 border font-semibold text-slate-800">${item.tuan}</td>
+                        <td class="p-2.5 border text-center">${item.keHoach}</td>
+                        <td class="p-2.5 border text-center text-emerald-600 font-bold">${item.daDay}</td>
+                        <td class="p-2.5 border text-center">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${percent >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${percent}%</span>
+                        </td>
+                        <td class="p-2.5 border text-center">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">
+                                ${item.isLocked ? '🔒 Đã khóa' : '🔓 Đang mở'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+        } else {
+            console.warn("⚠️ Server báo lỗi hoặc success không phải true:", res);
+        }
+    })
+    .catch(err => console.error("❌ Lỗi kết nối fetch:", err));
+}
+//Báo cáo
+let globalBaoCaoData = [];
+
+function taiBaoCaoChiTiet() {
+    fetch(`${API_URL}?action=getBaoCaoChiTiet`)
+    .then(res => res.json())
+    .then(res => {
+        if(res.success) {
+            globalBaoCaoData = res.data;
+            
+            // Tự động nạp dữ liệu vào các bộ lọc Dropdown
+            populateDropdowns(globalBaoCaoData);
+            
+            renderBaoCaoTable(globalBaoCaoData);
+        }
+    })
+    .catch(err => console.error("Lỗi tải báo cáo chi tiết:", err));
+}
+
+// Hàm tự động nạp danh sách vào các dropdown bộ lọc
+function populateDropdowns(data) {
+    const tuanSet = new Set(); // Set cho Tuần
+    const gvSet = new Set();
+    const monSet = new Set();
+    const phanMonSet = new Set();
+    const lopSet = new Set();
+    
+    data.forEach(item => {
+        if(item.tuan) tuanSet.add(item.tuan);
+        if(item.giaoVien) gvSet.add(item.giaoVien);
+        if(item.monHoc) monSet.add(item.monHoc);
+        if(item.phanMon) phanMonSet.add(item.phanMon);
+        if(item.lop) lopSet.add(item.lop);
+    });
+    
+    // Nạp dropdown Tuần (Sắp xếp theo thứ tự số nếu có)
+    const selectTuan = document.getElementById('filterBCCoGiTuan');
+    if(selectTuan) {
+        selectTuan.innerHTML = '<option value="">-- Tất cả Tuần --</option>';
+        Array.from(tuanSet).sort((a, b) => {
+            // Cố gắng tách số từ chuỗi tuần (VD: "Tuần 1", "1"...) để sắp xếp tự nhiên
+            let numA = parseInt(a.toString().replace(/\D/g, '')) || 0;
+            let numB = parseInt(b.toString().replace(/\D/g, '')) || 0;
+            return numA - numB;
+        }).forEach(tuan => {
+            selectTuan.innerHTML += `<option value="${tuan}">Tuần: ${tuan}</option>`;
+        });
+    }
+
+    // Nạp các dropdown khác như cũ...
+    const selectGV = document.getElementById('filterBCCoGiGV');
+    if(selectGV) {
+        selectGV.innerHTML = '<option value="">-- Tất cả Giáo Viên --</option>';
+        Array.from(gvSet).sort().forEach(ten_tkb => {
+            selectGV.innerHTML += `<option value="${ten_tkb}">${ten_tkb}</option>`;
+        });
+    }
+    
+    const selectMon = document.getElementById('filterBCCoGiMon');
+    if(selectMon) {
+        selectMon.innerHTML = '<option value="">-- Tất cả Môn Học --</option>';
+        Array.from(monSet).sort().forEach(mon => {
+            selectMon.innerHTML += `<option value="${mon}">${mon}</option>`;
+        });
+    }
+
+    const selectPhanMon = document.getElementById('filterBCCoGiPhanMon');
+    if(selectPhanMon) {
+        selectPhanMon.innerHTML = '<option value="">-- Tất cả Phân Môn --</option>';
+        Array.from(phanMonSet).sort().forEach(pm => {
+            selectPhanMon.innerHTML += `<option value="${pm}">${pm}</option>`;
+        });
+    }
+    
+    const selectLop = document.getElementById('filterBCCoGiLop');
+    if(selectLop) {
+        selectLop.innerHTML = '<option value="">-- Tất cả Lớp --</option>';
+        Array.from(lopSet).sort().forEach(lop => {
+            selectLop.innerHTML += `<option value="${lop}">${lop}</option>`;
+        });
+    }
+}
+
+// Hàm lọc cập nhật thêm điều kiện Tuần
+function filterBaoCaoTable() {
+    const tuanKey = document.getElementById('filterBCCoGiTuan').value; // Lấy giá trị Tuần lọc
+    const gvKey = document.getElementById('filterBCCoGiGV').value;
+    const monKey = document.getElementById('filterBCCoGiMon').value;
+    const phanMonKey = document.getElementById('filterBCCoGiPhanMon').value;
+    const lopKey = document.getElementById('filterBCCoGiLop').value;
+    const ttKey = document.getElementById('filterBCCoGiTrangThai').value;
+    
+    currentFilteredData = globalBaoCaoData.filter(item => {
+        const matchTuan = !tuanKey || String(item.tuan) === String(tuanKey); // So khớp Tuần
+        const matchGV = !gvKey || item.giaoVien === gvKey;
+        const matchMon = !monKey || item.monHoc === monKey;
+        const matchPhanMon = !phanMonKey || item.phanMon === phanMonKey;
+        const matchLop = !lopKey || item.lop === lopKey;
+        
+        let matchTT = true;
+        if(ttKey === 'chua-ky') matchTT = !item.daKy;
+        if(ttKey === 'da-ky') matchTT = item.daKy;
+        
+        return matchTuan && matchGV && matchMon && matchPhanMon && matchLop && matchTT;
+    });
+    
+    document.getElementById('countBaoCao').innerText = currentFilteredData.length;
+    renderBaoCaoTable(currentFilteredData);
+}
+// Cập nhật lại hàm render để lưu luôn vào biến currentFilteredData lúc ban đầu tải xong
+function taiBaoCaoChiTiet() {
+    fetch(`${API_URL}?action=getBaoCaoChiTiet`)
+    .then(res => res.json())
+    .then(res => {
+        if(res.success) {
+            globalBaoCaoData = res.data;
+            populateDropdowns(globalBaoCaoData);
+            filterBaoCaoTable(); // Dùng hàm lọc để khởi tạo bảng và đếm số lượng chuẩn
+        }
+    })
+    .catch(err => console.error("Lỗi tải báo cáo chi tiết:", err));
+}
+function renderBaoCaoTable(data) {
+    const tbody = document.getElementById('baoCaoTableBody');
+    tbody.innerHTML = "";
+    
+    if(data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
+        return;
+    }
+    
+    data.forEach(item => {
+        tbody.innerHTML += `
+            <tr class="hover:bg-slate-50">
+                <td class="p-2.5 border font-semibold text-slate-800">${item.tuan}</td>
+                <td class="p-2.5 border">${item.giaoVien}</td>
+                <td class="p-2.5 border">${item.monHoc}</td>
+                <td class="p-2.5 border font-medium text-indigo-600">${item.phanMon}</td>
+                <td class="p-2.5 border font-semibold">${item.lop}</td>
+                <td class="p-2.5 border text-center">${item.tiet}</td>
+                <td class="p-2.5 border text-slate-600">${item.noiDung}</td>
+                <td class="p-2.5 border text-center">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.daKy ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                        ${item.daKy ? '✅ Đã ký' : '⚠️ Chưa ký SĐB'}
+                    </span>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+
+
+function xuatExcelBaoCao() {
+    if(globalBaoCaoData.length === 0) {
+        alert("Không có dữ liệu để xuất file!");
+        return;
+    }
+    
+    // Chuẩn hóa mảng dữ liệu sang định dạng SheetJS
+    const exportData = globalBaoCaoData.map((item, index) => ({
+        "STT": index + 1,
+        "Tuần": item.tuan,
+        "Giáo Viên": item.giaoVien,
+        "Môn Học": item.monHoc,
+        "Phân Môn Học": item.phanmonHoc,
+        "Lớp": item.lop,
+        "Tiết": item.tiet,
+        "Nội Dung Kế Hoạch": item.noiDung,
+        "Trạng Thái Ký Sổ": item.daKy ? "Đã ký sổ đầu bài" : "Chưa ký sổ đầu bài"
+    }));
+    
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "BaoCaoTietDay");
+    
+    // Xuất file Excel (.xlsx)
+    XLSX.writeFile(workbook, "Bao_Cao_Thuc_Hien_Day_Hoc.xlsx");
+}
+// Hàm mới: Thống kê tổng số tiết theo từng Giáo Viên và Phân Môn dựa trên kết quả đang lọc
+function xuatBaoCaoTongHopGV() {
+    // Nếu chưa lọc hoặc danh sách trống
+    const dataToProcess = currentFilteredData.length > 0 ? currentFilteredData : globalBaoCaoData;
+    
+    if(dataToProcess.length === 0) {
+        alert("Không có dữ liệu để tổng hợp!");
+        return;
+    }
+    
+    // Gom nhóm theo Cặp Khóa: Giáo Viên + Phân Môn (để tách bạch Chính khóa, Ôn tập, BDHSG...)
+    const summaryMap = {};
+    
+    dataToProcess.forEach(item => {
+        const ten_tkb = item.giaoVien || "Chưa xác định";
+        const phanMon = item.phanMon || "Chính khóa / Mặc định"; // Tránh để trống
+        
+        // Tạo khóa duy nhất cho mỗi giáo viên theo từng phân môn
+        const key = ten_tkb + "_" + phanMon;
+        
+        if (!summaryMap[key]) {
+            summaryMap[key] = {
+                giaoVien: ten_tkb,
+                phanMon: phanMon,
+                monHoc: item.monHoc || "",
+                tongTiet: 0,
+                daKy: 0,
+                chuaKy: 0
+            };
+        }
+        
+        summaryMap[key].tongTiet += 1;
+        if (item.daKy) {
+            summaryMap[key].daKy += 1;
+        } else {
+            summaryMap[key].chuaKy += 1;
+        }
+    });
+    
+    // Chuyển đổi thành mảng để xuất Excel
+    const summaryArray = Object.values(summaryMap).map((item, index) => ({
+        "STT": index + 1,
+        "Giáo Viên": item.giaoVien,
+        "Môn Học": item.monHoc,
+        "Phân Môn": item.phanMon, // Thêm cột Phân môn vào file thống kê
+        "Tổng Số Tiết": item.tongTiet,
+        "Đã Ký SĐB": item.daKy,
+        "Chưa Ký SĐB": item.chuaKy,
+        "Tỷ Lệ Hoàn Thành": ((item.daKy / item.tongTiet) * 100).toFixed(1) + "%"
+    }));
+    
+    // Tạo file Excel tổng hợp
+    const worksheet = XLSX.utils.json_to_sheet(summaryArray);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "TongHopTheoGV_PhanMon");
+    XLSX.writeFile(workbook, "Thong_Ke_Tong_Hop_Giao_Vien_Theo_Phan_Mon.xlsx");
+}
+//Khoá 
+function khóaSDBTheoTuần() {
+    const tuanKey = document.getElementById('filterBCCoGiTuan').value;
+    
+    if (!tuanKey) {
+        alert("Vui lòng chọn cụ thể một Tuần cần khóa ở ô bộ lọc bên trái!");
+        return;
+    }
+    
+    if (!confirm(`Bạn có chắc chắn muốn khóa Sổ Đầu Bài và Kế Hoạch của [ Tuần ${tuanKey} ] không? Thao tác này sẽ ghi nhận trạng thái khóa vào sheet CauHinhTuan.`)) {
+        return;
+    }
+    
+    // Gọi API thực hiện khóa trên Google Apps Script
+    fetch(`${API_URL}?action=khoaTuanSDB&tuan=${encodeURIComponent(tuanKey)}`, {
+        method: 'POST'
+    })
+    .then(res => res.json())
+    .then(res => {
+        if(res.success) {
+            alert(`Đã khóa thành công tuần ${tuanKey} vào cột H của sheet CauHinhTuan!`);
+        } else {
+            alert("Lỗi: " + (res.message || "Không thể thực hiện khóa tuần."));
+        }
+    })
+    .catch(err => {
+        console.error("Lỗi kết nối:", err);
+        alert("Có lỗi xảy ra khi gửi yêu cầu khóa tuần.");
+    });
+}
+function thucHienKhoaTuan(loaiKhoa) {
+    const tuanKey = document.getElementById('filterBCCoGiTuan').value;
+    
+    if (!tuanKey) {
+        alert("Vui lòng chọn cụ thể một Tuần cần khóa ở ô bộ lọc bên trái!");
+        return;
+    }
+    
+    const tenLoai = loaiKhoa === 'KeHoach' ? 'Kế Hoạch (Cột H)' : 'Sổ Đầu Bài (Cột I)';
+    
+    if (!confirm(`Bạn có chắc chắn muốn khóa ${tenLoai} của [ Tuần ${tuanKey} ] không?`)) {
+        return;
+    }
+    
+    fetch(`${API_URL}?action=khoaTuanTheoLoai&tuan=${encodeURIComponent(tuanKey)}&loai=${encodeURIComponent(loaiKhoa)}`, {
+        method: 'POST'
+    })
+    .then(res => res.json())
+    .then(res => {
+        if(res.success) {
+            alert(`Đã khóa ${tenLoai} thành công cho tuần ${tuanKey}!`);
+        } else {
+            alert("Lỗi từ Server: " + (res.message || "Không rõ nguyên nhân"));
+        }
+    })
+    .catch(err => {
+        console.error("Lỗi kết nối chi tiết:", err);
+        alert("Lỗi kết nối hoặc phản hồi không phải định dạng JSON: " + err.toString());
+    });
+}
+//Phân quyền
+// Hàm kiểm tra và ẩn các tab quản trị / báo cáo đối với giáo viên thường
+function phanQuyenGiaoDien() {
+    // Đọc thêm từ gói session chung nếu có
+    let sessionData = {};
+    try {
+        sessionData = JSON.parse(localStorage.getItem("kienona_session") || "{}");
+    } catch(e) {}
+
+    var vaiTroUser = (localStorage.getItem("vaiTroUser") || sessionData.vaiTro || sessionData.role || "").toLowerCase();
+    var maNhanSu = (localStorage.getItem("maNhanSu") || sessionData.maNhanSu || "").toLowerCase();
+
+    // Danh sách từ khóa quản trị được phép xem
+    var dsQuyenQuanTri = ["bgh", "admin", "kythuat", "hieutruong", "phohieutruong", "it", "tai"]; // Đã thêm "tai" để test
+    
+    var coQuyen = dsQuyenQuanTri.some(function(q) {
+        return vaiTroUser.includes(q) || maNhanSu.includes(q);
+    });
+
+    if (!coQuyen) {
+        var tabBaoCao = document.getElementById("tab-baocao");
+        if (tabBaoCao) tabBaoCao.style.display = "none";
+
+        var btnTaiTKB = document.getElementById("tab-admin-tkb");
+        if (btnTaiTKB) btnTaiTKB.style.display = "none";
+
+        var tabTaiPPCT = document.getElementById("tab-ppct");
+        if (tabTaiPPCT) tabTaiPPCT.style.display = "none";
+    }
+}
+
+// Gọi hàm này ngay khi trang vừa tải xong
+document.addEventListener("DOMContentLoaded", function() {
+    phanQuyenGiaoDien();
+});
+
+    </script>
+</body>
+</html>
