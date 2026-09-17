@@ -3,45 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng nhập - Quản Lý Hồ Sơ Học Sinh</title>
+    <title>Đăng nhập hệ thống - Kienora OS</title>
+    <!-- Sử dụng Tailwind CSS qua CDN để có giao diện hiện đại -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        .login-card h2 { text-align: center; color: #333; margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; color: #666; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .btn-login { width: 100%; padding: 10px; background: #007bff; border: none; color: white; font-size: 16px; border-radius: 4px; cursor: pointer; }
-        .btn-login:hover { background: #0056b3; }
-        #error-msg { color: red; text-align: center; margin-top: 10px; font-size: 14px; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Hiệu ứng chuyển động nhẹ cho nền */
+        .bg-kienora-gradient {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1d4ed8 100%);
+        }
     </style>
     <!-- Thư viện Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body>
+<body class="bg-kienora-gradient min-h-screen flex items-center justify-center p-4">
 
-    <div class="login-card">
-        <h2>Đăng Nhập Hệ Thống</h2>
-        <form id="loginForm" onsubmit="handleLogin(event)">
-            <div class="form-group">
-                <label>Mã nhân sự</label>
-                <input type="text" id="username" required placeholder="Nhập mã nhân sự...">
+    <div class="w-full max-w-md bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden border border-white/20 p-8 transform transition-all">
+        
+        <!-- Header / Logo Thương hiệu -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 text-white rounded-2xl shadow-lg mb-4 text-2xl font-bold tracking-wider">
+                K
             </div>
-            <div class="form-group">
-                <label>Mật khẩu</label>
-                <input type="password" id="password" required placeholder="Nhập mật khẩu...">
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Kienora Ecosystem</h1>
+            <p class="text-xs text-slate-500 mt-1 uppercase tracking-widest font-semibold">Hệ thống Quản lý Chuyên môn</p>
+        </div>
+
+        <!-- Form Đăng Nhập -->
+        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Mã nhân sự</label>
+                <div class="relative">
+                    <input type="text" id="username" required placeholder="Nhập mã nhân sự của bạn..." 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all">
+                </div>
             </div>
-            <button type="submit" class="btn-login">Đăng Nhập</button>
-            <div id="error-msg"></div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Mật khẩu</label>
+                <div class="relative">
+                    <input type="password" id="password" required placeholder="••••••••" 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all">
+                </div>
+            </div>
+
+            <button type="submit" id="submitBtn" 
+                class="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-500/30 transition-all duration-200 flex items-center justify-center text-sm tracking-wide">
+                <span>Đăng Nhập Ngay</span>
+            </button>
+
+            <!-- Khu vực hiển thị thông báo lỗi / trạng thái -->
+            <div id="error-msg" class="text-center text-xs font-medium text-rose-500 min-h-[20px]"></div>
         </form>
+
+        <!-- Footer nhỏ -->
+        <div class="mt-8 pt-6 border-t border-slate-100 text-center">
+            <p class="text-[11px] text-slate-400">Powered by <span class="font-bold text-blue-600">Kienora Architecture</span></p>
+        </div>
     </div>
 
    <script>
-        // Sử dụng cấu hình chuẩn từ dự án của bạn
+        // Cấu hình kết nối Supabase
         const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
         
-        // Đặt tên biến là 'db' để tránh hoàn toàn việc bị trùng lặp tên với thư viện gốc
         const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         async function handleLogin(event) {
@@ -50,11 +78,14 @@
             const userIn = document.getElementById('username').value.trim();
             const passIn = document.getElementById('password').value.trim();
             const errorDiv = document.getElementById('error-msg');
+            const submitBtn = document.getElementById('submitBtn');
             
-            errorDiv.textContent = "Đang kiểm tra kết nối...";
+            errorDiv.textContent = "Đang xác thực thông tin...";
+            errorDiv.className = "text-center text-xs font-medium text-blue-600 min-h-[20px]";
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-70', 'cursor-not-allowed');
 
             try {
-                // Truy vấn vào bảng chứa dữ liệu người dùng
                 let { data, error } = await db
                     .from('users')
                     .select('*')
@@ -66,37 +97,44 @@
                 if (data && data.length > 0) {
                     const users = data[0];
                     
-                    // 1. Lưu vào sessionStorage (để các trang con gọi nếu cần)
+                    // 1. Lưu vào sessionStorage
                     sessionStorage.setItem('currentUser', JSON.stringify(users));
                     
-                    // 2. Đóng gói dữ liệu chuẩn để trang KienoraOS nhận diện
+                    // 2. Đóng gói dữ liệu chuẩn cho hệ thống Kienora
                     const sessionData = {
                         maNhanSu: users.ma_nhan_su,
                         fullName: users.ho_va_ten,
-                        vaiTro: users.quyen || 'Giáo viên' // Lấy cột 'quyen' làm vai trò
+                        vaiTro: users.quyen || 'Giáo viên'
                     };
 
                     const schoolData = {
-                        maTruong: users.ma_truong || "THPT_NGUYENDUYTRINH", // Lấy từ cột ma_truong hoặc mặc định
-                        tenTruong: users.ten_truong || "Trường THPT Nguyễn Duy Trinh", // Tên trường
+                        maTruong: users.ma_truong || "THPT_NGUYENDUYTRINH",
+                        tenTruong: users.ten_truong || "Trường THPT Nguyễn Duy Trinh",
                         dbUrl: users.db_url || ""
                     };
 
-                    // Lưu vào localStorage theo đúng cơ chế bảo mật của trang OS
-                    localStorage.setItem('kienona_session', JSON.stringify(sessionData));
-                    localStorage.setItem('kienona_school', JSON.stringify(schoolData));
+                    localStorage.setItem('kienora_session', JSON.stringify(sessionData));
+                    localStorage.setItem('kienora_school', JSON.stringify(schoolData));
 
-                    // Thông báo đăng nhập thành công kèm vai trò
-                    alert("Đăng nhập thành công!\nXin chào: " + users.ho_va_ten + "\nVai trò: " + (users.quyen || 'Giáo viên'));
+                    errorDiv.textContent = "Đăng nhập thành công! Đang chuyển hướng...";
+                    errorDiv.className = "text-center text-xs font-medium text-emerald-600 min-h-[20px]";
                     
-                    // Chuyển hướng sang trang OS của bạn
-                    window.location.href = 'KienoraOS.html'; 
+                    setTimeout(() => {
+                        window.location.href = 'KienoraOS.html'; 
+                    }, 600);
+
                 } else {
                     errorDiv.textContent = "Sai mã nhân sự hoặc mật khẩu!";
+                    errorDiv.className = "text-center text-xs font-medium text-rose-500 min-h-[20px]";
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
                 }
             } catch (err) {
                 console.error("Lỗi đăng nhập:", err.message);
                 errorDiv.textContent = "Lỗi kết nối CSDL: " + err.message;
+                errorDiv.className = "text-center text-xs font-medium text-rose-500 min-h-[20px]";
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-70', 'cursor-not-allowed');
             }
         }
     </script>
