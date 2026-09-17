@@ -187,6 +187,8 @@
     // 3. Kích hoạt hiển thị quyền và nạp TKB sau khi đã có dữ liệu chuẩn
     if (typeof hienThiQuyen === 'function') hienThiQuyen();
     if (typeof loadTKBIntoKeHoach === 'function') loadTKBIntoKeHoach();
+    // 👉 THÊM DÒNG NÀY VÀO ĐÂY: 
+ 
 }
         // 3. Hiển thị thông tin định danh và quyền lên giao diện
         function hienThiQuyen() {
@@ -197,12 +199,21 @@
         }
 
         // 4. Khởi chạy duy nhất 1 lần khi tải trang xong
-        document.addEventListener("DOMContentLoaded", function() {
-            taiVaiTro();         
-            // Mặc định load tab Đăng TKB ngay khi vào trang
-            // 👉 Tự động cập nhật widget thống kê ngay khi tải xong dữ liệu
-            capNhatWidgetThongKe(globalBaoCaoData);
-        });
+        
+           document.addEventListener("DOMContentLoaded", function() {
+    // 1. Tải vai trò và thông tin người dùng trước
+    if (typeof taiVaiTro === 'function') {
+        taiVaiTro();
+    }
+
+    // 2. 🟢 BẮT BUỘC PHẢI GỌI HÀM NÀY ĐỂ TẢI DỮ LIỆU TỪ SUPABASE VÀ HIỂN THỊ LÊN BẢNG
+    if (typeof taiBaoCaoChiTiet === 'function') {
+        taiBaoCaoChiTiet();
+    } else {
+        console.error("❌ Không tìm thấy hàm taiBaoCaoChiTiet()");
+    }
+});
+    
 // Hàm kiểm tra và ẩn các tab quản trị nếu user là Giáo viên
 function checkUserPermission() {
     // Kiểm tra xem đã có thông tin session chưa
@@ -237,32 +248,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(checkUserPermission, 500); // Đợi 0.5s để session load ổn định rồi check
 
 });
-//Tự động hiện thống kê trên màn hình chính
-function capNhatWidgetThongKe(data) {
-    const totalKH = data.length;
-    let daKyCount = 0;
 
-    data.forEach(item => {
-        // Kiểm tra đúng cột trang_thai_ky trong CSDL của bạn
-        const rawTrangThai = item.trang_thai_ky || '';
-        const isDaKy = String(rawTrangThai).trim().toLowerCase().includes('đã ký');
-        if (isDaKy) {
-            daKyCount++;
-        }
-    });
-
-    // Tính phần trăm tiến độ
-    const percent = totalKH > 0 ? Math.round((daKyCount / totalKH) * 100) : 0;
-
-    // Gắn giá trị vào các thẻ ID trên giao diện của bạn
-    const elKH = document.getElementById('mainStatKH');
-    const elDaKy = document.getElementById('mainStatDaKy');
-    const elPercent = document.getElementById('mainStatPercent');
-
-    if (elKH) elKH.innerText = totalKH;
-    if (elDaKy) elDaKy.innerText = daKyCount;
-    if (elPercent) elPercent.innerText = percent + '%';
-}
         // ============================================================
         // ĐIỀU HƯỚNG TAB
         // ============================================================
@@ -2207,92 +2193,104 @@ async function saveSoDauBai() {
 // ==========================================
 // 1. QUẢN TRỊ VÀ THỐNG KÊ (loadQuanTriThongKe)
 // ==========================================
-async function loadQuanTriThongKe() {
-    try {
-        const inputGv = document.getElementById('inputGiaoVien');
-        const maNhanSu = inputGv ? inputGv.getAttribute('data-manhansu') : (typeof currentSession !== 'undefined' ? currentSession.maNhanSu : '');
-        console.log("👉 1. Mã nhân sự đang lấy được:", maNhanSu);
-        
-        const tuanSelect = document.getElementById('filterSDBTuan');
-        const tuan = tuanSelect ? tuanSelect.value : '';  
-        console.log("👉 2. Tuần đang chọn:", tuan);
+async function renderQuanTriVaThongKe(allData) {
+    console.log("🚀 [DEBUG] Hàm renderQuanTriVaThongKe ĐÃ ĐƯỢC GỌI với dữ liệu:", allData);
 
-        // Truy vấn trực tiếp từ bảng Supabase (Giả sử bảng tên là 'so_dau_bai' hoặc 'tiet_day')
-        let query = _supabase.from('so_dau_bai').select('*');
-        
-        if (maNhanSu) {
-            query = query.eq('ma_nhan_su', maNhanSu); // Hoặc cột tương ứng trong bảng của bạn
-        }
-        if (tuan) {
-            query = query.eq('tuan', tuan);
-        }
-
-        let { data, error } = await query;
-        if (error) throw error;
-
-        const danhSachTiet = data || [];
-        
-        // Tính toán thống kê
-        let tongKeHoach = danhSachTiet.length;
-        let tongDaKy = danhSachTiet.filter(item => item.da_ky === true).length;
-
-        const statKH = document.getElementById('mainStatKH');
-        const statDaKy = document.getElementById('mainStatDaKy');
-        const statPercent = document.getElementById('mainStatPercent');
-        
-        if (statKH) statKH.innerText = tongKeHoach;
-        if (statDaKy) statDaKy.innerText = tongDaKy;
-        
-        if (statPercent) {
-            const percent = tongKeHoach > 0 ? Math.round((tongDaKy / tongKeHoach) * 100) : 0;
-            statPercent.innerText = percent + "%";
-        }
-        
-        const tbody = document.getElementById('quanTriTableBody');
-        if (!tbody) return;
-        
-        tbody.innerHTML = "";
-        
-        if(danhSachTiet.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Không có dữ liệu cho phạm vi này.</td></tr>`;
-            return;
-        }
-
-        // Gom nhóm theo tuần để hiển thị chi tiết bảng
-        const groupTuanMap = {};
-        danhSachTiet.forEach(item => {
-            const t = item.tuan || "Khác";
-            if (!groupTuanMap[t]) {
-                groupTuanMap[t] = { tuan: t, keHoach: 0, daDay: 0, isLocked: item.is_locked || false };
-            }
-            groupTuanMap[t].keHoach += 1;
-            if (item.da_ky) groupTuanMap[t].daDay += 1;
-        });
-
-        Object.values(groupTuanMap).forEach(item => {
-            const percent = item.keHoach > 0 ? Math.round((item.daDay / item.keHoach) * 100) : 0;
-            tbody.innerHTML += `
-                <tr class="hover:bg-slate-50">
-                    <td class="p-2.5 border font-semibold text-slate-800">${item.tuan}</td>
-                    <td class="p-2.5 border text-center">${item.keHoach}</td>
-                    <td class="p-2.5 border text-center text-emerald-600 font-bold">${item.daDay}</td>
-                    <td class="p-2.5 border text-center">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${percent >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${percent}%</span>
-                    </td>
-                    <td class="p-2.5 border text-center">
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">
-                            ${item.isLocked ? '🔒 Đã khóa' : '🔓 Đang mở'}
-                        </span>
-                    </td>
-                </tr>
-            `;
-        });
-
-    } catch (err) {
-        console.error("❌ Lỗi loadQuanTriThongKe từ Supabase:", err);
+    if (!allData || !Array.isArray(allData)) {
+        console.warn("⚠️ Dữ liệu truyền vào không phải là mảng hoặc bị rỗng!");
+        return;
     }
-}
 
+    let currentMaNhanSu = (typeof currentSession !== 'undefined' && currentSession.maNhanSu) ? currentSession.maNhanSu : (localStorage.getItem('maNhanSu') || '');
+    let isUserAdmin = (typeof isAdmin !== 'undefined') ? isAdmin : false;
+
+    console.log("👤 [DEBUG] MaNS hiện tại:", currentMaNhanSu, "| Là Admin:", isUserAdmin);
+
+    let filteredData = allData;
+    if (!isUserAdmin && currentMaNhanSu) {
+        filteredData = allData.filter(item => {
+            const itemMa = String(item.ma_nhan_su || item.maNhanSu || '').trim().toLowerCase();
+            return itemMa === String(currentMaNhanSu).trim().toLowerCase();
+        });
+    }
+
+    console.log("📊 [DEBUG] Số dòng sau khi lọc cho giáo viên:", filteredData.length);
+
+    // Tính toán widget
+    const totalKH = filteredData.length;
+    let daKyCount = 0;
+
+    filteredData.forEach(item => {
+        const rawTrangThai = item.trang_thai_ky || item.trang_thai || item.trang_thai_sdb;
+        if (rawTrangThai === true || item.da_ky === true) {
+            daKyCount++;
+        } else if (rawTrangThai) {
+            const trangThaiStr = String(rawTrangThai).trim().toLowerCase();
+            if (trangThaiStr.includes('đã ký') || trangThaiStr.includes('ký') || trangThaiStr.includes('duyệt') || trangThaiStr.includes('hoàn thành')) {
+                daKyCount++;
+            }
+        }
+    });
+
+    const percent = totalKH > 0 ? Math.round((daKyCount / totalKH) * 100) : 0;
+
+    // Gắn lên widget
+    const elKH = document.getElementById('mainStatKH');
+    const elDaKy = document.getElementById('mainStatDaKy');
+    const elPercent = document.getElementById('mainStatPercent');
+
+    if (elKH) elKH.innerText = totalKH;
+    if (elDaKy) elDaKy.innerText = daKyCount;
+    if (elPercent) elPercent.innerText = percent + '%';
+
+    // Đổ dữ liệu vào bảng quanTriTableBody
+    const tbody = document.getElementById('quanTriTableBody');
+    if (!tbody) {
+        console.error("❌ Không tìm thấy thẻ có id là 'quanTriTableBody' trong HTML!");
+        return;
+    }
+
+    tbody.innerHTML = "";
+
+    if (filteredData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Không có dữ liệu cho phạm vi này.</td></tr>`;
+        return;
+    }
+
+    const groupTuanMap = {};
+    filteredData.forEach(item => {
+        const t = item.tuan || item.tuan_hoc || "Khác";
+        if (!groupTuanMap[t]) {
+            groupTuanMap[t] = { tuan: t, keHoach: 0, daDay: 0, isLocked: item.is_locked || item.trang_thai_khoa || false };
+        }
+        groupTuanMap[t].keHoach += 1;
+        
+        const rawTrangThai = item.trang_thai_ky || item.trang_thai || item.trang_thai_sdb;
+        const isDaKy = rawTrangThai === true || item.da_ky === true || (rawTrangThai && String(rawTrangThai).toLowerCase().includes('ký'));
+        if (isDaKy) {
+            groupTuanMap[t].daDay += 1;
+        }
+    });
+
+    Object.values(groupTuanMap).forEach(item => {
+        const rowPercent = item.keHoach > 0 ? Math.round((item.daDay / item.keHoach) * 100) : 0;
+        tbody.innerHTML += `
+            <tr class="hover:bg-slate-50">
+                <td class="p-2.5 border font-semibold text-slate-800">${item.tuan}</td>
+                <td class="p-2.5 border text-center">${item.keHoach}</td>
+                <td class="p-2.5 border text-center text-emerald-600 font-bold">${item.daDay}</td>
+                <td class="p-2.5 border text-center">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${rowPercent >= 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${rowPercent}%</span>
+                </td>
+                <td class="p-2.5 border text-center">
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${item.isLocked ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">
+                        ${item.isLocked ? '🔒 Đã khóa' : '🔓 Đang mở'}
+                    </span>
+                </td>
+            </tr>
+        `;
+    });
+}
 
 // ==========================================
 // 2. BÁO CÁO VÀ THỐNG KÊ CHI TIẾT
@@ -2341,7 +2339,8 @@ async function taiBaoCaoChiTiet() {
                 thoi_gian_ky: item.thoi_gian_ky || ''
             };
         });
-
+        // 👉 Gọi đúng tên hàm mới đã gộp chung (hoặc đổi tên cho khớp)
+        renderQuanTriVaThongKe(globalBaoCaoData);
         populateDropdowns(globalBaoCaoData);
         filterBaoCaoTable(); 
 
