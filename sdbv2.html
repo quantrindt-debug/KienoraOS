@@ -1890,109 +1890,172 @@ async function saveKeHoachTuan() {
 }
 //==========================================Ký sổ đầu bài ================================
 // Hàm tự động đổ dữ liệu danh sách tuần vào dropdown của Sổ đầu bài
+// Hàm tự động khởi tạo và đồng bộ danh sách tuần của Sổ đầu bài
 function initSDBTuanDropdown() {
-    const selectTuan = document.getElementById('filterSDBTuan');
-    if (!selectTuan) return;
-    
-    // Nếu dropdown đang trống, ta sao chép các option từ dropdown kế hoạch tuần qua (hoặc tự sinh)
-    const sourceTuan = document.getElementById('filterKHTuan');
-    if (sourceTuan && sourceTuan.options.length > 0) {
-        selectTuan.innerHTML = sourceTuan.innerHTML;
-        selectTuan.value = sourceTuan.value; // Đồng bộ luôn tuần đang chọn
-    } else {
-        // Dự phòng nếu chưa có nguồn, tự tạo danh sách tuần mẫu từ 1 đến 35
-        selectTuan.innerHTML = "";
-        for (let i = 1; i <= 35; i++) {
-            const opt = document.createElement('option');
-            opt.value = `Tuần ${i}`;
-            opt.innerText = `Tuần ${i}`;
-            selectTuan.appendChild(opt);
-        }
-    }
-}
+    const selectTuanSDB = document.getElementById('filterSDBTuan');
+    if (!selectTuanSDB) return;
 
+    // Lấy tuần đang chọn bên Kế hoạch tuần (nếu có) để đồng bộ chung
+    const selectTuanKH = document.getElementById('filterKHTuan');
+    let currentTuanSelected = selectTuanKH ? selectTuanKH.value : "";
+
+    // Sinh danh sách từ Tuần 1 đến Tuần 35
+    selectTuanSDB.innerHTML = "";
+    for (let i = 1; i <= 35; i++) {
+        const opt = document.createElement('option');
+        opt.value = `Tuần ${i}`;
+        opt.innerText = `Tuần ${i}`;
+        selectTuanSDB.appendChild(opt);
+    }
+
+    // Nếu bên Kế hoạch đã chọn một tuần cụ thể, đồng bộ sang Sổ đầu bài luôn
+    if (currentTuanSelected) {
+        selectTuanSDB.value = currentTuanSelected;
+    }
+
+    // Lắng nghe sự kiện nếu người dùng đổi tuần ở Sổ đầu bài thì tự động load lại dữ liệu
+    selectTuanSDB.onchange = function() {
+        loadSoDauBai();
+    };
+}
+// Hàm tự động khởi tạo và đồng bộ danh sách tuần của Sổ đầu bài
+function initSDBTuanDropdown() {
+    const selectTuanSDB = document.getElementById('filterSDBTuan');
+    if (!selectTuanSDB) return;
+
+    // Lấy tuần đang chọn bên Kế hoạch tuần (nếu có) để đồng bộ chung
+    const selectTuanKH = document.getElementById('filterKHTuan');
+    let currentTuanSelected = selectTuanKH ? selectTuanKH.value : "";
+
+    // Sinh danh sách từ Tuần 1 đến Tuần 35
+    selectTuanSDB.innerHTML = "";
+    for (let i = 1; i <= 35; i++) {
+        const opt = document.createElement('option');
+        opt.value = `Tuần ${i}`;
+        opt.innerText = `Tuần ${i}`;
+        selectTuanSDB.appendChild(opt);
+    }
+
+    // Nếu bên Kế hoạch đã chọn một tuần cụ thể, đồng bộ sang Sổ đầu bài luôn
+    if (currentTuanSelected) {
+        selectTuanSDB.value = currentTuanSelected;
+    }
+
+    // Lắng nghe sự kiện nếu người dùng đổi tuần ở Sổ đầu bài thì tự động load lại dữ liệu
+    selectTuanSDB.onchange = function() {
+        loadSoDauBai();
+    };
+}
 
 // Hàm tải dữ liệu Sổ đầu bài từ Server
-function loadSoDauBai() {
-    const tuan = document.getElementById('filterSDBTuan').value;
-    const inputGv = document.getElementById('inputGiaoVien');
-    const maNhanSu = inputGv ? inputGv.getAttribute('data-manhansu') : (typeof currentSession !== 'undefined' ? currentSession.maNhanSu : '');
-    
-    const url = `${API_URL}?action=getSoDauBaiTuan&tuan=${encodeURIComponent(tuan)}&maNhanSu=${encodeURIComponent(maNhanSu)}`;
-    
-    fetch(url)
-    .then(res => res.json())
-    .then(res => {
-        console.log("Dữ liệu load về từ server:", res); // <-- Thêm dòng này để kiểm tra qua Console (F12)
-        if (res.success) {
-            renderSoDauBaiTable(res.data);
-        } else {
-            console.error("Lỗi load:", res.message);
-        }
-    })
-    .catch(err => console.error("Lỗi kết nối load:", err));
-}
-
-// Hiển thị dữ liệu lên bảng
-function renderSoDauBaiTable(data) {
+// Hàm tải dữ liệu Sổ đầu bài từ bảng ke_hoach_tuan trong Supabase
+async function loadSoDauBai() {
+    const selectTuan = document.getElementById('filterSDBTuan');
+    const tuanStr = selectTuan ? selectTuan.value : "";
     const tbody = document.getElementById('soDauBaiTableBody');
-    tbody.innerHTML = "";
 
-    if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">Không có tiết dạy nào trong tuần này.</td></tr>`;
+    if (!tuanStr) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">Vui lòng chọn tuần cần tải sổ đầu bài.</td></tr>`;
         return;
     }
 
+    const matchTuan = tuanStr.match(/\d+/);
+    const tuanNum = matchTuan ? parseInt(matchTuan[0]) : 1;
+
+    const inputGv = document.getElementById('inputGiaoVien');
+    const maNhanSu = (
+        inputGv?.getAttribute('data-manhansu') || 
+        inputGv?.value || 
+        currentSession?.maNhanSu || 
+        ""
+    ).trim().toLowerCase();
+
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">Đang tải sổ đầu bài tuần ${tuanNum}...</td></tr>`;
+
+    try {
+        let query = db
+            .from('ke_hoach_tuan')
+            .select('*')
+            .eq('tuan', tuanNum);
+
+        if (!isAdmin && maNhanSu) {
+            query = query.eq('ma_nhan_su', maNhanSu);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            renderSoDauBaiTable(data);
+        } else {
+            if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-slate-400">Không tìm thấy tiết dạy nào trong tuần này. Bạn hãy sang tab "Kế hoạch tuần" để bấm "Lấy từ TKB" và lưu kế hoạch trước nhé.</td></tr>`;
+        }
+    } catch (err) {
+        console.error("Lỗi tải Sổ đầu bài:", err);
+        if (tbody) tbody.innerHTML = `<tr><td colspan="9" class="text-center py-6 text-rose-500">Lỗi kết nối CSDL: ${err.message}</td></tr>`;
+    }
+}
+
+// Hiển thị dữ liệu lên bảng
+// Hiển thị dữ liệu lên bảng Sổ đầu bài
+function renderSoDauBaiTable(data) {
+    const tbody = document.getElementById('soDauBaiTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
     data.forEach((item) => {
-    const trangThai = item.trangThaiKy ? String(item.trangThaiKy).trim() : "";
-    const isSigned = (trangThai === "Đã ký" || trangThai === "true" || trangThai === "1");
-    
-    const tr = document.createElement('tr');
-    tr.className = "hover:bg-slate-50/50 transition-colors";
-    tr.innerHTML = `
+        const trangThai = item.trang_thai_ky || item.trangThaiKy || "";
+        const isSigned = (trangThai === "Đã ký" || trangThai === "true" || trangThai === true || trangThai === "1");
+        
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/50 transition-colors";
+        tr.setAttribute('data-id', item.id || ''); // Lưu lại ID bản ghi để update chính xác
+
+        tr.innerHTML = `
             <td class="p-3 font-medium text-slate-800">
-                <div>${item.thu} (${item.buoi})</div>
-                <div class="text-slate-400 text-[11px]">Tiết ${item.tiet}</div>
+                <div>${item.thu || ''} (${item.buoi || ''})</div>
+                <div class="text-slate-400 text-[11px]">Tiết ${item.tiet || ''}</div>
             </td>
             <td class="p-3">
-                <span class="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">${item.lop}</span>
-                <div class="text-slate-500 mt-1">${item.mon}</div>
+                <span class="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">${item.lop || ''}</span>
+                <div class="text-slate-500 mt-1">${item.mon || ''}</div>
             </td>
             <td class="p-3">
                 <div class="flex items-center gap-1.5 mb-1">
-                    <span class="text-slate-500 font-semibold">Tiết ${item.tietPPCT}:</span>
-                    ${item.phanMon ? `<span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-blue-100">${item.phanMon}</span>` : ''}
+                    <span class="text-slate-500 font-semibold">Tiết ${item.tiet_ppct || item.tietPPCT || ''}:</span>
+                    ${(item.phan_mon || item.phanMon) ? `<span class="bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded text-[10px] font-medium border border-blue-100">${item.phan_mon || item.phanMon}</span>` : ''}
                 </div>
-                <div class="text-slate-700 font-medium">${item.tenBai}</div>
+                <div class="text-slate-700 font-medium">${item.ten_bai || item.tenBai || ''}</div>
             </td>
             <td class="p-3 text-center">
-                <input type="number" min="0" max="50" class="input-siso-vang w-16 text-center border border-slate-200 rounded p-1 text-xs" value="${item.siSoVang || 0}">
+                <input type="number" min="0" max="50" class="input-siso-vang w-16 text-center border border-slate-200 rounded p-1 text-xs" value="${item.si_so_vang !== undefined ? item.si_so_vang : (item.siSoVang || 0)}">
             </td>
             <td class="p-3">
-                <input type="text" class="input-ten-hvang w-full border border-slate-200 rounded p-1 text-xs" placeholder="HS vắng..." value="${item.tenHSVang || ""}">
+                <input type="text" class="input-ten-hvang w-full border border-slate-200 rounded p-1 text-xs" placeholder="HS vắng..." value="${item.ten_hs_vang || item.tenHSVang || ""}">
             </td>
             <td class="p-3">
-                <input type="text" class="input-nhanxet w-full border border-slate-200 rounded p-1 text-xs" value="${item.nhanXet !== undefined ? item.nhanXet : "Lớp học bình thường"}">
+                <input type="text" class="input-nhanxet w-full border border-slate-200 rounded p-1 text-xs" value="${item.nhan_xet !== undefined ? item.nhan_xet : (item.nhanXet !== undefined ? item.nhanXet : "Lớp học bình thường")}">
             </td>
             <td class="p-3 text-center">
                 <input type="number" min="1" max="10" step="1" class="input-diem w-14 text-center border border-slate-200 rounded p-1 text-xs font-bold text-emerald-700" value="${item.diem || ""}" placeholder="VD: 9">
             </td>
             <td class="p-3">
                 <select class="input-xeploai border border-slate-200 rounded p-1 text-xs bg-white">
-                    <option value="Tốt" ${item.xepLoai === 'Tốt' ? 'selected' : ''}>Tốt</option>
-                    <option value="Khá" ${item.xepLoai === 'Khá' ? 'selected' : ''}>Khá</option>
-                    <option value="Đạt" ${item.xepLoai === 'Đạt' ? 'selected' : ''}>Đạt</option>
-                    <option value="Chưa đạt" ${item.xepLoai === 'Chưa đạt' ? 'selected' : ''}>Chưa đạt</option>
+                    <option value="Tốt" ${((item.xep_loai || item.xepLoai) === 'Tốt') ? 'selected' : ''}>Tốt</option>
+                    <option value="Khá" ${((item.xep_loai || item.xepLoai) === 'Khá') ? 'selected' : ''}>Khá</option>
+                    <option value="Đạt" ${((item.xep_loai || item.xepLoai) === 'Đạt') ? 'selected' : ''}>Đạt</option>
+                    <option value="Chưa đạt" ${((item.xep_loai || item.xepLoai) === 'Chưa đạt') ? 'selected' : ''}>Chưa đạt</option>
                 </select>
             </td>
             <td class="p-3 text-center">
                 <div class="flex flex-col items-center gap-1">
-                    <label class="inline-flex items-center cursor-pointer">
+                    <label class="inline-flex items-center cursor-pointer relative">
                         <input type="checkbox" class="checkbox-ky sr-only peer" ${isSigned ? 'checked' : ''}>
-                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600 relative"></div>
+                        <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
                     </label>
                     <span class="status-text text-[10px] font-semibold ${isSigned ? 'text-emerald-600' : 'text-slate-400'}">${isSigned ? 'Đã ký' : 'Chưa ký'}</span>
-                    ${item.thoiGianKy ? `<span class="text-[9px] text-slate-400">${item.thoiGianKy}</span>` : ''}
+                    ${(item.thoi_gian_ky || item.thoiGianKy) ? `<span class="text-[9px] text-slate-400">${item.thoi_gian_ky || item.thoiGianKy}</span>` : ''}
                 </div>
             </td>
         `;
@@ -2000,16 +2063,26 @@ function renderSoDauBaiTable(data) {
     });
 }
 
-function saveSoDauBai() {
-    const tuan = document.getElementById('filterSDBTuan').value;
-    const inputGv = document.getElementById('inputGiaoVien');
-    const maNhanSu = inputGv ? inputGv.getAttribute('data-manhansu') : (typeof currentSession !== 'undefined' ? currentSession.maNhanSu : '');
-    
+// Hàm Ký & Lưu Sổ đầu bài trực tiếp vào cơ sở dữ liệu Supabase
+async function saveSoDauBai() {
+    const selectTuan = document.getElementById('filterSDBTuan');
+    const tuanStr = selectTuan ? selectTuan.value : "";
+    const matchTuan = tuanStr.match(/\d+/);
+    const tuanNum = matchTuan ? parseInt(matchTuan[0]) : 1;
+
     const rows = [];
-    document.querySelectorAll('#soDauBaiTableBody tr').forEach(tr => {
+    const trElements = document.querySelectorAll('#soDauBaiTableBody tr');
+
+    if (trElements.length === 0 || trElements[0].querySelector('td[colspan]')) {
+        alert("⚠️ Không có dữ liệu để ký sổ.");
+        return;
+    }
+
+    trElements.forEach(tr => {
         const checkbox = tr.querySelector('.checkbox-ky');
         if (!checkbox) return;
 
+        const recordId = tr.getAttribute('data-id');
         const isChecked = checkbox.checked;
         const siSoVangEl = tr.querySelector('.input-siso-vang');
         const tenHSVangEl = tr.querySelector('.input-ten-hvang');
@@ -2017,86 +2090,49 @@ function saveSoDauBai() {
         const diemEl = tr.querySelector('.input-diem');
         const xepLoaiEl = tr.querySelector('.input-xeploai');
         
-        // Lấy thông tin thô từ cột 0 và 1
-        const colThuBuoi = tr.children[0] ? tr.children[0].innerText.split('\n') : [];
-        // Lấy toàn bộ phần trước dấu ngoặc đơn (Ví dụ: "Thứ 4 (Chiều)" -> lấy "Thứ 4")
-        const thu = colThuBuoi[0] ? colThuBuoi[0].split('(')[0].trim() : '';
-        const buoi = colThuBuoi[0] && colThuBuoi[0].includes('(') ? colThuBuoi[0].match(/\((.*?)\)/)[1] : '';
-        const tiet = colThuBuoi[1] ? colThuBuoi[1].replace('Tiết ', '').trim() : '';
-        
-        const lopSpan = tr.children[1] ? tr.children[1].querySelector('span') : null;
-        const monDiv = tr.children[1] ? tr.children[1].querySelector('div') : null;
-        const lop = lopSpan ? lopSpan.innerText.trim() : '';
-        const mon = monDiv ? monDiv.innerText.trim() : '';
-        
-        // Lấy thông tin tiết PPCT và tên bài từ cột 2
-        const tietPPCTEl = tr.children[2] ? tr.children[2].querySelector('.font-semibold') : null;
-        const tietPPCT = tietPPCTEl ? tietPPCTEl.innerText.replace('Tiết ', '').replace(':', '').trim() : '';
-        
-        const phanMonEl = tr.children[2] ? tr.children[2].querySelector('span.bg-blue-50') : null;
-        const phanMon = phanMonEl ? phanMonEl.innerText.trim() : '';
-
-        const tenBaiDiv = tr.children[2] ? tr.children[2].querySelector('.text-slate-700') : null;
-        const tenBai = tenBaiDiv ? tenBaiDiv.innerText.trim() : '';
-
         rows.push({
-            tuan: tuan,
-            maNhanSu: maNhanSu,
-            thu: thu,
-            buoi: buoi,
-            tiet: tiet,
-            lop: lop,
-            mon: mon,
-            tietPPCT: tietPPCT,
-            phanMon: phanMon,
-            tenBai: tenBai,
-            siSoVang: siSoVangEl ? siSoVangEl.value : "0",
-            tenHSVang: tenHSVangEl ? tenHSVangEl.value : "",
-            nhanXet: nhanXetEl ? nhanXetEl.value : "",
-            diem: diemEl ? diemEl.value : "",
-            xepLoai: xepLoaiEl ? xepLoaiEl.value : "Tốt",
-            trangThaiKy: isChecked ? "Đã ký" : "Chưa ký",
-            giaoVienKy: maNhanSu,
-            thoiGianKy: new Date().toLocaleString("vi-VN")
+            id: recordId ? parseInt(recordId) : undefined, // Nếu có ID thì cập nhật đúng dòng đó
+            tuan: tuanNum,
+            si_so_vang: siSoVangEl ? parseInt(siSoVangEl.value) || 0 : 0,
+            ten_hs_vang: tenHSVangEl ? tenHSVangEl.value.trim() : "",
+            nhan_xet: nhanXetEl ? nhanXetEl.value.trim() : "",
+            diem: diemEl ? diemEl.value.trim() : "",
+            xep_loai: xepLoaiEl ? xepLoaiEl.value : "Tốt",
+            trang_thai_ky: isChecked ? "Đã ký" : "Chưa ký",
+            thoi_gian_ky: isChecked ? new Date().toLocaleString("vi-VN") : null
         });
     });
 
-    const payload = {
-        action: "saveSoDauBai",
-        tuan: tuan,
-        maNhanSu: maNhanSu,
-        rows: rows
-    };
+    try {
+        // Duyệt và cập nhật từng dòng theo ID lên bảng ke_hoach_tuan
+        for (let row of rows) {
+            if (!row.id) continue;
+            
+            const { error } = await db
+                .from('ke_hoach_tuan')
+                .update({
+                    si_so_vang: row.si_so_vang,
+                    ten_hs_vang: row.ten_hs_vang,
+                    nhan_xet: row.nhan_xet,
+                    diem: row.diem,
+                    xep_loai: row.xep_loai,
+                    trang_thai_ky: row.trang_thai_ky,
+                    thoi_gian_ky: row.thoi_gian_ky
+                })
+                .eq('id', row.id);
 
-    fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-    })
-    .then(async res => {
-        const text = await res.text();
-        try {
-            return JSON.parse(text);
-        } catch (e) {
-            console.error("Dữ liệu trả về không phải JSON thuần:", text);
-            throw new Error("Server trả về dữ liệu lỗi (không phải định dạng JSON).");
+            if (error) throw error;
         }
-    })
-    .then(res => {
-        if (res && res.success) {
-            alert("💾 " + res.message);
-            loadSoDauBai(); 
-        } else {
-            alert("❌ Lỗi khi ký sổ: " + (res ? res.message : "Không rõ nguyên nhân"));
-        }
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Lỗi kết nối hoặc xử lý dữ liệu: " + err.message);
-    });
+
+        alert("💾 Ký và lưu sổ đầu bài thành công!");
+        loadSoDauBai(); // Tải lại bảng để cập nhật trạng thái hiển thị
+    } catch (err) {
+        console.error("Lỗi lưu sổ đầu bài:", err);
+        alert("❌ Lỗi khi lưu sổ đầu bài: " + err.message);
+    }
 }
 
-//Thống kê và khoá sổ đầu bài
+//=====================Thống kê và khoá sổ đầu bài
 
 function loadQuanTriThongKe() {
     // 1. Kiểm tra mã nhân sự
