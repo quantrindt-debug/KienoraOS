@@ -505,24 +505,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).catch(err => console.warn("Lỗi tải danh sách số TKB:", err.message));
 
             // 2. Tải thông tin nhân sự / giáo viên (Lấy từ bảng nhân sự/giáo viên trên Supabase)
-            db.from('nhan_su') // Hoặc tên bảng chứa thông tin giáo viên của bạn
-                .select('*')
-                .eq('ma_nhan_su', currentSession.maNhanSu)
-                .single()
-                .then(({ data, error }) => {
-                    const inputGv = document.getElementById('inputGiaoVien');
-                    if (inputGv) {
-                        if (data && (data.ten_tkb || data.ho_ten)) {
-                            inputGv.value = data.ten_tkb || data.ho_ten;
-                        } else {
-                            inputGv.value = currentSession.maNhanSu || '';
-                        }
-                    }
-                }).catch(() => {
-                    const inputGv = document.getElementById('inputGiaoVien');
-                    if (inputGv) inputGv.value = currentSession.maNhanSu || '';
-                });
-
+           // Thay vì dùng .single() dễ gây lỗi 406, ta dùng .limit(1) hoặc lấy mảng
+db.from('users')
+    .select('*')
+    .eq('ma_nhan_su', currentSession.maNhanSu)
+    .then(({ data, error }) => {
+        const inputGv = document.getElementById('inputGiaoVien');
+        if (inputGv) {
+            // Kiểm tra xem có tìm thấy dữ liệu hay không
+            if (data && data.length > 0) {
+                const userObj = data[0];
+                inputGv.value = userObj.ten_tkb || userObj.ho_va_ten || userObj.ho_ten || currentSession.maNhanSu;
+            } else {
+                // Nếu không tìm thấy, gán tạm mã phiên đăng nhập để không bị lỗi trống ô
+                inputGv.value = currentSession.maNhanSu || '';
+                console.warn("⚠️ Không tìm thấy user khớp với ma_nhan_su:", currentSession.maNhanSu);
+            }
+        }
+    })
+    .catch(err => {
+        console.error("❌ Lỗi truy vấn thông tin user:", err);
+    });
             // 3. Tải danh sách tuần học (Lấy từ bảng cau_hinh_tuan hoặc tuan_hoc trên Supabase)
             // 3. Tải danh sách tuần học (Đã sửa lại đúng tên bảng CauHinhTuan và cột ten_tuan)
             db.from('CauHinhTuan') 
