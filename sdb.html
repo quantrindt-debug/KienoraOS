@@ -2449,6 +2449,7 @@ function populateDropdowns(data) {
 }
 
 // Hàm lọc cập nhật theo các điều kiện
+// Hàm lọc cập nhật theo các điều kiện
 function filterBaoCaoTable() {
     const tuanKey = document.getElementById('filterBCCoGiTuan')?.value || '';
     const gvKey = document.getElementById('filterBCCoGiGV')?.value || '';
@@ -2461,7 +2462,6 @@ function filterBaoCaoTable() {
         const gvVal = item.giao_vien || item.giaoVien || '';
         const monVal = item.mon_hoc || item.monHoc || '';
         const phanMonVal = item.phan_mon || item.phanMon || '';
-        const daKyVal = item.da_ky !== undefined ? item.da_ky : item.daKy;
 
         const matchTuan = !tuanKey || String(item.tuan) === String(tuanKey);
         const matchGV = !gvKey || gvVal === gvKey;
@@ -2469,9 +2469,16 @@ function filterBaoCaoTable() {
         const matchPhanMon = !phanMonKey || phanMonVal === phanMonKey;
         const matchLop = !lopKey || item.lop === lopKey;
         
+        // Chuẩn hóa xác định trạng thái đã ký hay chưa ký từ các biến có thể có trong item
+        const trangThaiText = String(item.trang_thai_sdb || item.trang_thai_ky || item.trang_thai || '').trim().toLowerCase();
+        const isDaKy = item.da_ky === true || item.daKy === true || item.da_ky === 1 || item.daKy === 1 || trangThaiText.includes('đã ký') || trangThaiText === 'da_ky';
+
         let matchTT = true;
-        if(ttKey === 'chua-ky') matchTT = !daKyVal;
-        if(ttKey === 'da-ky') matchTT = daKyVal;
+        if (ttKey === 'chua-ky') {
+            matchTT = !isDaKy; // Lấy những cái chưa ký
+        } else if (ttKey === 'da-ky') {
+            matchTT = isDaKy;  // Lấy những cái đã ký
+        }
         
         return matchTuan && matchGV && matchMon && matchPhanMon && matchLop && matchTT;
     });
@@ -2480,7 +2487,6 @@ function filterBaoCaoTable() {
     if(countEl) countEl.innerText = currentFilteredData.length;
     renderBaoCaoTable(currentFilteredData);
 }
-
 function renderBaoCaoTable(data) {
     const tbody = document.getElementById('baoCaoTableBody');
     if(!tbody) return;
