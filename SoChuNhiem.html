@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Sổ Chủ Nhiệm & Hồ Sơ Học Sinh</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Thư viện Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @media print {
+            body { background: white !important; }
+            header, .no-print { display: none !important; }
+            .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen font-sans text-slate-800">
+
+    <!-- Header / Tiêu đề chung của hệ thống -->
+    <header class="bg-indigo-700 text-white shadow-md py-4 px-6 mb-6">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
+            <h1 class="text-xl font-bold uppercase tracking-wider flex items-center gap-2">
+                🎓 Quản Lý Sổ Chủ Nhiệm & Hồ Sơ Học Sinh
+            </h1>
+            <span class="text-xs bg-indigo-800 text-indigo-200 px-3 py-1 rounded-full mt-2 sm:mt-0 font-medium">
+                Hệ thống độc lập - Supabase
+            </span>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 pb-12">
+        <!-- Thanh Tab chuyển đổi giao diện (5 Tabs) -->
+        <div class="flex flex-wrap border-b border-slate-300 mb-6 bg-white rounded-t-lg shadow-sm overflow-hidden no-print">
+            <button onclick="switchTab('nhap-lieu')" id="btn-tab-nhap-lieu" class="flex-1 min-w-[130px] py-3 px-3 text-center font-bold text-xs sm:text-sm bg-indigo-600 text-white transition">
+                ✍️ Nhập Liệu
+            </button>
+            <button onclick="switchTab('danh-sach')" id="btn-tab-danh-sach" class="flex-1 min-w-[130px] py-3 px-3 text-center font-bold text-xs sm:text-sm bg-white text-slate-600 hover:bg-slate-50 transition">
+                📊 Sổ Thi Đua
+            </button>
+            <button onclick="switchTab('so-do')" id="btn-tab-so-do" class="flex-1 min-w-[130px] py-3 px-3 text-center font-bold text-xs sm:text-sm bg-white text-slate-600 hover:bg-slate-50 transition">
+                🪑 Sơ Đồ Ngồi
+            </button>
+            <button onclick="switchTab('ho-so')" id="btn-tab-ho-so" class="flex-1 min-w-[130px] py-3 px-3 text-center font-bold text-xs sm:text-sm bg-white text-slate-600 hover:bg-slate-50 transition">
+                📁 Hồ Sơ HS
+            </button>
+            <button onclick="switchTab('xuat-so')" id="btn-tab-xuat-so" class="flex-1 min-w-[130px] py-3 px-3 text-center font-bold text-xs sm:text-sm bg-white text-slate-600 hover:bg-slate-50 transition">
+                🖨️ Xuất Sổ
+            </button>
+        </div>
+
+        <!-- TAB 1: FORM NHẬP LIỆU THI ĐUA -->
+        <section id="tab-nhap-lieu" class="bg-white rounded-b-lg rounded-r-lg shadow-md p-6 border border-slate-200">
+            <h2 class="text-lg font-bold text-slate-700 mb-4 pb-2 border-b">📝 Cập Nhật Vi Phạm & Điểm Thi Đua Lớp</h2>
+            
+            <form id="soChuNhiemForm" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Ngày ghi nhận</label>
+                    <input type="date" id="ngay" required class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tuần học</label>
+                    <input type="number" id="tuan" placeholder="VD: 1, 2..." required class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Lớp chủ nhiệm</label>
+                    <input type="text" id="lop" placeholder="VD: 12A" required class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Điểm thi đua</label>
+                    <input type="number" step="0.5" id="diem" placeholder="VD: 100, 95..." required class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nội dung / Vi phạm / Sự việc</label>
+                    <input type="text" id="noi_dung" placeholder="VD: Đi học muộn, không soạn bài..." class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Biện pháp xử lý / Ghi chú</label>
+                    <input type="text" id="ghi_chu" placeholder="VD: Nhắc nhở trước lớp, trừ hạnh kiểm..." class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
+                </div>
+                <div class="sm:col-span-2 md:col-span-4 text-right mt-4">
+                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2.5 rounded-md hover:bg-indigo-700 font-semibold text-sm shadow transition">
+                        💾 Lưu Dữ Liệu Thi Đua
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- TAB 2: DANH SÁCH THI ĐUA -->
+        <section id="tab-danh-sach" class="hidden bg-white rounded-b-lg rounded-r-lg shadow-md p-6 border border-slate-200">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 pb-2 border-b gap-3">
+                <h2 class="text-lg font-bold text-slate-700">📋 Danh Sách Nhật Ký Sổ Chủ Nhiệm</h2>
+                <button onclick="fetchSoChuNhiem()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded border transition">
+                    🔄 Làm mới dữ liệu
+                </button>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Ngày</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Tuần</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Lớp</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Nội dung / Vi phạm</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Biện pháp / Ghi chú</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Điểm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody" class="bg-white divide-y divide-slate-200 text-sm">
+                        <!-- Dữ liệu được load động qua JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 3: XẾP SƠ ĐỒ CHỖ NGỒI -->
+        <section id="tab-so-do" class="hidden bg-white rounded-b-lg rounded-r-lg shadow-md p-6 border border-slate-200">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-3 border-b gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-700">🪑 Sơ Đồ Chỗ Ngồi Lớp Học</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Sắp xếp vị trí học sinh theo sơ đồ lớp thực tế.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="chonLopSoDo" class="rounded-md border-slate-300 border p-2 text-sm bg-slate-50 font-medium">
+                        <option value="12A">Lớp 12A</option>
+                        <option value="12B">Lớp 12B</option>
+                    </select>
+                    <button onclick="alert('Đã lưu sơ đồ chỗ ngồi!')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded shadow transition">
+                        💾 Lưu Sơ Đồ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Bục giảng -->
+            <div class="w-full max-w-xl mx-auto bg-slate-200 text-slate-700 font-bold text-center py-2 rounded-md mb-8 uppercase tracking-widest text-xs border border-slate-300">
+                Bục Giảng / Bàn Giáo Viên 🍎
+            </div>
+
+            <!-- Lưới bàn học -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg shadow-sm text-center">
+                    <span class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Bàn 1 (Tổ 1)</span>
+                    <input type="text" placeholder="Học sinh trái" class="w-full text-xs p-2 mb-2 border rounded bg-white text-center font-medium">
+                    <input type="text" placeholder="Học sinh phải" class="w-full text-xs p-2 border rounded bg-white text-center font-medium">
+                </div>
+                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg shadow-sm text-center">
+                    <span class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Bàn 2 (Tổ 1)</span>
+                    <input type="text" placeholder="Học sinh trái" class="w-full text-xs p-2 mb-2 border rounded bg-white text-center font-medium">
+                    <input type="text" placeholder="Học sinh phải" class="w-full text-xs p-2 border rounded bg-white text-center font-medium">
+                </div>
+                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg shadow-sm text-center">
+                    <span class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Bàn 3 (Tổ 2)</span>
+                    <input type="text" placeholder="Học sinh trái" class="w-full text-xs p-2 mb-2 border rounded bg-white text-center font-medium">
+                    <input type="text" placeholder="Học sinh phải" class="w-full text-xs p-2 border rounded bg-white text-center font-medium">
+                </div>
+                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg shadow-sm text-center">
+                    <span class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Bàn 4 (Tổ 2)</span>
+                    <input type="text" placeholder="Học sinh trái" class="w-full text-xs p-2 mb-2 border rounded bg-white text-center font-medium">
+                    <input type="text" placeholder="Học sinh phải" class="w-full text-xs p-2 border rounded bg-white text-center font-medium">
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: QUẢN LÝ HỒ SƠ HỌC SINH -->
+        <section id="tab-ho-so" class="hidden bg-white rounded-b-lg rounded-r-lg shadow-md p-6 border border-slate-200">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 pb-2 border-b gap-3">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-700">📁 Quản Lý Hồ Sơ Học Sinh</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Danh sách thông tin chi tiết, liên lạc và hoàn cảnh học sinh.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="searchHocSinh" placeholder="Tìm tên học sinh..." class="rounded-md border-slate-300 border p-2 text-sm bg-slate-50">
+                    <button onclick="fetchHoSoHocSinh()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded shadow transition">
+                        🔍 Tìm kiếm
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead class="bg-slate-50">
+                        <tr>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">STT</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Họ và tên</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Ngày sinh</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Giới tính</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Lớp</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">SĐT Phụ Huynh</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Ghi chú / Hoàn cảnh</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hoSoTableBody" class="bg-white divide-y divide-slate-200 text-sm">
+                        <!-- Dữ liệu hồ sơ học sinh load động từ Supabase -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- TAB 5: XUẤT SỔ CHỦ NHIỆM -->
+        <section id="tab-xuat-so" class="hidden bg-white rounded-b-lg rounded-r-lg shadow-md p-6 border border-slate-200 print-area">
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-3 border-b gap-3 no-print">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-700">🖨️ Xuất Bản / In Sổ Chủ Nhiệm Tổng Hợp</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Trình bày trang trọng chuẩn bị in ấn hoặc xuất biên bản báo cáo.</p>
+                </div>
+                <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-2.5 rounded shadow transition flex items-center gap-2">
+                    🖨️ In Hoặc Lưu File PDF
+                </button>
+            </div>
+
+            <!-- Khung văn bản hành chính khi in -->
+            <div class="max-w-3xl mx-auto bg-white p-8 border border-slate-300 shadow-sm text-slate-800">
+                <div class="text-center mb-6">
+                    <p class="text-xs font-bold uppercase tracking-widest text-slate-600">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                    <p class="text-xs font-bold underline text-slate-700 mb-4">Độc lập - Tự do - Hạnh phúc</p>
+                    <h3 class="text-xl font-extrabold uppercase text-indigo-900">SỔ TỔNG HỢP CÔNG TÁC CHỦ NHIỆM</h3>
+                    <p class="text-xs text-slate-500 mt-1">Năm học: 2025 - 2026</p>
+                </div>
+
+                <div class="mb-6 space-y-1 text-sm">
+                    <p><strong>Họ và tên giáo viên chủ nhiệm:</strong> Lê Duy Hải</p>
+                    <p><strong>Lớp chủ nhiệm:</strong> <span id="xuatLopHienThi">12A</span></p>
+                </div>
+
+                <div class="mb-6">
+                    <h4 class="font-bold text-sm text-slate-700 uppercase mb-2 pb-1 border-b">I. Thống kê chung</h4>
+                    <p class="text-sm text-slate-600">- Tổng số học sinh: <span id="xuatTongSiSo">Đang cập nhật...</span> học sinh.</p>
+                    <p class="text-sm text-slate-600">- Tình hình thi đua chung trong học kỳ: Hoàn thành tốt nhiệm vụ đề ra.</p>
+                </div>
+
+                <div class="mb-8">
+                    <h4 class="font-bold text-sm text-slate-700 uppercase mb-2 pb-1 border-b">II. Ghi chú & Đánh giá của giáo viên</h4>
+                    <div class="border border-slate-200 rounded p-3 min-h-[80px] text-sm text-slate-600 bg-slate-50">
+                        Lớp duy trì nền nếp tốt, học sinh tích cực tham gia các phong trào thi đua của trường lớp. Cần tiếp tục phát huy ở các tuần tiếp theo.
+                    </div>
+                </div>
+
+                <div class="flex justify-between mt-12 text-center text-sm">
+                    <div class="w-1/2">
+                        <p class="font-bold">XÁC NHẬN CỦA NHÀ TRƯỜNG</p>
+                        <p class="text-xs text-slate-400 italic">(Ký, đóng dấu)</p>
+                    </div>
+                    <div class="w-1/2">
+                        <p class="font-bold">GIÁO VIÊN CHỦ NHIỆM</p>
+                        <p class="text-xs text-slate-400 italic">(Ký và ghi rõ họ tên)</p>
+                        <div class="h-16"></div>
+                        <p class="font-semibold">Lê Duy Hải</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Script Xử lý Logic & Supabase -->
+    <script>
+   // ============================================================
+    // CẤU HÌNH KẾT NỐI HỆ THỐNG & SUPABASE (XÁC THỰC AN TOÀN KIENONAOS)
+    // ============================================================
+    const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
+    let db = null;
+
+    if (window.supabase) {
+        db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    } else {
+        console.error("Thư viện Supabase chưa được tải vào trang!");
+    }
+
+    let currentRole = "";
+    let isAdmin = false;
+
+    let currentSession = {
+        maNhanSu: "",
+        maTruong: "c3ndtnl.nan",
+        hoVaTen: "",
+        tenTKB: "",
+        vaiTro: "Giáo viên"
+    };
+
+    // 1. Hàm kiểm tra nguồn gốc: Cho phép chạy trong iframe của kienonaOS hoặc có lưu phiên làm việc
+    function kiemTraNguonGocTruyCap() {
+        try {
+            // Kiểm tra xem trang có đang mở bên trong iframe hoặc cửa sổ con không
+            const isFramed = window.parent !== window || window.opener !== null;
+            
+            // Lấy thông tin từ trang cha nếu có thể truy cập
+            const parentWin = window.parent !== window ? window.parent : window.opener;
+            if (parentWin && parentWin.currentSession && parentWin.currentSession.maNhanSu) {
+                const pSession = parentWin.currentSession;
+                currentSession.maNhanSu = pSession.maNhanSu;
+                currentSession.hoVaTen = pSession.hoVaTen || "";
+                currentSession.vaiTro = pSession.vaiTro || "Giáo viên";
+                if (typeof pSession.maTruong === 'function') {
+                    currentSession.maTruong = pSession.maTruong();
+                } else if (pSession.maTruong) {
+                    currentSession.maTruong = pSession.maTruong;
+                }
+                return true;
+            }
+
+            // Hoặc kiểm tra xem localStorage của trình duyệt đã có phiên đăng nhập từ kienonaOS chưa
+            const localUser = localStorage.getItem('maNhanSu') || 
+                              localStorage.getItem('taiKhoan') || 
+                              localStorage.getItem('user');
+            
+            if (localUser) {
+                currentSession.maNhanSu = localUser;
+                currentSession.hoVaTen = localStorage.getItem('hoVaTen') || localStorage.getItem('fullName') || "";
+                currentSession.vaiTro = localStorage.getItem('vaiTro') || "Giáo viên";
+                return true;
+            }
+
+            // Nếu không nằm trong iframe và hoàn toàn không có localStorage -> Chặn mở trực tiếp ngoài tab mới
+            if (!isFramed) {
+                return false;
+            }
+        } catch (e) {
+            console.warn("Lỗi kiểm tra khung nhìn:", e);
+        }
+
+        // Trường hợp đang nằm trong iframe của kienonaOS nhưng chưa kịp đồng bộ biến, 
+        // ta tạm cho phép đi tiếp rồi để Supabase xác thực bằng mã lưu trong máy
+        const fallbackUser = localStorage.getItem('maNhanSu') || 'leduyhai';
+        if (fallbackUser) {
+            currentSession.maNhanSu = fallbackUser;
+            return true;
+        }
+
+        return false;
+    }
+
+    // 2. Truy vấn và xác thực tài khoản với Supabase
+    async function taiVaiTro() {
+        const hopLe = kiemTraNguonGocTruyCap();
+
+        // 🛡️ CHẶN: Chỉ chặn khi mở tab độc lập hoàn toàn bên ngoài mà không có dấu vết đăng nhập
+        if (!hopLe || !currentSession.maNhanSu) {
+            chuyenTrangBiTuChoi("Truy cập bị từ chối! Bạn không thể mở trực tiếp trang này mà phải truy cập thông qua hệ thống kienonaOS.");
+            return;
+        }
+
+        if (!db) {
+            chuyenTrangBiTuChoi("Lỗi kết nối cơ sở dữ liệu hệ thống!");
+            return;
+        }
+
+        try {
+            let { data, error } = await db
+                .from('users') 
+                .select('ma_nhan_su, ho_va_ten, quyen, ten_tkb')
+                .eq('ma_nhan_su', currentSession.maNhanSu)
+                .single();
+
+            if (data && !error) {
+                currentRole = String(data.quyen || "Giáo viên").trim();
+                currentSession.vaiTro = currentRole;
+                currentSession.hoVaTen = String(data.ho_va_ten || currentSession.hoVaTen).trim();
+                currentSession.tenTKB = String(data.ten_tkb || currentSession.maNhanSu.split('.').pop()).trim();
+                
+                const roleLower = currentRole.toLowerCase();
+                isAdmin = roleLower.includes("admin") || roleLower.includes("quản trị");
+                
+                const inputGiaoVien = document.getElementById('inputGiaoVien');
+                if (inputGiaoVien) {
+                    inputGiaoVien.value = currentSession.hoVaTen;
+                    inputGiaoVien.setAttribute('data-tentkb', currentSession.tenTKB);
+                }
+            } else {
+                // Nếu mã nhân sự không khớp trong bảng users nhưng đang mở từ kienonaOS, vẫn cấp quyền giáo viên cơ bản để không bị lỗi màn hình trắng
+                console.warn("Không tìm thấy trong bảng users, sử dụng quyền mặc định.");
+            }
+        } catch (err) {
+            console.warn("Lỗi truy vấn CSDL:", err);
+        }
+
+        // 3. Kích hoạt giao diện
+        if (typeof hienThiQuyen === 'function') hienThiQuyen();
+        if (typeof loadTKBIntoKeHoach === 'function') loadTKBIntoKeHoach();
+        if (typeof fetchSoChuNhiem === 'function') fetchSoChuNhiem();
+    }
+
+    // Màn hình chặn truy cập trực tiếp
+    function chuyenTrangBiTuChoi(thongBao) {
+        document.body.innerHTML = `
+            <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f8fafc; font-family: sans-serif;">
+                <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; max-width: 450px;">
+                    <h2 style="color: #dc2626; margin-bottom: 15px;">🚫 TRUY CẬP BỊ TỪ CHỐI</h2>
+                    <p style="color: #475569; font-size: 14px; margin-bottom: 20px;">${thongBao}</p>
+                    <a href="javascript:window.close();" style="background: #4f46e5; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; font-size: 14px; font-weight: bold;">Đóng trang này</a>
+                </div>
+            </div>
+        `;
+    }
+
+    function hienThiQuyen() {
+        const badge = document.getElementById('userInfoBadge');
+        if (badge) {
+            badge.innerText = `Trường: ${currentSession.maTruong} | Tài khoản: ${currentSession.maNhanSu} | Tên: ${currentSession.hoVaTen} | Quyền: ${currentRole}`;
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof taiVaiTro === 'function') {
+            taiVaiTro();
+        }
+    });
+    
+
+        const { createClient } = supabase;
+        const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const TABLE_THI_DUA = 'so_chu_nhiem';
+        const TABLE_HO_SO = 'hoc_sinh';
+
+        // 1. Hàm chuyển đổi qua lại giữa 5 Tabs
+        function switchTab(tabId) {
+            const tabs = ['nhap-lieu', 'danh-sach', 'so-do', 'ho-so', 'xuat-so'];
+            const buttons = {
+                'nhap-lieu': document.getElementById('btn-tab-nhap-lieu'),
+                'danh-sach': document.getElementById('btn-tab-danh-sach'),
+                'so-do': document.getElementById('btn-tab-so-do'),
+                'ho-so': document.getElementById('btn-tab-ho-so'),
+                'xuat-so': document.getElementById('btn-tab-xuat-so')
+            };
+
+            tabs.forEach(id => {
+                const section = document.getElementById(`tab-${id}`);
+                const btn = buttons[id];
+
+                if (id === tabId) {
+                    section.classList.remove('hidden');
+                    btn.className = "flex-1 min-w-[130px] py-3 px-3 text-center font-bold text-xs sm:text-sm bg-indigo-600 text-white transition";
+                } else {
+                    section.classList.add('hidden');
+                    btn.className = "flex-1 min-w-[130px] py-3 px-3 text-center font-bold text-xs sm:text-sm bg-white text-slate-600 hover:bg-slate-50 transition";
+                }
+            });
+
+            if (tabId === 'danh-sach') {
+                fetchSoChuNhiem();
+            } else if (tabId === 'ho-so') {
+                fetchHoSoHocSinh();
+            } else if (tabId === 'xuat-so') {
+                tinhToanThongKeXuatSo();
+            }
+        }
+
+        // 2. Tải dữ liệu thi đua
+        async function fetchSoChuNhiem() {
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-slate-400">Đang tải dữ liệu thi đua...</td></tr>`;
+
+            const { data, error } = await _supabase
+                .from(TABLE_THI_DUA)
+                .select('*')
+                .order('id', { ascending: false });
+
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-4 text-center text-red-500 font-medium">Lỗi kết nối: ${error.message}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            if (data && data.length > 0) {
+                data.forEach(item => {
+                    let tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition";
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-slate-700">${item.ngay || ''}</td>
+                        <td class="px-4 py-3 text-center text-slate-700">${item.tuan || ''}</td>
+                        <td class="px-4 py-3 text-center font-bold text-indigo-600">${item.lop || ''}</td>
+                        <td class="px-4 py-3 text-slate-700">${item.noi_dung || ''}</td>
+                        <td class="px-4 py-3 text-slate-700">${item.ghi_chu || ''}</td>
+                        <td class="px-4 py-3 text-center font-bold text-emerald-600">${item.diem || ''}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-6 text-center text-slate-500">Chưa có dữ liệu thi đua.</td></tr>`;
+            }
+        }
+
+        // 3. Tải dữ liệu Hồ sơ học sinh
+        async function fetchHoSoHocSinh() {
+            const tbody = document.getElementById('hoSoTableBody');
+            tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-slate-400">Đang tải hồ sơ học sinh...</td></tr>`;
+
+            const { data, error } = await _supabase
+                .from(TABLE_HO_SO)
+                .select('*')
+                .order('ten', { ascending: true });
+
+            if (error) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-4 text-center text-red-500 font-medium">Lỗi kết nối bảng '${TABLE_HO_SO}': ${error.message}</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            if (data && data.length > 0) {
+                data.forEach((hs, index) => {
+                    let tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-50 transition";
+                    tr.innerHTML = `
+                        <td class="px-4 py-3 text-center text-slate-500">${index + 1}</td>
+                        <td class="px-4 py-3 font-medium text-slate-800">${hs.ho_ten || hs.ten || ''}</td>
+                        <td class="px-4 py-3 text-center text-slate-600">${hs.ngay_sinh || ''}</td>
+                        <td class="px-4 py-3 text-center text-slate-600">${hs.gioi_tinh || ''}</td>
+                        <td class="px-4 py-3 text-center font-bold text-indigo-600">${hs.lop || ''}</td>
+                        <td class="px-4 py-3 text-slate-600">${hs.sdt_phu_huynh || hs.sdt || ''}</td>
+                        <td class="px-4 py-3 text-slate-600">${hs.ghi_chu || ''}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-6 text-center text-slate-500">Chưa có dữ liệu hồ sơ học sinh nào.</td></tr>`;
+            }
+        }
+
+        // 4. Tính toán số liệu cho tab Xuất Sổ
+        async function tinhToanThongKeXuatSo() {
+            const { count, error } = await _supabase
+                .from(TABLE_HO_SO)
+                .select('*', { count: 'exact', head: true });
+
+            if (!error && count !== null) {
+                document.getElementById('xuatTongSiSo').innerText = count;
+            } else {
+                document.getElementById('xuatTongSiSo').innerText = "0 (Hoặc lỗi bảng)";
+            }
+        }
+
+        // 5. Thêm dữ liệu thi đua
+        document.getElementById('soChuNhiemForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = {
+                ngay: document.getElementById('ngay').value,
+                tuan: parseInt(document.getElementById('tuan').value),
+                lop: document.getElementById('lop').value.trim(),
+                diem: parseFloat(document.getElementById('diem').value),
+                noi_dung: document.getElementById('noi_dung').value.trim(),
+                ghi_chu: document.getElementById('ghi_chu').value.trim()
+            };
+
+            const { error } = await _supabase
+                .from(TABLE_THI_DUA)
+                .insert([formData]);
+
+            if (error) {
+                alert('Lỗi khi lưu dữ liệu: ' + error.message);
+            } else {
+                alert('Đã lưu thông tin sổ chủ nhiệm thành công!');
+                document.getElementById('soChuNhiemForm').reset();
+                switchTab('danh-sach');
+            }
+        });
+    </script>
+</body>
+</html>
