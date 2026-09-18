@@ -2201,20 +2201,45 @@ async function renderQuanTriVaThongKe(allData) {
         return;
     }
 
-    let currentMaNhanSu = (typeof currentSession !== 'undefined' && currentSession.maNhanSu) ? currentSession.maNhanSu : (localStorage.getItem('maNhanSu') || '');
+    // 1. Lấy thông tin session và mã nhân sự an toàn
+    let sessionData = {};
+    try {
+        sessionData = JSON.parse(localStorage.getItem('kienora_session') || sessionStorage.getItem('currentUser') || '{}');
+    } catch (e) {}
+
+    let currentMaNhanSu = String(
+        (typeof currentSession !== 'undefined' && currentSession.maNhanSu) ? currentSession.maNhanSu : 
+        (sessionData.maNhanSu || sessionData.ma_nhan_su || localStorage.getItem('maNhanSu') || '')
+    ).trim().toLowerCase();
+
+    // 2. Nhận diện quyền Admin / BGH thông minh (Kiểm tra cả biến toàn cục lẫn từ khóa vai trò)
     let isUserAdmin = (typeof isAdmin !== 'undefined') ? isAdmin : false;
+    
+    const vaiTroStr = String(sessionData.vaiTro || sessionData.quyen || sessionData.role || '').trim().toLowerCase();
+    
+    // Nếu tài khoản thuộc BGH / Quản trị hoặc đúng mã quản lý đặc biệt -> Tự động bật quyền Admin
+    if (!isUserAdmin) {
+        isUserAdmin = currentMaNhanSu === 'c3ndtnl.nan.hait' || 
+                      vaiTroStr.includes('bgh') || 
+                      vaiTroStr.includes('quản trị') || 
+                      vaiTroStr.includes('admin') || 
+                      vaiTroStr.includes('hiệu trưởng') || 
+                      vaiTroStr.includes('phó hiệu trưởng');
+    }
 
-    console.log("👤 [DEBUG] MaNS hiện tại:", currentMaNhanSu, "| Là Admin:", isUserAdmin);
+    console.log("👤 [DEBUG PHÂN QUYỀN] MaNS hiện tại:", currentMaNhanSu, "| Vai trò:", vaiTroStr, "| Là Admin/BGH:", isUserAdmin);
 
+    // 3. Phân quyền lọc dữ liệu
     let filteredData = allData;
     if (!isUserAdmin && currentMaNhanSu) {
+        // Chỉ giáo viên thường mới bị lọc dữ liệu cá nhân
         filteredData = allData.filter(item => {
             const itemMa = String(item.ma_nhan_su || item.maNhanSu || '').trim().toLowerCase();
-            return itemMa === String(currentMaNhanSu).trim().toLowerCase();
+            return itemMa === currentMaNhanSu;
         });
     }
 
-    console.log("📊 [DEBUG] Số dòng sau khi lọc cho giáo viên:", filteredData.length);
+    console.log("📊 [DEBUG] Số dòng sau khi lọc:", filteredData.length);
 
     // Tính toán widget
     const totalKH = filteredData.length;
@@ -2244,11 +2269,12 @@ async function renderQuanTriVaThongKe(allData) {
     if (elPercent) elPercent.innerText = percent + '%';
 
     // Đổ dữ liệu vào bảng quanTriTableBody
-    const tbody = document.getElementById('quanTriTableBody');
-    if (!tbody) {
-        console.error("❌ Không tìm thấy thẻ có id là 'quanTriTableBody' trong HTML!");
-        return;
-    }
+   // Đảm bảo tìm chính xác id 'quanTriTableBody' khớp với HTML
+const tbody = document.getElementById('quanTriTableBody');
+if (!tbody) {
+    console.error("❌ Không tìm thấy thẻ có id là 'quanTriTableBody' trong HTML!");
+    return;
+}
 
     tbody.innerHTML = "";
 
@@ -2612,40 +2638,55 @@ async function thucHienKhoaTuan(loaiKhoa) {
 
 
 // ==========================================
+// ==========================================
+// 5. PHÂN QUYỀN GIAO DIỆN & KHỞI TẠO
+// ==========================================
+// ==========================================
 // 5. PHÂN QUYỀN GIAO DIỆN & KHỞI TẠO
 // ==========================================
 function phanQuyenGiaoDien() {
     let sessionData = {};
     try {
-        sessionData = JSON.parse(localStorage.getItem("kienona_session") || "{}");
-    } catch(e) {}
+        sessionData = JSON.parse(localStorage.getItem('kienora_session') || sessionStorage.getItem('currentUser') || '{}');
+    } catch (e) {}
 
-    var vaiTroUser = (localStorage.getItem("vaiTroUser") || sessionData.vaiTro || sessionData.role || "").toLowerCase();
-    var maNhanSu = (localStorage.getItem("maNhanSu") || sessionData.maNhanSu || "").toLowerCase();
+    let currentMaNhanSu = String(
+        (typeof currentSession !== 'undefined' && currentSession.maNhanSu) ? currentSession.maNhanSu : 
+        (sessionData.maNhanSu || sessionData.ma_nhan_su || localStorage.getItem('maNhanSu') || '')
+    ).trim().toLowerCase();
 
-    var dsQuyenQuanTri = ["bgh", "admin", "kythuat", "hieutruong", "phohieutruong", "it", "tai"];
-    var coQuyen = dsQuyenQuanTri.some(function(q) {
-        return vaiTroUser.includes(q) || maNhanSu.includes(q);
-    });
+    let isUserAdmin = (typeof isAdmin !== 'undefined') ? isAdmin : false;
+    const vaiTroStr = String(sessionData.vaiTro || sessionData.quyen || sessionData.role || localStorage.getItem('vaiTroUser') || '').trim().toLowerCase();
 
-    if (!coQuyen) {
-        var tabBaoCao = document.getElementById("tab-baocao");
+    // Kiểm tra quyền Admin / BGH đồng nhất với toàn bộ hệ thống
+    if (!isUserAdmin) {
+        isUserAdmin = currentMaNhanSu === 'c3ndtnl.nan.hait' || 
+                      vaiTroStr.includes('bgh') || 
+                      vaiTroStr.includes('quản trị') || 
+                      vaiTroStr.includes('admin') || 
+                      vaiTroStr.includes('hiệu trưởng') || 
+                      vaiTroStr.includes('phó hiệu trưởng');
+    }
+
+    console.log("🔐 [PHÂN QUYỀN ĐỒNG BỘ] Mã NS:", currentMaNhanSu, "| Vai trò:", vaiTroStr, "| Là Admin/BGH:", isUserAdmin);
+
+    var tabBaoCao = document.getElementById("tab-baocao");
+    var btnTaiTKB = document.getElementById("tab-admin-tkb");
+    var tabTaiPPCT = document.getElementById("tab-ppct");
+
+    if (isUserAdmin) {
+        if (tabBaoCao) tabBaoCao.style.display = "inline-block";
+        if (btnTaiTKB) btnTaiTKB.style.display = "inline-block";
+        if (tabTaiPPCT) tabTaiPPCT.style.display = "inline-block";
+    } else {
         if (tabBaoCao) tabBaoCao.style.display = "none";
-
-        var btnTaiTKB = document.getElementById("tab-admin-tkb");
         if (btnTaiTKB) btnTaiTKB.style.display = "none";
-
-        var tabTaiPPCT = document.getElementById("tab-ppct");
         if (tabTaiPPCT) tabTaiPPCT.style.display = "none";
     }
 }
-
+// Gọi hàm này ngay khi trang vừa tải xong
 document.addEventListener("DOMContentLoaded", function() {
     phanQuyenGiaoDien();
-    // Tự động tải dữ liệu báo cáo nếu đang ở trang quản trị báo cáo
-    if (document.getElementById('baoCaoTableBody')) {
-        taiBaoCaoChiTiet();
-    }
 });
     </script>
 </body>
