@@ -1543,53 +1543,50 @@ async function loadTKBIntoKeHoach() {
                 return String(str || "").replace(/_/g, ' ').replace(/\s+/g, ' ').trim().toLowerCase();
             };
 
-            // 1. Quét dữ liệu tiết lớn nhất từ tuần ngay trước đó (Dùng chung chuẩn khóa không chứa so_tkb)
-            // 1. Quét dữ liệu tiết lớn nhất từ TẤT CẢ các tuần trước đó (Khắc phục triệt để việc cách tuần bị mất tiến trình)
-let maxTietTuanTruocMap = {}; 
+            // 1. Quét dữ liệu tiết lớn nhất từ TẤT CẢ các tuần trước đó
+            let maxTietTuanTruocMap = {}; 
 
-if (tuanHienTaiNum > 1) {
-    let maNS = currentSession?.maNhanSu || "";
+            if (tuanHienTaiNum > 1) {
+                let maNS = currentSession?.maNhanSu || "";
 
-    // Lấy toàn bộ lịch sử từ tuần 1 đến tuần ngay trước tuần hiện tại
-    let queryTruoc = db
-        .from('ke_hoach_tuan')
-        .select('lop, mon, phan_mon, tiet_ppct, tuan, so_tkb')
-        .lt('tuan', tuanHienTaiNum); // Lấy tất cả các tuần nhỏ hơn tuần hiện tại
+                let queryTruoc = db
+                    .from('ke_hoach_tuan')
+                    .select('lop, mon, phan_mon, tiet_ppct, tuan, so_tkb')
+                    .lt('tuan', tuanHienTaiNum);
 
-    if (maNS) {
-        queryTruoc = queryTruoc.eq('ma_nhan_su', maNS);
-    }
+                if (maNS) {
+                    queryTruoc = queryTruoc.eq('ma_nhan_su', maNS);
+                }
 
-    const { data: dataTuanTruoc, error: errTruoc } = await queryTruoc;
-    
-    if (!errTruoc && dataTuanTruoc && dataTuanTruoc.length > 0) {
-        dataTuanTruoc.forEach(item => {
-            let rawLop = String(item.lop || "").trim();
-            let monTKB = String(item.mon || "").trim().toLowerCase();
-            
-            let tenLopChinh = rawLop;
-            let phanMonTuanTruoc = "";
-            if (rawLop.includes('-')) {
-                let parts = rawLop.split('-');
-                tenLopChinh = parts[0].trim();
-                phanMonTuanTruoc = parts.slice(1).join('-').trim();
-            }
+                const { data: dataTuanTruoc, error: errTruoc } = await queryTruoc;
+                
+                if (!errTruoc && dataTuanTruoc && dataTuanTruoc.length > 0) {
+                    dataTuanTruoc.forEach(item => {
+                        let rawLop = String(item.lop || "").trim();
+                        let monTKB = String(item.mon || "").trim().toLowerCase();
+                        
+                        let tenLopChinh = rawLop;
+                        let phanMonTuanTruoc = "";
+                        if (rawLop.includes('-')) {
+                            let parts = rawLop.split('-');
+                            tenLopChinh = parts[0].trim();
+                            phanMonTuanTruoc = parts.slice(1).join('-').trim();
+                        }
 
-            let normTenLopChinh = normalizeStr(tenLopChinh);
-            let normPhanMon = normalizeStr(phanMonTuanTruoc || item.phan_mon);
+                        let normTenLopChinh = normalizeStr(tenLopChinh);
+                        let normPhanMon = normalizeStr(phanMonTuanTruoc || item.phan_mon);
 
-            let gKey = `${normTenLopChinh}_${monTKB}_${normPhanMon}`;
-            let tVal = parseInt(item.tiet_ppct);
+                        let gKey = `${normTenLopChinh}_${monTKB}_${normPhanMon}`;
+                        let tVal = parseInt(item.tiet_ppct);
 
-            if (!isNaN(tVal)) {
-                // Nếu lớp này đã có dữ liệu ở tuần trước đó, luôn giữ lại giá trị tiết PPCT lớn nhất
-                if (!maxTietTuanTruocMap[gKey] || tVal > maxTietTuanTruocMap[gKey]) {
-                    maxTietTuanTruocMap[gKey] = tVal;
+                        if (!isNaN(tVal)) {
+                            if (!maxTietTuanTruocMap[gKey] || tVal > maxTietTuanTruocMap[gKey]) {
+                                maxTietTuanTruocMap[gKey] = tVal;
+                            }
+                        }
+                    });
                 }
             }
-        });
-    }
-}
 
             // 2. Tải thời khóa biểu gốc từ bảng thoi_khoa_bieu
             const cleanSoTKB = soTKBValue.replace(/\D/g, ''); 
@@ -1664,7 +1661,6 @@ if (tuanHienTaiNum > 1) {
                     let normTenLopChinh = normalizeStr(tenLopChinh);
                     let normLoaiLopTKB = normalizeStr(loaiLopTKB);
                     
-                    // CHUẨN KHÓA 2: Đồng bộ chuẩn khớp với gKey bên trên (Bỏ tiền tố so_tkb)
                     let groupKey = `${normTenLopChinh}_${monTKB}_${normLoaiLopTKB}`;
 
                     if (tietCounterMap[groupKey] === undefined) {
@@ -1692,7 +1688,16 @@ if (tuanHienTaiNum > 1) {
                             return checkKhoi && checkMon && checkPhanMon;
                         });
 
-                        let matchedPPCT = matchedList[currentTietIndex - 1] || matchedList[0];
+                        // 🔥 ĐÃ SỬA: Ép danh sách PPCT sắp xếp tăng dần 1, 2, 3... theo cột tiết
+                        matchedList.sort((p1, p2) => {
+                            let t1 = parseInt(p1.tiet || p1.tiet_ppct || 0);
+                            let t2 = parseInt(p2.tiet || p2.tiet_ppct || 0);
+                            return t1 - t2;
+                        });
+
+                        // Tìm dòng PPCT khớp đúng chỉ số tiết hiện tại (currentTietIndex)
+                        let matchedPPCT = matchedList.find(p => parseInt(p.tiet || p.tiet_ppct) === currentTietIndex) || 
+                                          matchedList[currentTietIndex - 1];
 
                         if (matchedPPCT) {
                             tietPPCT = matchedPPCT.tiet || matchedPPCT.tiet_ppct || currentTietIndex;
@@ -1705,14 +1710,15 @@ if (tuanHienTaiNum > 1) {
                         }
                     }
 
+                    // 🔥 ĐÃ SỬA: Ép buộc lấy tiết PPCT mới tính toán (tietPPCT), không lấy giá trị cũ rác 42 trong DB
                     return {
                         ...item,
                         tuan: tuanHienTaiNum,
                         so_tkb: soTKBValue,
                         ten_tkb: item.ten_tkb || tenTKBHienTai,
-                        tiet_ppct: item.tiet_ppct || tietPPCT || "",
-                        phan_mon: item.phan_mon || phanMon || "",
-                        ten_bai: item.ten_bai || tenBaiDay || "",
+                        tiet_ppct: tietPPCT || currentTietIndex, // Bỏ việc ưu tiên item.tiet_ppct
+                        phan_mon: phanMon || loaiLopTKB,
+                        ten_bai: tenBaiDay || "",
                         thiet_bi: item.thiet_bi || "",
                         ghi_chu: item.ghi_chu || "",
                         trang_thai: "Bình thường"
@@ -1745,8 +1751,7 @@ if (tuanHienTaiNum > 1) {
     } else {
         processTKBData();
     }
-}
-document.addEventListener('DOMContentLoaded', () => {
+}document.addEventListener('DOMContentLoaded', () => {
     // Gọi hàm load tuần khi khởi tạo tab Kế hoạch
     loadCauHinhTuanVaoKeHoach();
 
