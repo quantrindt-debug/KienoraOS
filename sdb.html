@@ -2084,7 +2084,7 @@ function renderSoDauBaiTable(data) {
                 <div class="text-slate-700 font-medium">${item.ten_bai || item.tenBai || ''}</div>
             </td>
             <td class="p-3 text-center">
-    <input type="number" min="0" max="50" class="input-siso-vang w-16 text-center border border-slate-200 rounded p-1 text-xs" value="${(item.si_so_vang !== undefined && item.si_so_vang !== null && item.si_so_vang !== '') ? item.si_so_vang : (item.siSoVang !== undefined && item.siSoVang !== null && item.siSoVang !== '' ? item.siSoVang : 0)}">
+    <input type="numberic" min="0" max="50" class="input-siso-vang w-16 text-center border border-slate-200 rounded p-1 text-xs" value="${(item.si_so_vang !== undefined && item.si_so_vang !== null && item.si_so_vang !== '') ? item.si_so_vang : (item.siSoVang !== undefined && item.siSoVang !== null && item.siSoVang !== '' ? item.siSoVang : 0)}">
 </td>           <td class="p-3">
                 <input type="text" class="input-ten-hvang w-full border border-slate-200 rounded p-1 text-xs" placeholder="HS vắng..." value="${item.ten_hs_vang || item.tenHSVang || ""}">
             </td>
