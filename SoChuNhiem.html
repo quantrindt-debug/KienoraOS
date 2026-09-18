@@ -52,115 +52,395 @@
 
         <!-- TAB 1: FORM NHẬP LIỆU THI ĐUA -->
         <section id="tab-nhap-lieu" class="bg-white rounded-b-lg rounded-r-lg shadow-md p-6 border border-slate-200">
-            <h2 class="text-lg font-bold text-slate-700 mb-4 pb-2 border-b">📝 Cập Nhật Vi Phạm & Điểm Thi Đua Lớp</h2>
+            <h2 class="text-lg font-bold text-slate-700 mb-4 pb-2 border-b">📝 Cập Nhật Nề Nếp & Điểm Thi Đua Lớp</h2>
             
-            <form id="soChuNhiemForm" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Ngày ghi nhận</label>
-                    <input type="date" id="ngay" required class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
+            <!-- ========================================== -->
+<!-- TRANG / TAB NHẬP LIỆU SỔ CHỦ NHIỆM           -->
+<!-- ========================================== -->
+<div class="space-y-6 max-w-7xl mx-auto pb-12">
+
+    <!-- Tiêu đề tổng quan của Tab -->
+    <div class="bg-gradient-to-r from-slate-800 to-indigo-900 text-white p-6 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div>
+            <h2 class="text-xl font-bold flex items-center gap-2">
+                <span>📝</span> Quản Lý Nhập Liệu Sổ Chủ Nhiệm
+            </h2>
+            <p class="text-xs text-slate-300 mt-1">
+                Hệ thống ghi nhận điểm danh, nề nếp cờ đỏ hằng ngày và tổng hợp điểm thi đua tuần.
+            </p>
+        </div>
+        <div class="flex items-center gap-3">
+            <span class="text-xs bg-indigo-800/80 px-3 py-1.5 rounded-lg border border-indigo-500/40">
+                📅 Tuần học hiện tại: <strong id="lblTuanHienTai" class="text-amber-300">Tuần 1</strong>
+            </span>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- PHẦN 1: ĐIỂM DANH & HỌC SINH NGHỈ HỌC        -->
+    <!-- ========================================== -->
+    <div class="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-4 pb-3 border-b border-slate-100 gap-3">
+            <div>
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="text-indigo-600">📋</span> I. Điểm Danh & Theo Dõi Học Sinh Nghỉ Học
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Cập nhật nhanh tình trạng vắng học, nghỉ có phép hoặc không phép của lớp.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <select id="selectLopPhan1" class="rounded-lg border-slate-300 border px-3 py-2 text-xs bg-slate-50 font-medium focus:ring-2 focus:ring-indigo-500">
+                    <option value="">-- Chọn lớp quản lý --</option>
+                    <option value="12A">12A</option>
+                    <option value="12B">12B</option>
+                </select>
+                <button onclick="moModalThemHocSinhNghi()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+                    ➕ Thêm Học Sinh Nghỉ
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse border border-slate-200 text-sm">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-700 text-xs">
+                        <th class="border border-slate-200 p-2.5 text-center w-[6%]">STT</th>
+                        <th class="border border-slate-200 p-2.5 text-left w-[22%]">Họ và tên học sinh</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[15%]">Ngày nghỉ</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[15%]">Hình thức</th>
+                        <th class="border border-slate-200 p-2.5 text-left">Lý do / Ghi chú</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[10%]">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="tbPhan1NghiHoc" class="text-xs text-slate-700">
+                    <tr>
+                        <td colspan="6" class="border border-slate-200 p-6 text-center italic text-slate-400">
+                            Chưa có dữ liệu học sinh nghỉ trong tuần. Vui lòng chọn lớp để hiển thị.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- PHẦN 2: NHẬT KÝ NỀ NẾP - ĐỘI CỜ ĐỎ          -->
+    <!-- ========================================== -->
+    <div class="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-4 pb-3 border-b border-slate-100 gap-3">
+            <div>
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="text-indigo-600">📊</span> II. Cập Nhật Nề Nếp & Theo Dõi Hằng Ngày (Đội Cờ Đỏ)
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Theo dõi và ghi nhận tình hình nề nếp hằng ngày giúp BGH và GVCN uốn nắn kịp thời.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <input type="date" id="filterNgayCoDo" class="rounded-lg border-slate-300 border px-3 py-1.5 text-xs bg-slate-50 font-medium focus:ring-2 focus:ring-indigo-500">
+                <button onclick="moModalThemViPhamCoDo()" class="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+                    ➕ cập nhật nề nếp
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse border border-slate-200 text-sm">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-700 text-xs">
+                        <th class="border border-slate-200 p-2.5 text-center w-[6%]">STT</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[12%]">Ngày</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[10%]">Lớp</th>
+                        <th class="border border-slate-200 p-2.5 text-left w-[22%]">Họ và tên học sinh</th>
+                        <th class="border border-slate-200 p-2.5 text-left">Nội dung lỗi vi phạm</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[10%]">Điểm trừ</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[10%]">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="tbPhan2CoDo" class="text-xs text-slate-700">
+                    <tr>
+                        <td colspan="7" class="border border-slate-200 p-6 text-center italic text-slate-400">
+                            Chưa có nhật ký vi phạm nào trong ngày.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- PHẦN 3: TỔNG HỢP & CHẤM ĐIỂM THI ĐUA       -->
+    <!-- ========================================== -->
+    <div class="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-center mb-5 pb-4 border-b border-slate-100 gap-3">
+            <div>
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <span class="text-amber-600">🏆</span> III. Tổng Hợp & Chấm Điểm Thi Đua Cuối Tuần
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Công thức: <code class="bg-slate-100 px-1.5 py-0.5 rounded text-indigo-700 font-semibold">(VS*1 + CSVC*1 + Xe*1 + C.Thi*1 + QĐ Khác*3 + SĐB*3) / 10</code> (Làm tròn 2 chữ số thập phân).
+                </p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5">
+                    <label class="text-xs font-bold text-slate-600">Tuần:</label>
+                    <select id="selectTuanThiDua" class="rounded-lg border-slate-300 border px-3 py-2 text-xs bg-slate-50 font-medium focus:ring-2 focus:ring-indigo-500">
+                        <option value="1">Tuần 1</option>
+                        <option value="2">Tuần 2</option>
+                        <option value="3">Tuần 3</option>
+                        <option value="4">Tuần 4</option>
+                    </select>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Tuần học</label>
-                    <input type="number" id="tuan" placeholder="VD: 1, 2..." required class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Lớp chủ nhiệm</label>
-                    <input type="text" id="lop" placeholder="VD: 12A" required class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Điểm thi đua</label>
-                    <input type="number" step="0.5" id="diem" placeholder="VD: 100, 95..." required class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Nội dung / Vi phạm / Sự việc</label>
-                    <input type="text" id="noi_dung" placeholder="VD: Đi học muộn, không soạn bài..." class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
-                </div>
-                <div class="sm:col-span-2">
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Biện pháp xử lý / Ghi chú</label>
-                    <input type="text" id="ghi_chu" placeholder="VD: Nhắc nhở trước lớp, trừ hạnh kiểm..." class="w-full rounded-md border-slate-300 shadow-sm p-2.5 border text-sm bg-slate-50 focus:bg-white transition">
-                </div>
-                <div class="sm:col-span-2 md:col-span-4 text-right mt-4">
-                    <button type="submit" class="bg-indigo-600 text-white px-6 py-2.5 rounded-md hover:bg-indigo-700 font-semibold text-sm shadow transition">
-                        💾 Lưu Dữ Liệu Thi Đua
-                    </button>
-                </div>
-            </form>
+
+                <button onclick="tinhToanBangThiDuaClient()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+                    ⚡ Tính Điểm & Xếp Vị Thứ
+                </button>
+                <button onclick="luuDiemThiDuaLenSupabase()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+                    💾 Lưu Lên Hệ Thống
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse border border-slate-200 text-sm">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-700 text-xs">
+                        <th class="border border-slate-200 p-2.5 text-center w-[5%]">STT</th>
+                        <th class="border border-slate-200 p-2.5 text-left w-[12%]">Lớp</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[7%]">Sĩ số</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[8%]">VS <span class="block text-[10px] font-normal text-slate-400">(hsk 1)</span></th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[8%]">CSVC <span class="block text-[10px] font-normal text-slate-400">(hsk 1)</span></th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[8%]">Xe <span class="block text-[10px] font-normal text-slate-400">(hsk 1)</span></th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[8%]">C.Thi <span class="block text-[10px] font-normal text-slate-400">(hsk 1)</span></th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[9%]">QĐ Khác <span class="block text-[10px] font-normal text-slate-400">(hsk 3)</span></th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[9%]">SĐB <span class="block text-[10px] font-normal text-slate-400">(hsk 3)</span></th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[12%] bg-amber-50/80 font-bold text-amber-900">Điểm Thi Đua</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[12%] bg-emerald-50/80 font-bold text-emerald-900">Vị Thứ</th>
+                    </tr>
+                </thead>
+                <tbody id="tbDiemThiDua" class="text-xs text-slate-700">
+                    <!-- Dữ liệu mẫu minh họa giao diện phần 3 -->
+                    <tr>
+                        <td class="border border-slate-200 p-2 text-center font-medium">1</td>
+                        <td class="border border-slate-200 p-2 font-bold text-slate-800">12A</td>
+                        <td class="border border-slate-200 p-2 text-center font-semibold text-slate-600">42</td>
+                        <td class="border border-slate-200 p-1.5 text-center"><input type="number" step="0.1" max="10" min="0" value="9.5" class="w-full text-center border border-slate-300 rounded p-1 focus:ring-1 focus:ring-indigo-500"></td>
+                        <td class="border border-slate-200 p-1.5 text-center"><input type="number" step="0.1" max="10" min="0" value="10" class="w-full text-center border border-slate-300 rounded p-1 focus:ring-1 focus:ring-indigo-500"></td>
+                        <td class="border border-slate-200 p-1.5 text-center"><input type="number" step="0.1" max="10" min="0" value="9.0" class="w-full text-center border border-slate-300 rounded p-1 focus:ring-1 focus:ring-indigo-500"></td>
+                        <td class="border border-slate-200 p-1.5 text-center"><input type="number" step="0.1" max="10" min="0" value="10" class="w-full text-center border border-slate-300 rounded p-1 focus:ring-1 focus:ring-indigo-500"></td>
+                        <td class="border border-slate-200 p-1.5 text-center"><input type="number" step="0.1" max="10" min="0" value="9.8" class="w-full text-center border border-slate-300 rounded p-1 focus:ring-1 focus:ring-indigo-500"></td>
+                        <td class="border border-slate-200 p-1.5 text-center"><input type="number" step="0.1" max="10" min="0" value="9.2" class="w-full text-center border border-slate-300 rounded p-1 focus:ring-1 focus:ring-indigo-500"></td>
+                        <td class="border border-slate-200 p-2 text-center font-bold text-amber-700 bg-amber-50/50 text-sm">9.52</td>
+                        <td class="border border-slate-200 p-2 text-center font-bold text-emerald-700 bg-emerald-50/50 text-sm">1</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
         </section>
 
         <!-- TAB 2: DANH SÁCH THI ĐUA -->
         <section id="tab-danh-sach" class="hidden bg-white rounded-b-lg rounded-r-lg shadow-md p-6 border border-slate-200">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-4 pb-2 border-b gap-3">
-                <h2 class="text-lg font-bold text-slate-700">📋 Danh Sách Nhật Ký Sổ Chủ Nhiệm</h2>
-                <button onclick="fetchSoChuNhiem()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-4 py-2 rounded border transition">
-                    🔄 Làm mới dữ liệu
-                </button>
-            </div>
+            <!-- GIAO DIỆN SỔ THI ĐUA TOÀN TRƯỜNG -->
+<div class="space-y-6 max-w-7xl mx-auto pb-12">
 
-            <div class="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
-                <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Ngày</th>
-                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Tuần</th>
-                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Lớp</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Nội dung / Vi phạm</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold text-slate-600 uppercase">Biện pháp / Ghi chú</th>
-                            <th class="px-4 py-3 text-center text-xs font-bold text-slate-600 uppercase">Điểm</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dataTableBody" class="bg-white divide-y divide-slate-200 text-sm">
-                        <!-- Dữ liệu được load động qua JS -->
-                    </tbody>
-                </table>
+    <!-- 1. HEADER & BỘ LỌC -->
+    <div class="bg-white rounded-xl shadow-md border border-slate-200 p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <span>📊</span> Sổ Thi Đua & Xếp Hạng Nề Nếp Toàn Trường
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Tổng hợp điểm số, xếp hạng thi đua các lớp theo tuần.</p>
+        </div>
+        
+        <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex items-center gap-1.5">
+                <label class="text-xs font-bold text-slate-600">Xem Tuần:</label>
+                <select id="soThiDuaFilterTuan" class="rounded-lg border-slate-300 border px-3 py-1.5 text-xs bg-slate-50 font-medium">
+                    <option value="1">Tuần 1</option>
+                    <option value="2">Tuần 2</option>
+                    <option value="3">Tuần 3</option>
+                </select>
             </div>
+            <div class="flex items-center gap-1.5">
+                <label class="text-xs font-bold text-slate-600">Khối:</label>
+                <select id="soThiDuaFilterKhoi" class="rounded-lg border-slate-300 border px-3 py-1.5 text-xs bg-slate-50 font-medium">
+                    <option value="">Tất cả khối</option>
+                    <option value="10">Khối 10</option>
+                    <option value="11">Khối 11</option>
+                    <option value="12">Khối 12</option>
+                </select>
+            </div>
+            <button onclick="xuatBaoCaoThiDua()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2 rounded-lg shadow-sm transition flex items-center gap-1.5">
+                📥 Xuất Excel / In Sổ
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. THẺ THỐNG KÊ NHANH (KPIs) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-4 rounded-xl shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-amber-100 font-medium uppercase">Dẫn đầu tuần</p>
+                <h4 class="text-2xl font-bold mt-1">Lớp 12A <span class="text-sm font-normal">(9.52đ)</span></h4>
+            </div>
+            <span class="text-3xl">🥇</span>
+        </div>
+        <div class="bg-gradient-to-br from-indigo-600 to-indigo-700 text-white p-4 rounded-xl shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-indigo-100 font-medium uppercase">Điểm TB toàn trường</p>
+                <h4 class="text-2xl font-bold mt-1">8.85 điểm</h4>
+            </div>
+            <span class="text-3xl">📈</span>
+        </div>
+        <div class="bg-gradient-to-br from-slate-700 to-slate-800 text-white p-4 rounded-xl shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs text-slate-300 font-medium uppercase">Tổng số lớp tham gia</p>
+                <h4 class="text-2xl font-bold mt-1">30 Lớp</h4>
+            </div>
+            <span class="text-3xl">🏫</span>
+        </div>
+    </div>
+
+    <!-- 3. BẢNG XẾP HẠNG CHI TIẾT -->
+    <div class="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+        <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+            <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                <span>🏆</span> Bảng Xếp Hạng Thi Đua Chi Tiết
+            </h3>
+            <span class="text-xs text-slate-500 italic">Dữ liệu được cập nhật tự động từ hệ thống</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse border border-slate-200 text-sm">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-700 text-xs">
+                        <th class="border border-slate-200 p-2.5 text-center w-[8%]">Vị thứ</th>
+                        <th class="border border-slate-200 p-2.5 text-left w-[12%]">Tên lớp</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[8%]">Sĩ số</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[7%]">VS</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[7%]">CSVC</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[7%]">Xe</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[7%]">C.Thi</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[8%]">QĐ Khác</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[8%]">SĐB</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[12%] bg-amber-50 font-bold text-amber-900">Điểm Thi Đua</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[16%]">Xếp loại</th>
+                    </tr>
+                </thead>
+                <tbody id="tbSoThiDua" class="text-xs text-slate-700">
+                    <!-- Hàng mẫu minh họa -->
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="border border-slate-200 p-2.5 text-center font-bold text-amber-600 text-sm">1</td>
+                        <td class="border border-slate-200 p-2.5 font-bold text-slate-800">12A</td>
+                        <td class="border border-slate-200 p-2.5 text-center text-slate-600">42</td>
+                        <td class="border border-slate-200 p-2.5 text-center">9.5</td>
+                        <td class="border border-slate-200 p-2.5 text-center">10</td>
+                        <td class="border border-slate-200 p-2.5 text-center">9.0</td>
+                        <td class="border border-slate-200 p-2.5 text-center">10</td>
+                        <td class="border border-slate-200 p-2.5 text-center">9.8</td>
+                        <td class="border border-slate-200 p-2.5 text-center">9.2</td>
+                        <td class="border border-slate-200 p-2.5 text-center font-bold text-amber-700 bg-amber-50/50 text-sm">9.52</td>
+                        <td class="border border-slate-200 p-2.5 text-center font-semibold text-emerald-600">Tốt (Hạng A)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
         </section>
 
         <!-- TAB 3: XẾP SƠ ĐỒ CHỖ NGỒI -->
         <section id="tab-so-do" class="hidden bg-white rounded-b-lg rounded-r-lg shadow-md p-6 border border-slate-200">
-            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 pb-3 border-b gap-3">
-                <div>
-                    <h2 class="text-lg font-bold text-slate-700">🪑 Sơ Đồ Chỗ Ngồi Lớp Học</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">Sắp xếp vị trí học sinh theo sơ đồ lớp thực tế.</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <select id="chonLopSoDo" class="rounded-md border-slate-300 border p-2 text-sm bg-slate-50 font-medium">
-                        <option value="12A">Lớp 12A</option>
-                        <option value="12B">Lớp 12B</option>
-                    </select>
-                    <button onclick="alert('Đã lưu sơ đồ chỗ ngồi!')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded shadow transition">
-                        💾 Lưu Sơ Đồ
-                    </button>
-                </div>
-            </div>
+            <!-- TAB SƠ ĐỒ CHỖ NGỒI HỌC SINH -->
+<div class="space-y-6 max-w-7xl mx-auto pb-12">
 
-            <!-- Bục giảng -->
-            <div class="w-full max-w-xl mx-auto bg-slate-200 text-slate-700 font-bold text-center py-2 rounded-md mb-8 uppercase tracking-widest text-xs border border-slate-300">
-                Bục Giảng / Bàn Giáo Viên 🍎
-            </div>
+    <!-- Header & Công cụ điều khiển -->
+    <div class="bg-white rounded-xl shadow-md border border-slate-200 p-5 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div>
+            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <span>🪑</span> Sơ Đồ Chỗ Ngồi Lớp Học
+            </h2>
+            <p class="text-xs text-slate-500 mt-0.5">Quản lý và sắp xếp vị trí ngồi học sinh theo tổ, theo chiều cao hoặc thủ công.</p>
+        </div>
+        
+        <div class="flex items-center gap-2 flex-wrap">
+            <select id="selectLopSoDo" class="rounded-lg border-slate-300 border px-3 py-1.5 text-xs bg-slate-50 font-medium">
+                <option value="">-- Chọn lớp --</option>
+                <option value="12A">12A</option>
+                <option value="12B">12B</option>
+            </select>
 
-            <!-- Lưới bàn học -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg shadow-sm text-center">
-                    <span class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Bàn 1 (Tổ 1)</span>
-                    <input type="text" placeholder="Học sinh trái" class="w-full text-xs p-2 mb-2 border rounded bg-white text-center font-medium">
-                    <input type="text" placeholder="Học sinh phải" class="w-full text-xs p-2 border rounded bg-white text-center font-medium">
-                </div>
-                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg shadow-sm text-center">
-                    <span class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Bàn 2 (Tổ 1)</span>
-                    <input type="text" placeholder="Học sinh trái" class="w-full text-xs p-2 mb-2 border rounded bg-white text-center font-medium">
-                    <input type="text" placeholder="Học sinh phải" class="w-full text-xs p-2 border rounded bg-white text-center font-medium">
-                </div>
-                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg shadow-sm text-center">
-                    <span class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Bàn 3 (Tổ 2)</span>
-                    <input type="text" placeholder="Học sinh trái" class="w-full text-xs p-2 mb-2 border rounded bg-white text-center font-medium">
-                    <input type="text" placeholder="Học sinh phải" class="w-full text-xs p-2 border rounded bg-white text-center font-medium">
-                </div>
-                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg shadow-sm text-center">
-                    <span class="block text-[10px] font-bold text-blue-600 uppercase mb-2">Bàn 4 (Tổ 2)</span>
-                    <input type="text" placeholder="Học sinh trái" class="w-full text-xs p-2 mb-2 border rounded bg-white text-center font-medium">
-                    <input type="text" placeholder="Học sinh phải" class="w-full text-xs p-2 border rounded bg-white text-center font-medium">
+            <!-- Các nút thuật toán tự động -->
+            <button onclick="xepTheoTo()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm transition">
+                👥 Tự Động Xếp Theo Tổ (4 Tổ)
+            </button>
+            <button onclick="xepTheoChieuCao()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm transition">
+                📏 Xếp Theo Chiều Cao
+            </button>
+            <button onclick="luuSoDoChoNgoi()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-sm transition">
+                💾 Lưu Sơ Đồ
+            </button>
+        </div>
+    </div>
+
+    <!-- Khu vực bục giảng & Bảng đen -->
+    <div class="w-full bg-slate-800 text-white py-2.5 rounded-lg text-center font-bold text-xs uppercase tracking-wider shadow-inner">
+        BẢNG ĐEN / BỤC GIẢNG (PHÍA TRÊN)
+    </div>
+
+    <!-- Sơ đồ bàn ghế phòng học (2 Dãy lớn, mỗi dãy 2 tổ) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-50 border border-slate-200 p-6 rounded-xl">
+        
+        <!-- DÃY BÊN TRÁI (Tổ 1 & Tổ 2) -->
+        <div class="space-y-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+            <div class="text-center font-bold text-xs text-indigo-700 uppercase border-b pb-2">
+                DÃY TRÁI (Tổ 1 & Tổ 2)
+            </div>
+            <!-- Danh sách các bàn trong dãy trái -->
+            <div id="dayTraiContainer" class="space-y-3">
+                <!-- Ví dụ 1 bàn gồm 2 học sinh ngồi chung -->
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-2 text-center bg-slate-50 hover:bg-indigo-50 transition cursor-pointer">
+                        <span class="block text-xs font-bold text-slate-700">Nguyễn Văn A</span>
+                        <span class="text-[10px] text-slate-400">Cao: 175cm (Tổ 1)</span>
+                    </div>
+                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-2 text-center bg-slate-50 hover:bg-indigo-50 transition cursor-pointer">
+                        <span class="block text-xs font-bold text-slate-700">Trần Thị B</span>
+                        <span class="text-[10px] text-slate-400">Cao: 160cm (Tổ 1)</span>
+                    </div>
                 </div>
             </div>
+        </div>
+
+        <!-- DÃY BÊN PHẢI (Tổ 3 & Tổ 4) -->
+        <div class="space-y-4 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+            <div class="text-center font-bold text-xs text-indigo-700 uppercase border-b pb-2">
+                DÃY PHẢI (Tổ 3 & Tổ 4)
+            </div>
+            <!-- Danh sách các bàn trong dãy phải -->
+            <div id="dayPhaiContainer" class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-2 text-center bg-slate-50 hover:bg-indigo-50 transition cursor-pointer">
+                        <span class="block text-xs font-bold text-slate-700">Lê Văn C</span>
+                        <span class="text-[10px] text-slate-400">Cao: 170cm (Tổ 3)</span>
+                    </div>
+                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-2 text-center bg-slate-50 hover:bg-indigo-50 transition cursor-pointer">
+                        <span class="block text-xs font-bold text-slate-700">Phạm Thị D</span>
+                        <span class="text-[10px] text-slate-400">Cao: 158cm (Tổ 3)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
         </section>
 
         <!-- TAB 4: QUẢN LÝ HỒ SƠ HỌC SINH -->
@@ -765,7 +1045,52 @@
             console.error("Lỗi khi tải dữ liệu báo cáo:", e);
         }
     }
+//=================Tính vị thứ=========
+    // Hàm tính điểm thi đua và xếp vị thứ cho các lớp trong tuần
+function tinhToanVaXepViThu(danhSachLopTuan) {
+    // 1. Tính điểm thi đua cho từng lớp theo công thức của anh
+    // Công thức: (vs*1 + csvc*1 + xe*1 + c_thi*1 + qd_khac*3 + sdb*3) / 10
+    danhSachLopTuan.forEach(item => {
+        let vs = parseFloat(item.vs) || 0;
+        let csvc = parseFloat(item.csvc) || 0;
+        let xe = parseFloat(item.xe) || 0;
+        let c_thi = parseFloat(item.c_thi) || 0;
+        let qd_khac = parseFloat(item.qd_khac) || 0;
+        let sdb = parseFloat(item.sdb) || 0;
 
+        let tongDiem = (vs * 1 + csvc * 1 + xe * 1 + c_thi * 1 + qd_khac * 3 + sdb * 3) / 10;
+        
+        // Làm tròn 2 chữ số thập phân
+        item.diem_thi_dua = Math.round(tongDiem * 100) / 100;
+    });
+
+    // 2. Sắp xếp danh sách giảm dần theo điểm thi đua để tính vị thứ
+    danhSachLopTuan.sort((a, b) => b.diem_thi_dua - a.diem_thi_dua);
+
+    // 3. Gán vị thứ (xử lý trường hợp nếu bằng điểm thì cùng vị thứ)
+    let currentViThu = 1;
+    for (let i = 0; i < danhSachLopTuan.length; i++) {
+        if (i > 0 && danhSachLopTuan[i].diem_thi_dua === danhSachLopTuan[i - 1].diem_thi_dua) {
+            // Nếu điểm bằng lớp trước thì giữ nguyên vị thứ của lớp trước
+            danhSachLopTuan[i].vi_thu = danhSachLopTuan[i - 1].vi_thu;
+        } else {
+            danhSachLopTuan[i].vi_thu = currentViThu;
+        }
+        currentViThu++; // Tăng số lượng đã duyệt qua thay vì chỉ số mảng cố định để xử lý đồng hạng chuẩn xác
+    }
+
+    return danhSachLopTuan;
+}
+//==================== Lấy sĩ số ==============
+async function laySiSoLop(tenLop) {
+    if (!db) return 0;
+    let { data, error, count } = await db
+        .from('hoc_sinh')
+        .select('*', { count: 'exact', head: true })
+        .eq('lop', tenLop);
+    
+    return error ? 0 : count;
+}
     </script>
 </body>
 </html>
