@@ -245,7 +245,35 @@
         </div>
       </div>
 
+    
+    <!-- NHÓM 3: HỒ SƠ QUẢN LÝ CÔNG VIỆC -->
+      <div class="relative group">
+        <div class="flex items-center justify-between px-3 py-2.5 hover:bg-emerald-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
+          <div class="flex items-center gap-2.5">
+            <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-gears"></i>
+            </div>
+            <span>Cam kết đảm bảo chất lượng giáo dục</span>
+          </div>
+          <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:translate-x-0.5 transition-transform"></i>
+        </div>
+
+        <!-- MENU CON (HIỂN THỊ KHI HOVER) -->
+        <div class="hidden group-hover:block absolute left-full top-0 ml-1 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 p-1.5 space-y-1 z-[9010]">
+          <button onclick="openDbLink()" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+            <i class="fa-solid fa-database text-emerald-600 w-4 text-center"></i>
+            <span>Cơ sở dữ liệu trường</span>
+          </button>
+           <button onclick="launchApp('ckdbclgd')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+            <i class="fa-solid fa-calendar-check text-blue-500 w-4 text-center"></i>
+            <span>Cam kết đảm bảo chất lượng giáo dục</span>
+          </button>
+        </div>
+      </div>
+
     </div>
+
+
 
     <!-- BUTTON ĐĂNG XUẤT -->
     <div class="p-2 bg-slate-50 border-t border-slate-200 rounded-b-2xl">
@@ -259,9 +287,9 @@
   <div class="absolute bottom-0 left-0 w-full h-11 bg-slate-900/80 backdrop-blur-md border-t border-slate-700/50 flex items-center justify-between px-3 z-[9000]">
     <div class="flex items-center gap-3">
       <button onclick="toggleStartMenu(event)" class="flex items-center gap-2 bg-sky-600 hover:bg-sky-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow transition active:scale-95">
-        <i class="fa-solid fa-border-all text-sm"></i>
-        <span id="taskbarUser">Hệ thống</span>
-      </button>
+    <i class="fa-solid fa-border-all text-sm"></i>
+    <span id="taskbarUser">Hệ thống</span>
+</button>
 
       <div id="taskbar-apps" class="flex items-center gap-2 pl-3 border-l border-slate-700/50 overflow-x-auto"></div>
     </div>
@@ -304,54 +332,88 @@
     let openWindowsCount = 0;
 
     // --- KIỂM TRA BẢO MẬT & NHẬN PHIÊN LÀM VIỆC KHI MỞ TRANG ---
-    function checkSessionAndInit() {
-      const savedSession = localStorage.getItem('kienona_session');
-      const savedSchool = localStorage.getItem('kienona_school');
-      
-      if (!savedSession || !savedSchool) {
-        alert("⚠️ Bạn chưa đăng nhập hoặc truy cập trực tiếp trái phép! Hệ thống sẽ chuyển về trang đăng nhập.");
-        window.location.href = 'login.html'; 
-        return;
-      }
-
-      try {
-        const userData = JSON.parse(savedSession);
-        const schoolData = JSON.parse(savedSchool);
-        
-        // Gán dữ liệu phiên làm việc, hỗ trợ nhiều dạng tên biến khác nhau để tránh bị undefined
-        currentSession = {
-          maTruong: schoolData.maTruong || userData.maTruong || '',
-          maNhanSu: userData.maNhanSu || userData.account || userData.username || '',
-          user: userData,
-          school: schoolData
-        };
-
-        // Hiển thị thông tin lên Start Menu và Taskbar (Có kiểm tra tồn tại ID để tránh lỗi)
-        const extractedMaNS = userData.maNhanSu || '';
-        
-        const elFullName = document.getElementById('userFullName');
-        if (elFullName) elFullName.innerText = (userData.fullName || 'Cán bộ') + (extractedMaNS ? " (" + extractedMaNS + ")" : "");
-
-        const elSchoolName = document.getElementById('userSchoolName');
-        if (elSchoolName) elSchoolName.innerText = schoolData.tenTruong || ('Trường: ' + schoolData.maTruong);
-
-        const elSchoolCode = document.getElementById('userSchoolCode');
-        if (elSchoolCode) elSchoolCode.innerText = "MÃ: " + schoolData.maTruong;
-
-        const elRole = document.getElementById('userRole');
-        if (elRole) elRole.innerText = userData.vaiTro || 'Giáo viên';
-
-        const elTaskbarUser = document.getElementById('taskbarUser');
-        if (elTaskbarUser) elTaskbarUser.innerText = userData.fullName || schoolData.maTruong;
-
-      } catch (e) {
-        localStorage.removeItem('kienona_session');
-        localStorage.removeItem('kienona_school');
-        alert("⚠️ Phiên làm việc đã hết hạn hoặc bị lỗi! Vui lòng đăng nhập lại.");
-        window.location.href = 'login.html';
-      }
+    // --- KIỂM TRA BẢO MẬT & NHẬN PHIÊN LÀM VIỆC KHI MỞ TRANG ---
+// --- KIỂM TRA BẢO MẬT & NHẬN PHIÊN LÀM VIỆC KHI MỞ TRANG ---
+function checkSessionAndInit() {
+    let savedData = null;
+    
+    // 1. Ưu tiên lấy từ sessionStorage trước (vì login.html đang lưu ở đây)
+    if (sessionStorage.getItem('currentUser')) {
+        savedData = sessionStorage.getItem('currentUser');
+    } 
+    // 2. Nếu không có, quét tìm trong localStorage theo các khóa phổ biến
+    else {
+        const commonKeys = ['kienora_user', 'kienora_session', 'user', 'account', 'session', 'loginData', 'userData'];
+        for (let key of commonKeys) {
+            if (localStorage.getItem(key)) {
+                savedData = localStorage.getItem(key);
+                break;
+            }
+        }
     }
 
+    // Nếu hoàn toàn trống trơn (chưa hề đăng nhập)
+    if (!savedData) {
+        alert("⚠️ Trình duyệt chưa lưu phiên đăng nhập! Vui lòng đăng nhập từ trang login.");
+        window.location.href = 'login.html'; 
+        return;
+    }
+
+    try {
+        let userData;
+        try {
+            userData = JSON.parse(savedData);
+        } catch (err) {
+            userData = { fullName: savedData, username: savedData };
+        }
+
+        // --- KHAI BÁO VÀ LẤY THÔNG TIN TRƯỜNG ---
+        const schoolCode = userData.schoolCode || userData.ma_truong || localStorage.getItem('current_school_code') || 'THPT_NGUYEN_DUY_TRINH';
+        const schoolName = userData.schoolName || userData.ten_truong || localStorage.getItem('current_school_name') || 'Trường THPT Nguyễn Duy Trinh';
+        
+        // --- LẤY TÊN GIÁO VIÊN CHO CHUẨN XÁC ---
+        let fullName = userData.fullName || userData.ho_va_ten || userData.name || userData.tenGiaoVien || userData.hoTen || userData.tenNhanSu || 'Giáo viên';
+        
+        if (userData.ten_gv) fullName = userData.ten_gv;
+        if (userData.ho_va_ten) fullName = userData.ho_va_ten;
+
+        // Xử lý làm sạch nếu tên bị dính URL hoặc chuỗi không hợp lệ
+        if (!fullName || fullName.includes('supabase.co') || fullName.startsWith('http') || fullName.includes('ywccbfpy')) {
+            fullName = userData.username || userData.account || "Giáo viên"; 
+        }
+        
+        const role = userData.roleName || userData.quyen || 'Giáo viên';
+        const maNhanSu = userData.username || userData.ma_nhan_su || userData.account || '';
+
+        currentSession = {
+            maTruong: schoolCode,
+            maNhanSu: maNhanSu,
+            user: userData,
+            school: { maTruong: schoolCode, tenTruong: schoolName }
+        };
+
+        // --- ĐƯA THÔNG TIN LÊN GIAO DIỆN (START MENU & TASKBAR) ---
+        const elFullName = document.getElementById('userFullName');
+        if (elFullName) elFullName.innerText = fullName;
+
+        const elSchoolName = document.getElementById('userSchoolName');
+        if (elSchoolName) elSchoolName.innerText = schoolName;
+
+        const elSchoolCode = document.getElementById('userSchoolCode');
+        if (elSchoolCode) elSchoolCode.innerText = "MÃ: " + schoolCode;
+
+        const elRole = document.getElementById('userRole');
+        if (elRole) elRole.innerText = role;
+
+        const elTaskbarUser = document.getElementById('taskbarUser');
+        if (elTaskbarUser) elTaskbarUser.innerText = fullName;
+
+    } catch (e) {
+        console.error("Lỗi đọc dữ liệu phiên:", e);
+        alert("⚠️ Dữ liệu phiên làm việc không hợp lệ. Vui lòng đăng nhập lại!");
+        window.location.href = 'login.html';
+    }
+}
     // Chạy kiểm tra ngay khi tải trang
     checkSessionAndInit();
     function launchApp(appId) {
@@ -423,11 +485,12 @@
     'quantridaucap': "quantridaucap.html",
     'xeplop': "xeplop.html",
     'QuanLyHoSoHocSinh': "QuanLyHoSoHocSinh.html",
-    'sdb': "sdb.html",
+    'sdb': "sdbv2.html",
     'KeHoachChamCong': "KeHoachChamCong.html",
     'SoChuNhiem': "SoChuNhiem.html",
     'ThiDuaLop': "THPT_NguyenDuyTrinh/ThiDuaLop.html", // Đường dẫn chính xác tới thư mục con
-    'ThiDua': "THPT_NguyenDuyTrinh/ThiDua.html"
+    'ThiDua': "THPT_NguyenDuyTrinh/ThiDua.html",
+    'ckdbclgd': "ckdbclgd.html"
   };
   
   // Sửa từ .includes() thành toán tử "in" hoặc hasOwnProperty để kiểm tra key trong Object
@@ -441,21 +504,11 @@
   // ==========================================
   // CƠ CHẾ 2: GỌI GOOGLE APPS SCRIPT LẤY LINK TỪ SHEET
   // ==========================================
-  // Gửi lên API sử dụng đúng giá trị từ currentSession
-const userData = JSON.parse(savedSession);
-        const schoolData = JSON.parse(savedSchool);
-        
-        // Lấy dữ liệu linh hoạt tránh bị undefined
-        const parsedMaTruong = schoolData.maTruong || userData.maTruong || localStorage.getItem('maTruong') || '';
-        const parsedMaNS = userData.maNhanSu || userData.account || userData.username || localStorage.getItem('maNhanSu') || '';
-
-        // Gán dữ liệu phiên làm việc chuẩn xác
-        currentSession = {
-          maTruong: parsedMaTruong,
-          maNhanSu: parsedMaNS,
-          user: userData,
-          school: schoolData
-        };
+ // ==========================================
+  // CƠ CHẾ 2: GỌI GOOGLE APPS SCRIPT LẤY LINK TỪ SHEET (nếu có)
+  // ==========================================
+  const requestUrl = `YOUR_APPS_SCRIPT_URL_HERE?maTruong=${currentSession.maTruong}&maNhanSu=${currentSession.maNhanSu}&appId=${appId}`;
+  
   fetch(requestUrl)
     .then(res => res.json())
     .then(res => {
@@ -463,16 +516,13 @@ const userData = JSON.parse(savedSession);
         document.getElementById(`title-${appId}`).innerText = `${appMeta.title} - [${currentSession.school ? currentSession.school.tenTruong : currentSession.maTruong}]`;
         document.getElementById(`iframe-${appId}`).src = res.data.url;
       } else {
-        alert("🔒 Không thể truy cập: " + (res.message || "Không tìm thấy cấu hình trang web!"));
-        closeApp(appId);
+        // Nếu không dùng Google Apps Script mà chạy file tĩnh thì có thể bỏ qua hoặc báo lỗi nhẹ
       }
     })
     .catch(err => {
-      alert("Lỗi truy vấn đường dẫn: " + err.message);
-      closeApp(appId);
+      console.log("Chạy ở chế độ tệp cục bộ.");
     });
 }
-
     function addTaskbarItem(appId, appMeta) {
       const tbContainer = document.getElementById('taskbar-apps');
       const btn = document.createElement('button');
