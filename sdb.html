@@ -1842,13 +1842,13 @@ function onTietPPCTChange(input) {
 }
 
 // 9. Lưu kế hoạch tuần lên Supabase
+// 9. Lưu kế hoạch tuần lên Supabase
 async function saveKeHoachTuan() {
     console.log("==> Bắt đầu thực hiện lưu kế hoạch lên Supabase...");
 
     const tuanElement = document.getElementById('filterKHTuan');
     const tuanRaw = tuanElement ? tuanElement.value : '';
     
-    // Tự động lọc lấy con số từ chuỗi tuần (Ví dụ: "Tuần 1 (07/09/2026...)" sẽ lấy ra số 1)
     const matchTuan = tuanRaw.match(/\d+/);
     const tuanNum = matchTuan ? parseInt(matchTuan[0]) : 1;
 
@@ -1861,49 +1861,64 @@ async function saveKeHoachTuan() {
     }
 
     const maNhanSu = currentSession?.maNhanSu || "";
-    const trElements = document.querySelectorAll('#keHoachTableBody tr');
-    
-    if (trElements.length === 0) {
-        alert("❌ Không có dữ liệu dòng nào trên bảng để lưu!");
-        return;
-    }
-
-    const rowsToInsert = [];
-
-    trElements.forEach(tr => {
-        if (tr.querySelector('td') && tr.querySelector('td').getAttribute('colspan')) return;
-
-        const lopEl = tr.querySelector('.td-lop');
-        const monEl = tr.querySelector('.td-mon');
-        const tietPPCTEl = tr.querySelector('.input-tietppct');
-        const phanMonEl = tr.querySelector('.input-phanmon');
-        const tenBaiEl = tr.querySelector('.input-tenbai');
-        const thietBiEl = tr.querySelector('.input-thietbi');
-        const ghiChuEl = tr.querySelector('.input-ghichu');
-        const trangThaiEl = tr.querySelector('.select-trangthai');
-        
-        rowsToInsert.push({
-            tuan: tuanNum, // Đảm bảo luôn là số nguyên hợp lệ (1, 2, 3...)
-            so_tkb: soTKB,
-            ma_nhan_su: maNhanSu,
-            thu: tr.querySelector('td:nth-child(1)') ? tr.querySelector('td:nth-child(1)').innerText.trim() : '',
-            buoi: tr.querySelector('td:nth-child(2)') ? tr.querySelector('td:nth-child(2)').innerText.trim() : '',
-            tiet: tr.querySelector('td:nth-child(3)') ? tr.querySelector('td:nth-child(3)').innerText.trim() : '',
-            lop: lopEl ? (lopEl.getAttribute('data-val') || lopEl.innerText.trim()) : '',
-            mon: monEl ? (monEl.getAttribute('data-val') || monEl.innerText.trim()) : '',
-            tiet_ppct: tietPPCTEl ? tietPPCTEl.value.trim() : '',
-            phan_mon: phanMonEl ? phanMonEl.value.trim() : '',
-            ten_bai: tenBaiEl ? tenBaiEl.value.trim() : '',
-            thiet_bi: thietBiEl ? thietBiEl.value.trim() : '',
-            ghi_chu: ghiChuEl ? ghiChuEl.value.trim() : '',
-            trang_thai: trangThaiEl ? trangThaiEl.value : 'Bình thường'
-        });
-    });
 
     try {
         if (typeof db === 'undefined' || !db) throw new Error("Chưa kết nối Supabase");
 
-        // 1. Xóa dữ liệu cũ của đúng tuần, số TKB và giáo viên này trước khi ghi mới
+        // 🔒 THÊM ĐOẠN NÀY: Kiểm tra xem tuần này đã bị khóa trong CSDL chưa
+        // 🔒 Kiểm tra xem tuần này đã bị khóa trong bảng CauHinhTuan chưa
+        // 🔒 Kiểm tra xem tuần này đã bị khóa trong bảng CauHinhTuan dựa vào ten_tuan
+        const { data: checkLockData, error: checkLockError } = await db
+            .from('CauHinhTuan')
+            .select('khoa_ke_hoach')
+            .eq('ten_tuan', tuanRaw) // Hoặc dùng biến `tuanRaw` tuỳ theo cách lưu trong bảng CauHinhTuan
+            .maybeSingle();
+
+        if (checkLockData && checkLockData.khoa_ke_hoach === 'Khoá') {
+            alert("⚠️ Kế hoạch tuần này đã bị khóa, bạn không thể lưu hoặc thay đổi dữ liệu!");
+            return; // Chặn đứng, không cho phép lưu/ghi đè
+        }
+
+        const trElements = document.querySelectorAll('#keHoachTableBody tr');
+        
+        if (trElements.length === 0) {
+            alert("❌ Không có dữ liệu dòng nào trên bảng để lưu!");
+            return;
+        }
+
+        const rowsToInsert = [];
+
+        trElements.forEach(tr => {
+            if (tr.querySelector('td') && tr.querySelector('td').getAttribute('colspan')) return;
+
+            const lopEl = tr.querySelector('.td-lop');
+            const monEl = tr.querySelector('.td-mon');
+            const tietPPCTEl = tr.querySelector('.input-tietppct');
+            const phanMonEl = tr.querySelector('.input-phanmon');
+            const tenBaiEl = tr.querySelector('.input-tenbai');
+            const thietBiEl = tr.querySelector('.input-thietbi');
+            const ghiChuEl = tr.querySelector('.input-ghichu');
+            const trangThaiEl = tr.querySelector('.select-trangthai');
+            
+            rowsToInsert.push({
+                tuan: tuanNum,
+                so_tkb: soTKB,
+                ma_nhan_su: maNhanSu,
+                thu: tr.querySelector('td:nth-child(1)') ? tr.querySelector('td:nth-child(1)').innerText.trim() : '',
+                buoi: tr.querySelector('td:nth-child(2)') ? tr.querySelector('td:nth-child(2)').innerText.trim() : '',
+                tiet: tr.querySelector('td:nth-child(3)') ? tr.querySelector('td:nth-child(3)').innerText.trim() : '',
+                lop: lopEl ? (lopEl.getAttribute('data-val') || lopEl.innerText.trim()) : '',
+                mon: monEl ? (monEl.getAttribute('data-val') || monEl.innerText.trim()) : '',
+                tiet_ppct: tietPPCTEl ? tietPPCTEl.value.trim() : '',
+                phan_mon: phanMonEl ? phanMonEl.value.trim() : '',
+                ten_bai: tenBaiEl ? tenBaiEl.value.trim() : '',
+                thiet_bi: thietBiEl ? thietBiEl.value.trim() : '',
+                ghi_chu: ghiChuEl ? ghiChuEl.value.trim() : '',
+                trang_thai: trangThaiEl ? trangThaiEl.value : 'Bình thường'
+            });
+        });
+
+        // 1. Xóa dữ liệu cũ trước khi ghi mới
         const { error: deleteError } = await db
             .from('ke_hoach_tuan')
             .delete()
@@ -1927,8 +1942,7 @@ async function saveKeHoachTuan() {
         console.error("Lỗi khi lưu kế hoạch:", err);
         alert("❌ Lỗi khi lưu kế hoạch lên cơ sở dữ liệu: " + err.message);
     }
-}
-//==========================================Ký sổ đầu bài ================================
+}//==========================================Ký sổ đầu bài ================================
 // Hàm tự động đổ dữ liệu danh sách tuần vào dropdown của Sổ đầu bài
 // Hàm tự động khởi tạo và đồng bộ danh sách tuần của Sổ đầu bài
 function initSDBTuanDropdown() {
