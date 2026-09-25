@@ -9,7 +9,7 @@
     <!-- SheetJS cho Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Thư viện Supabase JS Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-jsdie@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800">
 
@@ -110,144 +110,119 @@
             console.error("Thư viện Supabase chưa được tải vào trang!");
         }
 
-        let currentRole = "";
+        let currentRole = "Giáo viên";
         let isAdmin = false;
 
-        // Lấy thông tin từ localStorage đồng nhất với OS (Hỗ trợ cả 2 chuẩn lưu trữ)
+        // ĐỐI TƯỢNG PHIÊN LÀM VIỆC ĐỒNG BỘ CHUẨN TỪ KIENORAOS
         let currentSession = {
-            maNhanSu: localStorage.getItem('maNhanSu') || 
-                      localStorage.getItem('taiKhoan') || 
-                      localStorage.getItem('user') || '',
-            
-            maTruong: function() {
-                const sessionStr = localStorage.getItem('kienona_school');
-                if (sessionStr) {
-                    try {
-                        const sData = JSON.parse(sessionStr);
-                        if (sData.maTruong) return sData.maTruong;
-                    } catch(e){}
-                }
-                const parts = this.maNhanSu.split('.');
-                return parts.length >= 2 ? parts[0] + "." + parts[1] : "c3ndtnl.nan";
-            }(),
-
-            hoVaTen: "",
+            maNhanSu: "",
+            maTruong: "THPT_NGUYEN_DUY_TRINH",
+            hoVaTen: "Cán bộ quản lý",
             tenTKB: "",
             vaiTro: "Giáo viên"
         };
 
-        // 2. Truy vấn thông tin nhân sự, quyền và tên TKB từ Supabase
+        // 1. Hàm khởi tạo thông tin phiên làm việc từ localStorage chuẩn của KienoraOS
+        function initSessionData() {
+            try {
+                // Đọc từ key chuẩn mới nhất của hệ điều hành cha
+                const rawSession = localStorage.getItem('kienora_user') || localStorage.getItem('kienora_session');
+                if (rawSession) {
+                    const uData = JSON.parse(rawSession);
+                    currentSession.maNhanSu = uData.username || uData.maNhanSu || '';
+                    currentSession.hoVaTen = uData.fullName || uData.hoVaTen || 'Cán bộ quản lý';
+                    currentSession.vaiTro = uData.roleName || uData.vaiTro || uData.quyen || 'Giáo viên';
+                    currentSession.maTruong = uData.schoolCode || uData.maTruong || localStorage.getItem('current_school_code') || 'THPT_NGUYEN_DUY_TRINH';
+                    currentSession.tenTKB = currentSession.maNhanSu ? currentSession.maNhanSu.split('.').pop() : '';
+                } else {
+                    // Dự phòng đọc các biến lẻ cũ
+                    currentSession.maNhanSu = localStorage.getItem('maNhanSu') || localStorage.getItem('taiKhoan') || '';
+                    currentSession.maTruong = localStorage.getItem('current_school_code') || 'THPT_NGUYEN_DUY_TRINH';
+                }
+                currentRole = currentSession.vaiTro;
+                const roleLower = currentRole.toLowerCase();
+                isAdmin = roleLower.includes("admin") || roleLower.includes("quản trị");
+            } catch (e) {
+                console.error("Lỗi đọc session:", e);
+            }
+        }
+
+        // 2. Truy vấn thông tin bổ sung từ Supabase (nếu cần)
         async function taiVaiTro() {
-    // 1. Lấy thông tin từ localStorage nếu có sẵn
-    const savedSession = localStorage.getItem('kienona_session');
-    if (savedSession) {
-        try {
-            const uData = JSON.parse(savedSession);
-            if (uData.maNhanSu) currentSession.maNhanSu = uData.maNhanSu;
-            if (uData.fullName) currentSession.hoVaTen = uData.fullName;
-            if (uData.vaiTro) currentSession.vaiTro = uData.vaiTro;
-        } catch(e){}
-    }
+            initSessionData();
 
-    if (!db) return;
+            if (!db || !currentSession.maNhanSu) {
+                hienThiQuyen();
+                return;
+            }
 
-    try {
-        // 2. Truy vấn trực tiếp vào bảng chứa thông tin nhân sự/user
-        // (Nếu tên bảng của bạn là 'users' thì để 'users', nếu là tên khác như 'nhansu' thì thay vào đây)
-        let { data, error } = await db
-            .from('users') 
-            .select('ma_nhan_su, ho_va_ten, quyen, ten_tkb')
-            .eq('ma_nhan_su', currentSession.maNhanSu)
-            .single();
+            try {
+                let { data, error } = await db
+                    .from('users') 
+                    .select('ma_nhan_su, ho_va_ten, quyen, ten_tkb, ma_truong')
+                    .eq('ma_nhan_su', currentSession.maNhanSu)
+                    .limit(1);
 
-        if (data && !error) {
-            currentRole = String(data.quyen || "Giáo viên").trim();
-            currentSession.vaiTro = currentRole;
-            currentSession.hoVaTen = String(data.ho_va_ten || "").trim();
+                if (data && data.length > 0 && !error) {
+                    const userObj = data[0];
+                    currentRole = String(userObj.quyen || currentSession.vaiTro).trim();
+                    currentSession.vaiTro = currentRole;
+                    currentSession.hoVaTen = String(userObj.ho_va_ten || currentSession.hoVaTen).trim();
+                    currentSession.tenTKB = String(userObj.ten_tkb || currentSession.maNhanSu.split('.').pop()).trim();
+                    if (userObj.ma_truong) currentSession.maTruong = userObj.ma_truong;
+                    
+                    const roleLower = currentRole.toLowerCase();
+                    isAdmin = roleLower.includes("admin") || roleLower.includes("quản trị");
+                }
+            } catch (err) {
+                console.warn("Không lấy được chi tiết từ CSDL, dùng giá trị trong session:", err);
+            }
+
+            hienThiQuyen();
             
-            // Lấy chính xác cột ten_tkb từ CSDL, nếu trống thì tự lấy phần đuôi mã nhân sự
-            currentSession.tenTKB = String(data.ten_tkb || currentSession.maNhanSu.split('.').pop()).trim();
-            
-            const roleLower = currentRole.toLowerCase();
-            isAdmin = roleLower.includes("admin") || roleLower.includes("quản trị");
-            
-            // Đưa thông tin lên giao diện ô input
             const inputGiaoVien = document.getElementById('inputGiaoVien');
             if (inputGiaoVien) {
                 inputGiaoVien.value = currentSession.hoVaTen;
                 inputGiaoVien.setAttribute('data-tentkb', currentSession.tenTKB);
             }
-        }
-    } catch (err) {
-        console.warn("Không lấy được chi tiết từ CSDL, dùng giá trị mặc định:", err);
-        currentSession.tenTKB = currentSession.maNhanSu ? currentSession.maNhanSu.split('.').pop() : '';
-        currentRole = currentSession.vaiTro;
-    }
 
-    // 3. Kích hoạt hiển thị quyền và nạp TKB sau khi đã có dữ liệu chuẩn
-    if (typeof hienThiQuyen === 'function') hienThiQuyen();
-    if (typeof loadTKBIntoKeHoach === 'function') loadTKBIntoKeHoach();
-    // 👉 THÊM DÒNG NÀY VÀO ĐÂY: 
- 
-}
+            if (typeof loadTKBIntoKeHoach === 'function') loadTKBIntoKeHoach();
+        }
+
         // 3. Hiển thị thông tin định danh và quyền lên giao diện
         function hienThiQuyen() {
             const badge = document.getElementById('userInfoBadge');
             if (badge) {
-                badge.innerText = `Trường: ${currentSession.maTruong} | Tài khoản: ${currentSession.maNhanSu} | Tên: ${currentSession.hoVaTen || 'Cán bộ'} | Quyền: ${currentRole || 'Giáo viên'}`;
+                badge.innerText = `Trường: ${currentSession.maTruong} | Tài khoản: ${currentSession.maNhanSu || 'Khách'} | Tên: ${currentSession.hoVaTen} | Quyền: ${currentRole}`;
             }
         }
 
-        // 4. Khởi chạy duy nhất 1 lần khi tải trang xong
-        
-           document.addEventListener("DOMContentLoaded", function() {
-    // 1. Tải vai trò và thông tin người dùng trước
-    if (typeof taiVaiTro === 'function') {
-        taiVaiTro();
-    }
+        // 4. Khởi chạy khi tải trang xong
+        document.addEventListener("DOMContentLoaded", function() {
+            initSessionData();
+            hienThiQuyen();
 
-    // 2. 🟢 BẮT BUỘC PHẢI GỌI HÀM NÀY ĐỂ TẢI DỮ LIỆU TỪ SUPABASE VÀ HIỂN THỊ LÊN BẢNG
-    if (typeof taiBaoCaoChiTiet === 'function') {
-        taiBaoCaoChiTiet();
-    } else {
-        console.error("❌ Không tìm thấy hàm taiBaoCaoChiTiet()");
-    }
-});
-    
-// Hàm kiểm tra và ẩn các tab quản trị nếu user là Giáo viên
-function checkUserPermission() {
-    // Kiểm tra xem đã có thông tin session chưa
-    if (typeof currentSession === 'undefined') return;
+            if (typeof taiVaiTro === 'function') {
+                taiVaiTro();
+            }
 
-    // Lấy thông tin quyền (tùy thuộc vào cách bạn lưu, ví dụ 'quyen' hoặc 'role')
-    const userRole = String(currentSession.quyen || currentSession.role || "").trim().toLowerCase();
-    
-    // Nếu là giáo viên (không phải admin/quản trị viên)
-    if (userRole.includes('giáo viên') || userRole === 'gv' || userRole === 'teacher') {
-        
-        // 1. Ẩn nút/tab "Đăng TKB" trên giao diện (nếu có class hoặc id tương ứng)
-        const tabDangTKB = document.querySelector('[data-tab="dang-tkb"]') || document.getElementById('btnDangTKB');
-        if (tabDangTKB) {
-            tabDangTKB.style.display = 'none'; // Ẩn hẳn đi
-        }
-
-        // 2. Ẩn menu quản trị bên trái (ví dụ mục Quản trị, phân cấp,...)
-        const menuQuanTri = document.querySelectorAll('.admin-only, [data-role="admin"]');
-        menuQuanTri.forEach(el => {
-            el.style.display = 'none';
+            if (typeof taiBaoCaoChiTiet === 'function') {
+                taiBaoCaoChiTiet();
+            }
         });
 
-        // 3. Nếu người dùng đang cố tình đứng ở tab quản trị, tự động chuyển về tab mặc định cho phép (ví dụ tab Kế hoạch Dạy Học)
-        const currentActiveTab = document.querySelector('.tab-pane.active, .content-active');
-        // Bạn có thể check nếu tab hiện tại là tab quản trị thì gọi hàm chuyển tab về Kế hoạch Dạy Học
-    }
-}
+        // Hàm kiểm tra quyền giáo viên
+        function checkUserPermission() {
+            const userRole = String(currentSession.vaiTro || "").trim().toLowerCase();
+            if (userRole.includes('giáo viên') || userRole === 'gv' || userRole === 'teacher') {
+                const tabDangTKB = document.querySelector('[data-tab="dang-tkb"]') || document.getElementById('btnDangTKB');
+                if (tabDangTKB) tabDangTKB.style.display = 'none';
+            }
+        }
 
-// Gọi hàm này ngay sau khi load xong thông tin session / đăng nhập
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(checkUserPermission, 500); // Đợi 0.5s để session load ổn định rồi check
-
-});
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(checkUserPermission, 300);
+        });
 
         // ============================================================
         // ĐIỀU HƯỚNG TAB
