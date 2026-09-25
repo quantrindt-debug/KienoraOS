@@ -96,30 +96,29 @@
                 if (data && data.length > 0) {
                     const users = data[0];
                     
-                    // 1. Lưu vào sessionStorage (để các trang con gọi nếu cần)
+                    // 1. Lưu toàn bộ thông tin user vào sessionStorage
                     sessionStorage.setItem('currentUser', JSON.stringify(users));
                     
-                    // 2. Đóng gói dữ liệu chuẩn để trang KienoraOS nhận diện
-                    const sessionData = {
-                        maNhanSu: users.ma_nhan_su,
-                        fullName: users.ho_va_ten,
-                        vaiTro: users.quyen || 'Giáo viên' // Lấy cột 'quyen' làm vai trò
-                    };
-
-                    const schoolData = {
-                        maTruong: users.ma_truong || "THPT_NGUYENDUYTRINH", // Lấy từ cột ma_truong hoặc mặc định
-                        tenTruong: users.ten_truong || "Trường THPT Nguyễn Duy Trinh", // Tên trường
-                        dbUrl: users.db_url || ""
-                    };
-
-                    // Lưu vào localStorage theo đúng cơ chế bảo mật của trang OS
-                    localStorage.setItem('kienona_session', JSON.stringify(sessionData));
-                    localStorage.setItem('kienona_school', JSON.stringify(schoolData));
-
-                    // Thông báo đăng nhập thành công kèm vai trò
-                    alert("Đăng nhập thành công!\nXin chào: " + users.ho_va_ten + "\nVai trò: " + (users.quyen || 'Giáo viên'));
+                    // 2. Đóng gói dữ liệu chuẩn theo đúng định dạng mà các trang con (như Quản lý hồ sơ học sinh) đang gọi
+                    // Sửa đoạn này trong file login.html:
+    const sessionData = {
+        username: users.ma_nhan_su,
+        fullName: users.ho_va_ten,
+        roleName: users.quyen || 'Quản trị viên',
+        schoolCode: users.ma_truong || users.school_code || 'C3NDTNL.NAN', // Đổi giá trị mặc định thành mã trường của bạn
+        schoolName: users.ten_truong || users.school_name || 'Trường THPT Nguyễn Duy Trinh'
+    };
+                    // Lưu vào localStorage key 'kienora_user' để trang con nhận diện mượt mà
+                    localStorage.setItem('kienora_user', JSON.stringify(sessionData));
                     
-                    // Chuyển hướng sang trang OS của bạn
+                    // Dự phòng thêm các key bổ trợ cũ nếu cần
+                    localStorage.setItem('current_school_code', sessionData.schoolCode);
+                    localStorage.setItem('current_school_name', sessionData.schoolName);
+
+                    // Thông báo đăng nhập thành công kèm mã trường
+                    alert("Đăng nhập thành công!\nXin chào: " + users.ho_va_ten + "\nMã trường: " + sessionData.schoolCode);
+                    
+                    // Chuyển hướng sang trang OS chính
                     window.location.href = 'KienoraOS.html'; 
                 } else {
                     errorDiv.textContent = "Sai mã nhân sự hoặc mật khẩu!";
@@ -129,6 +128,6 @@
                 errorDiv.textContent = "Lỗi kết nối CSDL: " + err.message;
             }
         }
-    </script>
+   </script>
 </body>
 </html>
