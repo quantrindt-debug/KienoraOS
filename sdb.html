@@ -2155,13 +2155,17 @@ async function saveSoDauBai() {
         const diemEl = tr.querySelector('.input-diem');
         const xepLoaiEl = tr.querySelector('.input-xeploai');
         
+        // Xử lý giá trị điểm: nếu để trống thì thành null, ngược lại thì chuyển thành số thực (float)
+        const diemVal = diemEl ? diemEl.value.trim() : "";
+        const parsedDiem = diemVal === "" ? null : parseFloat(diemVal);
+
         rows.push({
-            id: recordId ? parseInt(recordId) : undefined, // Nếu có ID thì cập nhật đúng dòng đó
+            id: recordId ? parseInt(recordId) : undefined,
             tuan: tuanNum,
             si_so_vang: siSoVangEl ? parseInt(siSoVangEl.value) || 0 : 0,
             ten_hs_vang: tenHSVangEl ? tenHSVangEl.value.trim() : "",
             nhan_xet: nhanXetEl ? nhanXetEl.value.trim() : "",
-            diem: diemEl ? diemEl.value.trim() : "",
+            diem: parsedDiem, // Đã sửa thành kiểu số hoặc null, không còn là chuỗi rỗng
             xep_loai: xepLoaiEl ? xepLoaiEl.value : "Tốt",
             trang_thai_ky: isChecked ? "Đã ký" : "Chưa ký",
             thoi_gian_ky: isChecked ? new Date().toLocaleString("vi-VN") : null
