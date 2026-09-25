@@ -497,19 +497,16 @@ function checkSessionAndInit() {
   if (appId in localPageFiles) {
       document.getElementById(`title-${appId}`).innerText = `${appMeta.title} - [${currentSession.school ? currentSession.school.tenTruong : currentSession.maTruong}]`;
       
-      // Lấy thông tin mã nhân sự và mã trường hiện tại để truyền sang iframe
-      // Sửa lại đoạn lấy mã trường cho đúng với CSDL
-const schoolCode = userData.ma_truong || userData.school_code || userData.schoolCode || 'C3NDTNL.NAN';
-const schoolName = userData.ten_truong || userData.school_name || userData.schoolName || 'Trường THPT Nguyễn Duy Trinh';
+      // Lấy trực tiếp từ currentSession hoặc sessionStorage để tránh lỗi not defined
+      const maNhanSu = (currentSession && currentSession.maNhanSu) || JSON.parse(sessionStorage.getItem('currentUser') || '{}').ma_nhan_su || '';
+      const maTruong = (currentSession && currentSession.maTruong) || JSON.parse(sessionStorage.getItem('currentUser') || '{}').ma_truong || '';
 
-      // Gắn thêm tham số vào URL của iframe để trang con không bị mất ngữ cảnh khi chạy trên máy chủ
       let targetUrl = localPageFiles[appId];
-      // Kiểm tra xem URL đã có dấu ? chưa để nối tham số cho đúng chuẩn
       const separator = targetUrl.includes('?') ? '&' : '?';
       targetUrl += `${separator}maNhanSu=${encodeURIComponent(maNhanSu)}&maTruong=${encodeURIComponent(maTruong)}`;
 
       document.getElementById(`iframe-${appId}`).src = targetUrl;
-      return; // Dừng lại ở đây, không gọi API nữa
+      return;
   }
 
   // ==========================================
