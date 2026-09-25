@@ -1716,20 +1716,42 @@ async function loadTKBIntoKeHoach() {
             if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-6 text-rose-500">Lỗi kết nối khi tải TKB: ${err.message}</td></tr>`;
         }
     };
+// Thay vì dùng code cũ bị giới hạn 1000 dòng, bạn gọi hàm phân trang này:
 
+   // 🟢 THAY THẾ ĐOẠN CŨ BẰNG ĐOẠN NÀY:
     if (!window.allPPCTCache || window.allPPCTCache.length === 0) {
-        db.from('phan_phoi_chuong_trinh')
-          .select('*')
-          .limit(2000)
-          .then(({ data, error }) => {
-              if (!error && data) {
-                  window.allPPCTCache = data;
-              }
-              processTKBData();
-          });
+        await loadAllPPCT(); // Gọi hàm phân trang đã viết ở trên
     } else {
         processTKBData();
     }
+}
+        // Thay vì chỉ gọi .limit(10000) bị chặn ở 1000, ta dùng hàm lấy sạch hoặc phân trang:
+async function loadAllPPCT() {
+    let allData = [];
+    let step = 1000;
+    let rangeStart = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+        let { data, error } = await db
+            .from('phan_phoi_chuong_trinh')
+            .select('*')
+            .range(rangeStart, rangeStart + step - 1);
+
+        if (error || !data || data.length === 0) {
+            hasMore = false;
+        } else {
+            allData = allData.concat(data);
+            if (data.length < step) {
+                hasMore = false;
+            } else {
+                rangeStart += step;
+            }
+        }
+    }
+    window.allPPCTCache = allData;
+    console.log("Đã tải toàn bộ PPCT không giới hạn, tổng số dòng:", window.allPPCTCache.length);
+    processTKBData();
 }
 document.addEventListener('DOMContentLoaded', () => {
     // Gọi hàm load tuần khi khởi tạo tab Kế hoạch
