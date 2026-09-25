@@ -496,8 +496,18 @@ function checkSessionAndInit() {
   // Sửa từ .includes() thành toán tử "in" hoặc hasOwnProperty để kiểm tra key trong Object
   if (appId in localPageFiles) {
       document.getElementById(`title-${appId}`).innerText = `${appMeta.title} - [${currentSession.school ? currentSession.school.tenTruong : currentSession.maTruong}]`;
-      // Gán trực tiếp giá trị đường dẫn được định nghĩa trong Object (hỗ trợ cả đường dẫn chứa thư mục con)
-      document.getElementById(`iframe-${appId}`).src = localPageFiles[appId];
+      
+      // Lấy thông tin mã nhân sự và mã trường hiện tại để truyền sang iframe
+      const maNhanSu = currentSession.maNhanSu || JSON.parse(sessionStorage.getItem('currentUser') || '{}').ma_nhan_su || '';
+      const maTruong = currentSession.maTruong || JSON.parse(sessionStorage.getItem('currentUser') || '{}').ma_truong || '';
+
+      // Gắn thêm tham số vào URL của iframe để trang con không bị mất ngữ cảnh khi chạy trên máy chủ
+      let targetUrl = localPageFiles[appId];
+      // Kiểm tra xem URL đã có dấu ? chưa để nối tham số cho đúng chuẩn
+      const separator = targetUrl.includes('?') ? '&' : '?';
+      targetUrl += `${separator}maNhanSu=${encodeURIComponent(maNhanSu)}&maTruong=${encodeURIComponent(maTruong)}`;
+
+      document.getElementById(`iframe-${appId}`).src = targetUrl;
       return; // Dừng lại ở đây, không gọi API nữa
   }
 
