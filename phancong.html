@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Thư viện Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body { background-color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
     </style>
@@ -20,17 +21,7 @@
             <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
             <span class="tracking-wide uppercase font-bold">KienoraOS • Phân công Chuyên môn & Kiêm nhiệm</span>
         </div>
-        <div class="flex items-center gap-2">
-            <!-- Khu vực chọn tuần hiện tại của bạn -->
-            <select id="selectTuan" class="border border-slate-300 rounded-md px-3 py-1.5 text-sm font-bold bg-white text-slate-800 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <!-- Danh sách tuần sẽ tự động load vào đây -->
-            </select>
-
-            <!-- ⚙️ NÚT BÁNH XE DÀNH CHO QUẢN TRỊ / BGD -->
-            <button type="button" onclick="quanLyKhoaTuan()" title="Cài đặt khóa/mở phân công chuyên môn tuần này" class="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 transition-all shadow-xs flex items-center justify-center">
-                ⚙️ <span class="text-xs font-bold ml-1 hidden sm:inline">Khóa tuần</span>
-            </button>
-        </div>
+        
     </div>
 
     <!-- CONTAINER CHÍNH -->
@@ -80,22 +71,20 @@
 
         <div class="space-y-1">
             <div class="flex items-center gap-2">
-                <!-- Chuyển từ input text sang select để chọn đợt đã có hoặc tạo mới -->
-                <select id="selectTenDot" onchange="capNhatThongTinDot(this)" class="px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-blue-600 focus:outline-none w-1/3">
-                    <!-- Được nạp động bằng Javascript -->
-                </select>
-                
-                <!-- Ô tùy chỉnh tuần bắt đầu -->
-                <div class="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 w-1/3">
-                    <span class="text-[10px] text-slate-500 font-medium">Từ tuần:</span>
-                    <input type="number" id="inputTuanBD" min="1" max="52" value="1" class="w-full bg-transparent text-xs font-bold text-blue-800 focus:outline-none text-center">
-                </div>
+                <!--  select để chọn tuần áp dụng -->
+                <div class="flex items-center gap-2">
+                    <!-- Khu vực chọn tuần hiện tại của bạn -->
+                    <select id="selectTuan" class="border border-slate-300 rounded-md px-3 py-1.5 text-sm font-bold bg-white text-slate-800 shadow-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <!-- Danh sách tuần sẽ tự động load vào đây -->
+                    </select>
 
-                <!-- Ô tùy chỉnh tuần kết thúc -->
-                <div class="flex items-center gap-1 bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 w-1/3">
-                    <span class="text-[10px] text-slate-500 font-medium">Đến tuần:</span>
-                    <input type="number" id="inputTuanKT" min="1" max="52" value="18" class="w-full bg-transparent text-xs font-bold text-blue-800 focus:outline-none text-center">
+                    <!-- ⚙️ NÚT BÁNH XE DÀNH CHO QUẢN TRỊ / BGD -->
+                    <button type="button" onclick="quanLyKhoaTuan()" title="Cài đặt khóa/mở phân công chuyên môn tuần này" class="p-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 transition-all shadow-xs flex items-center justify-center">
+                        ⚙️ <span class="text-xs font-bold ml-1 hidden sm:inline">Khóa tuần</span>
+                    </button>
                 </div>
+                
+                
             </div>
         </div>
     </div>
@@ -229,15 +218,23 @@
                 </div>
 
                 <!-- Nút xuất Excel -->
+                <button type="button" onclick="xuatFileExcelChuanTKB()" class="px-3 py-1.5 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 transition-all shadow-xs flex items-center justify-center text-xs font-bold gap-1">
+                📊 Xuất Mẫu TKB (Excel)
+            </button>
                 <button onclick="xuatFileExcel()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all">
                     📊 Xuất File Excel
+                </button>
+                <button type="button" onclick="inBangBaoCao()" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 transition-all shadow-xs flex items-center justify-center text-xs font-bold gap-1">
+                    🖨️ In Báo Cáo
                 </button>
             
             </div>
 
             <!-- Khu vực hiển thị bảng dữ liệu báo cáo -->
-            <div id="containerBangBaoCao" class="overflow-x-auto">
-                <p class="text-slate-400 italic text-center py-6">Đang tổng hợp dữ liệu báo cáo...</p>
+            <div class="w-full px-4 py-6 bg-white rounded-xl shadow-sm">
+                <div id="containerBangBaoCao" class="overflow-x-auto">
+                    <p class="text-slate-400 italic text-center py-6">Đang tổng hợp dữ liệu báo cáo...</p>
+                </div>
             </div>
         </div>
 
@@ -522,8 +519,7 @@
             }
 
             doiNhomChuyenMon();
-            capNhatThongTinDot();
-            
+                    
             loadBangBaoCao();
         }
 
@@ -670,30 +666,57 @@ async function chonGiaoVien(element, gvId, gvName, nhomVal) {
         window.tamPhanCongTheoMon[mon] = {};
     });
 
-    // 2. TỰ ĐỘNG TRUY VẤN DỮ LIỆU ĐÃ LƯU TRƯỚC ĐÓ CỦA GIÁO VIÊN NÀY TỪ SUPABASE
-    const selectDotElement = document.getElementById('selectTuanBaoCao');
-    const tenDotHienTai = selectDotElement ? selectDotElement.value.trim() : "";
+    // 2. TỰ ĐỘNG TRUY VẤN DỮ LIỆU ĐÃ LƯU CỦA GIÁO VIÊN NÀY TỪ SUPABASE
+    // Lấy đúng ID thẻ chọn tuần giao diện phân công (thường là 'selectTuan')
+    const selectDotElement = document.getElementById('selectTuan') || document.getElementById('selectTuanBaoCao');
+    let tuanText = selectDotElement ? (selectDotElement.options[selectDotElement.selectedIndex]?.text.trim() || selectDotElement.value.trim()) : "Tuần 1";
+    
+    let matchT = tuanText.match(/tuần\s*(\d+)/i);
+    let currentWeekNum = matchT ? parseInt(matchT[1]) : 1;
+    let tenDotHienTai = `Tuần ${currentWeekNum}`;
 
     if (db && gvId) {
         try {
-            // Ưu tiên lấy dữ liệu của đợt hiện tại trước
+            // Lấy toàn bộ lịch sử phân công giảng dạy của giáo viên này
             let { data: dataCu, error } = await db.from('phan_cong_giang_day')
                 .select('mon_hoc, lop, hoc_ky, so_tiet, dot')
                 .eq('ma_nhan_su', gvId);
 
             if (!error && dataCu && dataCu.length > 0) {
-                // Lọc xem giáo viên này đã có trong đợt hiện tại chưa
-                let dataDungDot = dataCu.filter(item => item.dot === tenDotHienTai);
+                // Kiểm tra xem đợt hiện tại đã có dữ liệu chưa
+                let dataDungDot = dataCu.filter(item => String(item.dot).trim() === tenDotHienTai);
                 
-                // Nếu đợt hiện tại chưa có, lấy đợt gần nhất (hoặc toàn bộ lịch sử phân công cũ)
-                let dataDuaVao = dataDungDot.length > 0 ? dataDungDot : dataCu;
+                let dataDuaVao = [];
+                if (dataDungDot.length > 0) {
+                    dataDuaVao = dataDungDot;
+                } else {
+                    // Nếu đợt hiện tại chưa có, tìm tuần có số lớn nhất đã từng lưu trong lịch sử
+                    let savedWeeksMap = {};
+                    dataCu.forEach(item => {
+                        let m = String(item.dot).match(/tuần\s*(\d+)/i);
+                        if (m) {
+                            let wNum = parseInt(m[1]);
+                            if (!savedWeeksMap[wNum]) savedWeeksMap[wNum] = [];
+                            savedWeeksMap[wNum].push(item);
+                        }
+                    });
 
-                // Đổ dữ liệu cũ vào biến tạm window.tamPhanCongTheoMon
+                    let weekNumbers = Object.keys(savedWeeksMap).map(Number);
+                    if (weekNumbers.length > 0) {
+                        let maxWeek = Math.max(...weekNumbers);
+                        dataDuaVao = savedWeeksMap[maxWeek] || [];
+                        console.log(`💡 Giảng dạy tuần ${currentWeekNum} trống, tự động lấy dữ liệu từ tuần lớn nhất đã lưu: Tuần ${maxWeek}`);
+                    } else {
+                        dataDuaVao = dataCu;
+                    }
+                }
+
+                // Đổ dữ liệu vào biến tạm window.tamPhanCongTheoMon
                 dataDuaVao.forEach(item => {
                     let mon = item.mon_hoc;
                     let lop = item.lop;
                     let hk = String(item.hoc_ky);
-                    let soTietVal = item.so_tiet || 2;
+                    let soTietVal = parseFloat(item.so_tiet) || 2;
 
                     if (!window.tamPhanCongTheoMon[mon]) {
                         window.tamPhanCongTheoMon[mon] = {};
@@ -703,8 +726,8 @@ async function chonGiaoVien(element, gvId, gvName, nhomVal) {
                     }
 
                     window.tamPhanCongTheoMon[mon][lop].soTiet = soTietVal;
-                    if (hk === "1") window.tamPhanCongTheoMon[mon][lop].hk1 = true;
-                    if (hk === "2") window.tamPhanCongTheoMon[mon][lop].hk2 = true;
+                    if (hk === "1" || hk.toLowerCase().includes("1")) window.tamPhanCongTheoMon[mon][lop].hk1 = true;
+                    if (hk === "2" || hk.toLowerCase().includes("2")) window.tamPhanCongTheoMon[mon][lop].hk2 = true;
                 });
             }
         } catch (e) {
@@ -725,22 +748,17 @@ async function chonGiaoVien(element, gvId, gvName, nhomVal) {
         `;
     });
 
-    // Tự động kích hoạt tab môn đầu tiên (hệ thống sẽ tự động vẽ các checkbox lớp đã tích dựa vào window.tamPhanCongTheoMon)
+    // Tự động kích hoạt tab môn đầu tiên
     if (dsMonNhom.length > 0) {
         let btnDauTien = containerTab.querySelector('button');
         chuyenTabMon(dsMonNhom[0], btnDauTien);
     }
 
-    // Load phần kiêm nhiệm của giáo viên này nếu có hàm hỗ trợ
+    // 4. Load phần kiêm nhiệm của giáo viên này (đã áp dụng cơ chế tự động tìm tuần lớn nhất ở các bước trước)
     if (typeof loadDanhSachKiemNhiemChoGV === 'function') {
-        loadDanhSachKiemNhiemChoGV(gvId); // Truyền đúng tên biến đang có sẵn ở đây
+        loadDanhSachKiemNhiemChoGV(gvId); 
     }
 }
-// Hàm chuyển đổi qua lại giữa các tab môn học
-// Biến toàn cục lưu tạm phân công theo từng môn
-window.tamPhanCongTheoMon = {}; 
-window.currentActiveMon = null;
-
 function chuyenTabMon(monMoi, btnElement) {
     // Bước 1: Lưu trạng thái của môn cũ trước khi rời đi
     if (window.currentActiveMon) {
@@ -867,16 +885,34 @@ function luuTrangThaiHienTaiVaoTam() {
         }
 
 async function savePhanCongGiangDay() {
-    // TRƯỚC KHI TIẾN HÀNH LƯU, KIỂM TRA XEM TUẦN ĐÓ CÓ BỊ KHÓA KHÔNG
-    let tuanDangThaoTac = parseInt(document.getElementById('selectTuan')?.value) || 1;
-    let { data: checkKhoa } = await db.from('CauHinhTuan')
-        .select('khoa_pccm')
-        .eq('id', tuanDangThaoTac) // Sửa lại eq theo id chuẩn cấu trúc bảng CauHinhTuan
-        .single();
+    // 1. Lấy id và tên tuần đang chọn trên giao diện
+    const selectTuanEl = document.getElementById('selectTuan');
+    if (!selectTuanEl || !selectTuanEl.value) {
+        alert("⚠ Vui lòng chọn tuần trước khi lưu!");
+        return;
+    }
+    let tuanId = selectTuanEl.value;
+    
+    let tenTuanText = selectTuanEl.options[selectTuanEl.selectedIndex]?.text.trim() || "Tuần 1";
+    let matchTuan = tenTuanText.match(/tuần\s*(\d+)/i);
+    let currentWeek = matchTuan ? parseInt(matchTuan[1]) : (parseInt(tuanId) || 1);
 
-    if (checkKhoa && (checkKhoa.khoa_pccm === true || String(checkKhoa.khoa_pccm).toLowerCase() === 'khóa')) {
-        alert(`⚠ Rất tiếc, phân công chuyên môn của [Tuần ${tuanDangThaoTac}] ĐÃ BỊ KHÓA bởi Quản trị viên!\nBạn không thể lưu hoặc thay đổi dữ liệu lúc này.`);
-        return; 
+    // 2. Kiểm tra trạng thái khóa từ CSDL
+    try {
+        let { data: checkData, error: checkErr } = await db.from('CauHinhTuan')
+            .select('khoa_pccm')
+            .eq('id', tuanId)
+            .single();
+
+        if (!checkErr && checkData) {
+            let val = String(checkData.khoa_pccm || "").trim().toLowerCase();
+            if (val.includes('khoá') || val.includes('khóa') || val === 'true') {
+                alert("❌ Phân công chuyên môn của tuần này ĐÃ BỊ KHÓA! Bạn không thể thêm hoặc lưu dữ liệu.");
+                return;
+            }
+        }
+    } catch (e) {
+        console.error("Lỗi kiểm tra khóa:", e);
     }
 
     if(!selectedGVCode) {
@@ -884,34 +920,20 @@ async function savePhanCongGiangDay() {
         return;
     }
 
-    // KIỂM TRA QUYỀN HẠN PHÂN CÔNG CHUYÊN MÔN
     const roleOS = currentRole.toLowerCase();
     const chucVuDB = currentSession.chucVuDb.toLowerCase();
-    
     const laBGHHoacAdmin = isAdmin || roleOS.includes("bgh") || roleOS.includes("admin") || roleOS.includes("hiệu trưởng");
     const laQuanLyChuyenMon = ["tổ trưởng", "nhóm trưởng", "tổ phó"].some(cv => chucVuDB.includes(cv));
 
     if (!laBGHHoacAdmin && !laQuanLyChuyenMon) {
-        alert("⛔ Bạn không có quyền phân công chuyên môn! Chức năng này chỉ dành cho Tổ trưởng, Nhóm trưởng, Tổ phó hoặc Ban Giám hiệu.");
+        alert("⛔ Bạn không có quyền phân công chuyên môn!");
         return;
     }
 
-    if (!laBGHHoacAdmin && laQuanLyChuyenMon) {
-        let gvDuocChonObj = danhSachUsers.find(u => (u.ma_nhan_su || u.id) === selectedGVCode);
-        let nhomCmCuaGV = gvDuocChonObj ? (gvDuocChonObj.nhom_cm || gvDuocChonObj.to_chuyen_mon || "") : "";
-        
-        if (nhomCmCuaGV !== currentSession.nhomCmDb) {
-            alert(`⛔ Bạn chỉ được phép phân công cho giáo viên thuộc Tổ ${currentSession.nhomCmDb} của bạn!`);
-            return;
-        }
-    }
-
-    // 1. Lưu lại trạng thái của môn đang hiển thị trên màn hình vào bộ nhớ tạm
     if (window.currentActiveMon && typeof luuTrangThaiCuaMon === 'function') {
         luuTrangThaiCuaMon(window.currentActiveMon);
     }
 
-    // LẤY DANH SÁCH KIÊM NHIỆM ĐƯỢC TÍCH CHỌN
     let chiTietKiemNhiem = [];
     document.querySelectorAll('input[name="kiemNhiem"]:checked').forEach(cb => {
         chiTietKiemNhiem.push({
@@ -921,7 +943,6 @@ async function savePhanCongGiangDay() {
         });
     });
 
-    // 2. Tổng hợp danh sách phân công giảng dạy từ bộ nhớ tạm window.tamPhanCongTheoMon
     let danhSachPhanCongDay = [];
     if (window.tamPhanCongTheoMon) {
         for (let mon in window.tamPhanCongTheoMon) {
@@ -932,7 +953,7 @@ async function savePhanCongGiangDay() {
                     danhSachPhanCongDay.push({
                         tenMon: mon,
                         lop: lop,
-                        hoc_ky: info.hk || "1",
+                        hoc_ky: info.hoc_ky || info.hk || "1",
                         soTiet: info.soTiet || 2
                     });
                 }
@@ -940,50 +961,76 @@ async function savePhanCongGiangDay() {
         }
     }
 
-    // Kiểm tra xem đã chọn ít nhất Môn học hoặc Kiêm nhiệm chưa
     if (danhSachPhanCongDay.length === 0 && chiTietKiemNhiem.length === 0) {
-        alert("⚠ Vui lòng tích chọn ít nhất một lớp học cho môn học hoặc một nhiệm vụ kiêm nhiệm!");
+        alert("⚠ Vui lòng tích chọn ít nhất một lớp học hoặc nhiệm vụ kiêm nhiệm!");
         return;
     }
 
-    // Lấy tên đợt linh hoạt từ thẻ selectTenDot
-    const selectDotElement = document.getElementById('selectTenDot');
-    const tenDotMoi = selectDotElement ? selectDotElement.value.trim() : "Tuần " + tuanDangThaoTac;
-    
-    const tuanBatDauMoi = parseInt(document.getElementById('inputTuanBD')?.value) || tuanDangThaoTac;
-    const tuanKetThucMoi = parseInt(document.getElementById('inputTuanKT')?.value) || tuanDangThaoTac;
-
-    if (tuanBatDauMoi > tuanKetThucMoi) {
-        alert("⚠ Tuần bắt đầu không thể lớn hơn tuần kết thúc!");
-        return;
-    }
+    const tenDotMoi = `Tuần ${currentWeek}`; // Sẽ luôn lưu chuẩn là "Tuần 5", "Tuần 1",... không bị dính (HK1) nữa
 
     if (db) {
         try {
-            // 🛑 XỬ LÝ XÓA DỮ LIỆU CŨ CỦA ĐỢT NÀY TRONG CẢ 2 BẢNG (ĐỂ GHI ĐÈ SẠCH SẼ)
-            // 1. Xóa giảng dạy cũ
+            // 3. TỰ ĐỘNG TÍNH TOÁN TUẦN BẮT ĐẦU VÀ KẾT THÚC THÔNG MINH
+            let tuanBatDauMoi = currentWeek;
+            let maxHkWeek = (currentWeek <= 18) ? 18 : 35;
+
+            // Lấy danh sách các đợt/tuần khác đang có của giáo viên này trong CSDL
+            let { data: existingRecords } = await db.from('phan_cong_giang_day')
+                .select('tuan_bat_dau, dot')
+                .eq('ma_nhan_su', selectedGVCode)
+                .neq('dot', tenDotMoi);
+
+            let existingWeeksMap = {};
+            (existingRecords || []).forEach(r => {
+                let w = parseInt(r.tuan_bat_dau);
+                if (!isNaN(w)) existingWeeksMap[w] = r.dot;
+            });
+            let existingWeeks = Object.keys(existingWeeksMap).map(Number);
+
+            // Tìm tuần lớn hơn tuần hiện tại để chặn mốc kết thúc
+            let largerWeeks = existingWeeks.filter(w => w > currentWeek);
+            let tuanKetThucMoi = maxHkWeek;
+            if (largerWeeks.length > 0) {
+                let minLargerWeek = Math.min(...largerWeeks);
+                tuanKetThucMoi = minLargerWeek - 1;
+            }
+
+            // Tự động co ngắn tuần kết thúc của các đợt cũ đứng TRƯỚC tuần hiện tại
+            let smallerWeeks = existingWeeks.filter(w => w < currentWeek);
+            for (let sw of smallerWeeks) {
+                let targetDot = existingWeeksMap[sw];
+                if (targetDot) {
+                    await db.from('phan_cong_giang_day')
+                        .update({ tuan_ket_thuc: currentWeek - 1 })
+                        .eq('ma_nhan_su', selectedGVCode)
+                        .eq('dot', targetDot);
+                }
+            }
+
+            // Xóa dữ liệu cũ của đợt hiện tại để ghi đè sạch sẽ
             let { error: errDelGiangDay } = await db.from('phan_cong_giang_day')
                 .delete()
                 .eq('ma_nhan_su', selectedGVCode)
                 .eq('dot', tenDotMoi);
 
             if (errDelGiangDay) {
-                alert("❌ Lỗi khi xóa dữ liệu giảng dạy cũ: " + errDelGiangDay.message);
+                alert("❌ Lỗi khi xóa dữ liệu cũ: " + errDelGiangDay.message);
                 return;
             }
 
-            // 2. Xóa kiêm nhiệm cũ
-            let { error: errDelKiemNhiem } = await db.from('phan_cong_kiem_nhiem')
+            await db.from('phan_cong_kiem_nhiem')
                 .delete()
                 .eq('ma_nhan_su', selectedGVCode)
                 .eq('dot', tenDotMoi);
 
-            if (errDelKiemNhiem) {
-                console.warn("Lưu ý khi xóa kiêm nhiệm cũ:", errDelKiemNhiem.message);
-            }
-
-            // TIẾN HÀNH LƯU PHÂN CÔNG GIẢNG DẠY
+            // 4. Lưu giảng dạy mới kèm giới hạn chuẩn (Toán/Văn = 3, khác = 1)
             for (let item of danhSachPhanCongDay) {
+                let monLower = (item.tenMon || "").toLowerCase();
+                let gioiHanMoi = 1;
+                if (monLower.includes('toán') || monLower.includes('văn')) {
+                    gioiHanMoi = 3;
+                }
+
                 let { error } = await db.from('phan_cong_giang_day').insert({
                     ma_nhan_su: selectedGVCode,
                     mon_hoc: item.tenMon,
@@ -992,7 +1039,8 @@ async function savePhanCongGiangDay() {
                     hoc_ky: item.hoc_ky,
                     dot: tenDotMoi,
                     tuan_bat_dau: tuanBatDauMoi,
-                    tuan_ket_thuc: tuanKetThucMoi
+                    tuan_ket_thuc: tuanKetThucMoi,
+                    gioi_han: gioiHanMoi
                 });
                 
                 if (error) {
@@ -1001,9 +1049,9 @@ async function savePhanCongGiangDay() {
                 }
             }
 
-            // TIẾN HÀNH LƯU THÔNG TIN KIÊM NHIỆM VÀO BẢNG phan_cong_kiem_nhiem
+            // Lưu kiêm nhiệm mới
             for (let kn of chiTietKiemNhiem) {
-                let { error: errKn } = await db.from('phan_cong_kiem_nhiem').insert({
+                await db.from('phan_cong_kiem_nhiem').insert({
                     ma_nhan_su: selectedGVCode,
                     id_kiem_nhiem: kn.id_kiem_nhiem,
                     ten_kiem_nhiem: kn.ten_kiem_nhiem,
@@ -1012,30 +1060,12 @@ async function savePhanCongGiangDay() {
                     tuan_bat_dau: tuanBatDauMoi,
                     tuan_ket_thuc: tuanKetThucMoi
                 });
-
-                if (errKn) {
-                    console.error("Lỗi Supabase khi insert kiêm nhiệm:", errKn);
-                    alert("❌ Lỗi lưu kiêm nhiệm: " + errKn.message);
-                    return;
-                }
             }
             
-            alert(`✅ Đã lưu thành công phân công giảng dạy và kiêm nhiệm (${tenDotMoi}) cho giáo viên!`);
+            alert(`✅ Đã lưu phân công cho giáo viên (${tenDotMoi}) thành công!`);
             
-            // 🛑 ĐOẠN XỬ LÝ GIAO DIỆN AN TOÀN TRÁNH LỖI CLASSLIST
-            try {
-                // Nếu bạn có gọi chuyển tab:
-                if (typeof switchTab === 'function') {
-                    switchTab(3);
-                }
-                
-                // Nếu bạn có đoạn hightlight hoặc đổi màu giáo viên vừa lưu ở danh sách bên trái:
-                let activeElement = document.getElementById('gv_' + selectedGVCode);
-                if (activeElement) {
-                    activeElement.classList.add('bg-blue-50'); // Chỉ chạy khi phần tử này tồn tại
-                }
-            } catch (uiErr) {
-                console.warn("Cảnh báo giao diện sau khi lưu (không ảnh hưởng dữ liệu):", uiErr);
+            if (typeof loadBangBaoCao === 'function') {
+                loadBangBaoCao();
             }
 
         } catch(e) {
@@ -1051,25 +1081,22 @@ async function loadDanhSachKiemNhiemChoGV(maNhanSu) {
     const container = document.getElementById('listKiemNhiemContainer');
     if (!container) return;
 
+    if (!maNhanSu) {
+        container.innerHTML = '<span class="text-slate-400 italic">Vui lòng chọn giáo viên bên trái...</span>';
+        return;
+    }
+
     container.innerHTML = '<span class="text-slate-400 italic">Đang tải kiêm nhiệm...</span>';
 
     try {
-        // Lấy tên đợt an toàn bằng cách kiểm tra các nguồn có thể xảy ra trên giao diện
-        let tenDotHienTai = "Tuần 1"; // Giá trị mặc định phòng hờ
-        try {
-            const selectDotElement = document.getElementById('selectTenDot');
-            let tuanDangThaoTac = parseInt(document.getElementById('selectTuan')?.value) || 1;
-            
-            if (selectDotElement && selectDotElement.value) {
-                tenDotHienTai = selectDotElement.value.trim();
-            } else {
-                tenDotHienTai = "Tuần " + tuanDangThaoTac;
-            }
-        } catch (errDot) {
-            console.warn("Không lấy được tên đợt, dùng mặc định:", errDot);
-        }
+        // 1. Lấy tuần đang chọn hiện tại trên giao diện làm mốc
+        let selectDotElement = document.getElementById('selectTuan');
+        let tuanText = selectDotElement ? selectDotElement.options[selectDotElement.selectedIndex]?.text.trim() : "Tuần 1";
+        let matchT = tuanText.match(/tuần\s*(\d+)/i);
+        let currentWeekNum = matchT ? parseInt(matchT[1]) : 1;
+        let tenDotHienTai = `Tuần ${currentWeekNum}`;
 
-        // 1. Lấy danh mục kiêm nhiệm từ bảng danh_muc_kiem_nhiem
+        // 2. Lấy danh mục kiêm nhiệm từ bảng danh_muc_kiem_nhiem trước
         let { data: dsDanhMuc, error: errDM } = await db.from('danh_muc_kiem_nhiem').select('*');
         
         if (errDM) {
@@ -1078,7 +1105,35 @@ async function loadDanhSachKiemNhiemChoGV(maNhanSu) {
             return;
         }
 
-        // 2. Lấy dữ liệu kiêm nhiệm đã phân công của giáo viên này trong đợt hiện tại
+        // 3. Kiểm tra xem tuần hiện tại đã có dữ liệu chưa. 
+        let { data: checkCurrentDot } = await db.from('phan_cong_kiem_nhiem')
+            .select('id_kiem_nhiem')
+            .eq('ma_nhan_su', String(maNhanSu))
+            .eq('dot', tenDotHienTai);
+
+        if (!checkCurrentDot || checkCurrentDot.length === 0) {
+            // Nếu tuần hiện tại chưa có, lấy tất cả các đợt đã lưu của giáo viên này để tìm tuần LỚN NHẤT
+            let { data: allRecords } = await db.from('phan_cong_kiem_nhiem')
+                .select('dot')
+                .eq('ma_nhan_su', String(maNhanSu));
+
+            if (allRecords && allRecords.length > 0) {
+                // Trích xuất tất cả các con số tuần từ chuỗi "Tuần X"
+                let savedWeeks = allRecords.map(r => {
+                    let m = String(r.dot).match(/tuần\s*(\d+)/i);
+                    return m ? parseInt(m[1]) : 0;
+                }).filter(w => w > 0);
+
+                if (savedWeeks.length > 0) {
+                    // 🌟 LẤY TUẦN CÓ SỐ LỚN NHẤT ĐÃ TỪNG LƯU
+                    let maxSavedWeek = Math.max(...savedWeeks);
+                    tenDotHienTai = `Tuần ${maxSavedWeek}`;
+                    console.log(`💡 Tuần hiện tại (${currentWeekNum}) chưa có kiêm nhiệm, hệ thống tự động lấy tuần lớn nhất đã lưu: ${tenDotHienTai}`);
+                }
+            }
+        }
+
+        // 4. Lấy dữ liệu kiêm nhiệm đã phân công theo đợt đã xác định
         let { data: dsDaPhanCong, error: errPC } = await db.from('phan_cong_kiem_nhiem')
             .select('id_kiem_nhiem')
             .eq('ma_nhan_su', String(maNhanSu))
@@ -1095,7 +1150,7 @@ async function loadDanhSachKiemNhiemChoGV(maNhanSu) {
             return;
         }
 
-        // 3. Render danh sách ra giao diện checkbox
+        // 5. Render danh sách ra giao diện checkbox kèm trạng thái checked
         let html = '';
         dsDanhMuc.forEach(item => {
             let isChecked = idDaChonSet.has(String(item.id)) ? 'checked' : '';
@@ -1124,106 +1179,9 @@ async function loadDanhSachKiemNhiemChoGV(maNhanSu) {
     }
 }
        
-
-       
         //----------------Thồnn tin đợt
        
-  // 1. Hàm chính bắt sự kiện khi thay đổi đợt
-function capNhatThongTinDot(el) {
-    if (!el) el = document.getElementById('selectTenDot');
-    if (!el) return;
 
-    // Xử lý nếu người chọn "CUSTOM" (Nhập tên đợt khác)
-    if (el.value === "CUSTOM") {
-        let tenMoi = prompt("Nhập tên đợt phân công mới (VD: Đợt bổ sung, Đợt hè...):");
-        if (tenMoi && tenMoi.trim() !== "") {
-            let cleanName = tenMoi.trim();
-            // Kiểm tra xem đã tồn tại chưa, nếu chưa thì thêm vào trước option CUSTOM
-            let existing = Array.from(el.options).find(opt => opt.value === cleanName);
-            if (!existing) {
-                let opt = document.createElement('option');
-                opt.value = cleanName;
-                opt.text = cleanName;
-                el.insertBefore(opt, el.querySelector('option[value="CUSTOM"]'));
-            }
-            el.value = cleanName;
-        } else {
-            el.selectedIndex = 0; // Hủy thì quay về dòng đầu tiên
-        }
-    }
--
-    // Thiết lập tuần mặc định theo đợt được chọn
-    thietLapTuanMacDinh();
-}
-
-// 2. Thiết lập tuần tương ứng
-function thietLapTuanMacDinh() {
-    const selectDot = document.getElementById('selectTenDot');
-    if (!selectDot || selectDot.selectedIndex === -1) return;
-    
-    const selectedOption = selectDot.options[selectDot.selectedIndex];
-    let val = selectedOption.value;
-
-    let tuanBD = 1;
-    let tuanKT = 18;
-
-    // Nếu là đợt tự sinh (ví dụ: Đợt 2, Đợt 3...), tự động tính khoảng tuần cách đều
-    if (val.startsWith("Đợt ")) {
-        let soThuTu = parseInt(val.replace("Đợt ", "")) || 1;
-        tuanBD = ((soThuTu - 1) * 6 + 1);
-        tuanKT = (soThuTu * 6 > 18 ? 18 : soThuTu * 6);
-    }
-
-    // Gán giá trị vào ô input giao diện
-    let inputBD = document.getElementById('inputTuanBD');
-    let inputKT = document.getElementById('inputTuanKT');
-    if (inputBD) inputBD.value = tuanBD;
-    if (inputKT) inputKT.value = tuanKT;
-    
-    let lblTuan = document.getElementById('lblThoiGianTuan');
-    if (lblTuan) {
-        lblTuan.innerText = `Tuần ${tuanBD} → ${tuanKT}`;
-    }
-}
-
-// 3. Hàm nạp danh sách đợt (Gọi hàm này lúc khởi động trang)
-async function taiDanhSachDotPhanCong() {
-    const selectDot = document.getElementById('selectTenDot');
-    if (!selectDot) return;
-
-    if (!window.arrDotDaCo || window.arrDotDaCo.length === 0) {
-        if (typeof db !== 'undefined' && db) {
-            try {
-                let { data, error } = await db.from('phan_cong_giang_day').select('dot');
-                if (!error && data) {
-                    window.arrDotDaCo = [...new Set(data.map(item => item.dot).filter(Boolean))];
-                }
-            } catch (e) {
-                console.warn("Không tải được danh sách đợt từ DB:", e);
-            }
-        }
-    }
-
-    let danhSachDotDaCo = window.arrDotDaCo || []; 
-    let html = '';
-    
-    danhSachDotDaCo.forEach(dot => {
-        html += `<option value="${dot}">${dot}</option>`;
-    });
-
-    const dotTiepTheo = "Tuần " + (danhSachDotDaCo.length + 1);
-    html += `<option value="${dotTiepTheo}">✨ ${dotTiepTheo} (Tạo mới)</option>`;
-    html += `<option value="CUSTOM">➕ Nhập tên đợt khác...</option>`;
-
-    selectDot.innerHTML = html;
-    
-    // Kích hoạt chạy ngay cho đợt đầu tiên
-    thietLapTuanMacDinh();
-}
-// Đảm bảo gọi hàm này ngay sau khi tải xong dữ liệu hoặc khi khởi động trang
-window.addEventListener('DOMContentLoaded', async () => {
-    await taiDanhSachDotPhanCong();
-});
 //=============================== Khu vực kiêm nhiệm =========================
 // Biến lưu danh sách kiêm nhiệm từ Database
 window.danhSachKiemNhiemChung = [];
@@ -1416,9 +1374,11 @@ async function loadDanhSachTuan() {
     }
 }
 
-// Hàm kiểm tra trạng thái khóa của tuần dựa vào ID đang chọn trên dropdown
+
+// 1. Hàm kiểm tra trạng thái khóa hiện tại
 async function kiemTraTrangThaiKhoaHienTai() {
-    const selectTuanEl = document.getElementById('selectTuan');
+    // Hỗ trợ cả 2 id phổ biến để tránh lỗi không tìm thấy thẻ select
+    const selectTuanEl = document.getElementById('selectTuan') || document.getElementById('selectTuan');
     if (!selectTuanEl || !db) return;
     
     let tuanId = selectTuanEl.value;
@@ -1430,35 +1390,38 @@ async function kiemTraTrangThaiKhoaHienTai() {
         .single();
     
     if (!error && data) {
-        capNhatGiaoDienNutKhoa(data.khoa_pccm);
-    }
-}
-
-
-// Đưa hàm ra phạm vi toàn cục (global) để nút bấm onclick có thể gọi được
-// 1. Hàm kiểm tra trạng thái khóa hiện tại (Dành cho cột kiểu Text: "Khóa" / "Mở")
-async function kiemTraTrangThaiKhoaHienTai() {
-    const selectTuanEl = document.getElementById('selectTuan');
-    if (!selectTuanEl || !db) return;
-    
-    let tuanId = selectTuanEl.value;
-    if (!tuanId) return;
-
-    let { data, error } = await db.from('CauHinhTuan')
-        .select('khoa_pccm')
-        .eq('id', tuanId)
-        .single();
-    
-    if (!error && data) {
-        // Kiểm tra nếu giá trị trong CSDL là "Khóa" hoặc "Đã khóa"
         let val = String(data.khoa_pccm || "").trim().toLowerCase();
-        let isLocked = (val === 'khóa' || val === 'đã khóa' || val === 'true');
-        capNhatGiaoDienNutKhoa(isLocked);
+        // Kiểm tra linh hoạt các dạng chữ: khóa, khoá, đã khóa, true
+        let isLocked = (val.includes('khoá') || val.includes('khóa') || val === 'true');
+        if (typeof capNhatGiaoDienNutKhoa === 'function') {
+            capNhatGiaoDienNutKhoa(isLocked);
+        }
     }
 }
 
-// 2. Hàm quản lý Khóa / Mở khóa khi bấm nút bánh xe
 window.quanLyKhoaTuan = async function() {
+    // 🛡️ BƯỚC 1: KIỂM TRA QUYỀN HẠN (CHỈ ADMIN, BGH, KỸ THUẬT MỚI ĐƯỢC PHÉP KHÓA/MỞ)
+    const roleOS = (typeof currentRole !== 'undefined' ? currentRole : "").toLowerCase();
+    const chucVuDB = (typeof currentSession !== 'undefined' && currentSession.chucVuDb ? currentSession.chucVuDb : "").toLowerCase();
+    const isUserAdmin = (typeof isAdmin !== 'undefined' && isAdmin);
+
+    const laCapCao = isUserAdmin || 
+                     roleOS.includes("admin") || 
+                     roleOS.includes("bgh") || 
+                     roleOS.includes("hiệu trưởng") || 
+                     roleOS.includes("kỹ thuật") || 
+                     roleOS.includes("ky thuat") ||
+                     roleOS.includes("ky thuat tối cao") ||
+                     chucVuDB.includes("bgh") || 
+                     chucVuDB.includes("hiệu trưởng") || 
+                     chucVuDB.includes("kỹ thuật");
+
+    if (!laCapCao) {
+        alert("⛔ Bạn không có quyền khóa hoặc mở khóa tuần! Chức năng này chỉ dành cho Admin, Ban Giám hiệu hoặc Kỹ thuật hệ thống.");
+        return; // Chặn đứng ngay lập tức
+    }
+
+    // 2. Lấy thông tin tuần đang chọn trên giao diện
     const selectTuanEl = document.getElementById('selectTuan');
     if (!selectTuanEl) {
         alert("❌ Không tìm thấy thông tin tuần trên giao diện!");
@@ -1479,7 +1442,6 @@ window.quanLyKhoaTuan = async function() {
     }
 
     try {
-        // Đọc trạng thái hiện tại từ CSDL
         let { data, error } = await db.from('CauHinhTuan')
             .select('khoa_pccm')
             .eq('id', tuanId)
@@ -1492,9 +1454,8 @@ window.quanLyKhoaTuan = async function() {
         }
 
         let valCurrent = String(data?.khoa_pccm || "").trim().toLowerCase();
-        let đangKhoa = (valCurrent === 'khoá' || valCurrent === 'đã khóa' || valCurrent === 'true');
+        let đangKhoa = (valCurrent.includes('khoá') || valCurrent.includes('khóa') || valCurrent === 'true');
 
-        // Đảo ngược trạng thái: Đang khóa -> chuyển thành "Mở", Đang mở -> chuyển thành "Khóa"
         let trangThaiMoiText = đangKhoa ? "Mở" : "Khoá"; 
         let isLockingNext = !đangKhoa;
 
@@ -1506,7 +1467,6 @@ window.quanLyKhoaTuan = async function() {
             return;
         }
 
-        // Cập nhật giá trị dạng chữ ("Khóa" hoặc "Mở") vào bảng CauHinhTuan
         let { error: errUpdate } = await db.from('CauHinhTuan')
             .update({ khoa_pccm: trangThaiMoiText })
             .eq('id', tuanId);
@@ -1522,7 +1482,13 @@ window.quanLyKhoaTuan = async function() {
             alert(`🔓 Đã MỞ KHÓA phân công chuyên môn ${tenTuanText} thành công!`);
         }
 
-        capNhatGiaoDienNutKhoa(isLockingNext);
+        if (typeof capNhatGiaoDienNutKhoa === 'function') {
+            capNhatGiaoDienNutKhoa(isLockingNext);
+        }
+        
+        if (typeof loadBangBaoCao === 'function') {
+            loadBangBaoCao();
+        }
 
     } catch (e) {
         console.error("Lỗi ngoại lệ:", e);
@@ -1578,7 +1544,6 @@ function khoiTaoBoLocBaoCao() {
     }
 }
 
-// 2. Hàm tải và tổng hợp dữ liệu lên bảng báo cáo
 async function loadBangBaoCao() {
     const container = document.getElementById('containerBangBaoCao');
     if (!container) return;
@@ -1586,16 +1551,23 @@ async function loadBangBaoCao() {
     container.innerHTML = '<p class="text-slate-400 italic text-center py-6">Đang tổng hợp dữ liệu phân công và kiêm nhiệm...</p>';
 
     try {
-        // Lấy trực tiếp con số tuần từ ô selectTuanBaoCao
         let selectTuanEl = document.getElementById('selectTuanBaoCao');
-        let tuanDangThaoTac = selectTuanEl ? parseInt(selectTuanEl.value) || 1 : 1;
+        if (!selectTuanEl || !selectTuanEl.value) {
+            container.innerHTML = '<p class="text-slate-500 text-center py-6">Vui lòng chọn tuần cần xem báo cáo.</p>';
+            return;
+        }
+
+        // Lấy tên tuần (VD: "Tuần 5") và chuẩn hóa lại chỉ lấy đúng định dạng "Tuần X"
+        let tuanText = selectTuanEl.options[selectTuanEl.selectedIndex]?.text.trim() || "";
+        let matchT = tuanText.match(/tuần\s*(\d+)/i);
+        let soTuần = matchT ? parseInt(matchT[1]) : 1;
         
-        // Ép tên đợt đi theo đúng tuần đang chọn trên giao diện (Ví dụ: "Tuần 1", "Tuần 2",...)
-        let tenDotHienTai = "Tuần " + tuanDangThaoTac;
+        // 🌟 SỬA TẠI ĐÂY: Chỉ dùng định dạng "Tuần X" để khớp chính xác với cột dot trong CSDL
+        let tenDotHienTai = `Tuần ${soTuần}`; 
         
         let nhomChon = document.getElementById('selectNhomBaoCao')?.value || "ALL";
 
-        // Truy vấn song song giảng dạy và kiêm nhiệm theo đúng đợt
+        // Truy vấn song song giảng dạy và kiêm nhiệm theo đúng đợt chuẩn trong CSDL
         let [resGiangDay, resKiemNhiem] = await Promise.all([
             db.from('phan_cong_giang_day').select('*').eq('dot', tenDotHienTai),
             db.from('phan_cong_kiem_nhiem').select('*').eq('dot', tenDotHienTai)
@@ -1603,9 +1575,10 @@ async function loadBangBaoCao() {
 
         let dataGiangDay = resGiangDay.data || [];
         let dataKiemNhiem = resKiemNhiem.data || [];
-        // ... (các đoạn code phía dưới giữ nguyên)
-
-        console.log("Dữ liệu kiêm nhiệm tải về:", dataKiemNhiem); // Kiểm tra F12 xem có dữ liệu không
+        
+        
+        console.log("Dữ liệu giảng dạy tải về:", dataGiangDay);
+        console.log("Dữ liệu kiêm nhiệm tải về:", dataKiemNhiem);
 
         let filteredUsers = danhSachUsers;
         if (nhomChon !== "ALL") {
@@ -1707,6 +1680,7 @@ async function loadBangBaoCao() {
         container.innerHTML = '<p class="text-red-500 text-center py-6">Lỗi hệ thống khi tải dữ liệu báo cáo.</p>';
     }
 }
+
 function xuatFileExcel() {
     let tuanDangThaoTac = parseInt(document.getElementById('selectTuan')?.value) || 1;
     let selectDotElement = document.getElementById('selectTenDot');
@@ -1849,6 +1823,308 @@ async function khoiTaoBoLocTuan() {
             <option value="2" selected>Tuần 2</option>
         `;
         if (typeof loadBangBaoCao === 'function') loadBangBaoCao();
+    }
+}
+//In báo cáo 
+function inBangBaoCao() {
+    let selectTuanEl = document.getElementById('selectTuanBaoCao');
+    if (!selectTuanEl || !selectTuanEl.value) {
+        alert("⚠ Vui lòng chọn tuần cần in báo cáo!");
+        return;
+    }
+
+    let tuanText = selectTuanEl.options[selectTuanEl.selectedIndex]?.text.trim() || "";
+    let soTuần = parseInt(tuanText.replace(/\D/g, '')) || 1;
+    let hocKyStr = (soTuần <= 18) ? "HK1" : "HK2";
+    let tenDotHienTai = `${tuanText} (${hocKyStr})`;
+    let nhomChon = document.getElementById('selectNhomBaoCao')?.value || "ALL";
+
+    if (typeof danhSachUsers === 'undefined' || danhSachUsers.length === 0) {
+        alert("⚠ Chưa có dữ liệu giáo viên. Vui lòng đợi bảng báo cáo tải xong rồi bấm in lại!");
+        return;
+    }
+
+    let filteredUsers = danhSachUsers;
+    if (nhomChon !== "ALL") {
+        filteredUsers = danhSachUsers.filter(u => (u.nhom_cm || u.to_chuyen_mon) === nhomChon);
+    }
+
+    db.from('phan_cong_giang_day').select('*').eq('dot', tenDotHienTai).then(resGD => {
+        db.from('phan_cong_kiem_nhiem').select('*').eq('dot', tenDotHienTai).then(resKN => {
+            let dataGiangDay = resGD.data || [];
+            let dataKiemNhiem = resKN.data || [];
+
+            let printWindow = window.open('', '_blank', 'height=700,width=900');
+            if (!printWindow) {
+                alert("⚠ Trình duyệt đang chặn cửa sổ pop-up. Vui lòng cho phép trang web mở cửa sổ in!");
+                return;
+            }
+
+            let rowsHtml = "";
+            let stt = 1;
+
+            filteredUsers.forEach(gv => {
+                let maGV = String(gv.ma_nhan_su || gv.username || "").trim();
+                let tenGV = gv.ho_va_ten || gv.fullname || gv.ten || "Chưa cập nhật";
+                let toCM = gv.nhom_cm || gv.to_chuyen_mon || "Chung";
+
+                let gvGiangDay = dataGiangDay.filter(i => String(i.ma_nhan_su || "").trim() === maGV);
+                let tongTietDay = gvGiangDay.reduce((sum, i) => sum + (parseFloat(i.so_tiet) || 0), 0);
+                
+                let strGiangDay = "";
+                if (gvGiangDay.length > 0) {
+                    let nhomTheoMon = {};
+                    gvGiangDay.forEach(i => {
+                        let mon = i.mon_hoc || i.ten_mon || "Môn học";
+                        if (!nhomTheoMon[mon]) nhomTheoMon[mon] = [];
+                        nhomTheoMon[mon].push(`${i.lop} (${i.so_tiet}t)`);
+                    });
+                    let arrChiTiet = [];
+                    for (let mon in nhomTheoMon) {
+                        arrChiTiet.push(`<b>${mon}:</b> ${nhomTheoMon[mon].join(', ')}`);
+                    }
+                    strGiangDay = arrChiTiet.join('<br>');
+                } else {
+                    strGiangDay = '<i>Không có</i>';
+                }
+
+                let gvKiemNhiem = dataKiemNhiem.filter(i => {
+                    let itemMa = String(i.ma_nhan_su || i.username || "").trim();
+                    return itemMa === maGV;
+                });
+                let tongTietKN = gvKiemNhiem.reduce((sum, i) => sum + (parseFloat(i.so_tiet_quy_doi || i.so_tiet) || 0), 0);
+
+                let strKiemNhiem = "";
+                if (gvKiemNhiem.length > 0) {
+                    strKiemNhiem = gvKiemNhiem.map(i => {
+                        let tenKN = i.ten_kiem_nhiem || i.cong_viec || "Kiêm nhiệm";
+                        let tietKN = i.so_tiet_quy_doi || i.so_tiet || 0;
+                        return `• ${tenKN} (${tietKN}t)`;
+                    }).join('<br>');
+                } else {
+                    strKiemNhiem = '<i>Không có</i>';
+                }
+
+                let tongTatCaTiet = tongTietDay + tongTietKN;
+
+                rowsHtml += `
+                    <tr>
+                        <td style="text-align: center;">${stt++}</td>
+                        <td style="font-family: monospace;">${maGV}</td>
+                        <td style="font-weight: bold;">${tenGV}</td>
+                        <td>${toCM}</td>
+                        <td>${strGiangDay}</td>
+                        <td>${strKiemNhiem}</td>
+                        <td style="text-align: center; font-weight: bold;">${tongTatCaTiet}</td>
+                    </tr>
+                `;
+            });
+
+            let htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>Bảng Phân Công - ${tenDotHienTai}</title>
+                    <style>
+                        body {
+                            font-family: 'Times New Roman', Times, serif;
+                            color: #000;
+                            margin: 15px;
+                            font-size: 12pt;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 20px;
+                        }
+                        .header h2 {
+                            margin: 0;
+                            font-size: 15pt;
+                            text-transform: uppercase;
+                        }
+                        .header h3 {
+                            margin: 4px 0;
+                            font-size: 13pt;
+                            font-weight: normal;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 10px;
+                        }
+                        th, td {
+                            border: 1px solid #000;
+                            padding: 6px 8px;
+                            text-align: left;
+                            vertical-align: middle;
+                            font-size: 11pt;
+                        }
+                        th {
+                            background-color: #f2f2f2 !important;
+                            text-align: center;
+                            font-weight: bold;
+                        }
+                        .footer {
+                            margin-top: 30px;
+                            display: flex;
+                            justify-content: space-between;
+                        }
+                        .footer-box {
+                            text-align: center;
+                            width: 40%;
+                        }
+                        @media print {
+                            @page {
+                                size: A4 landscape;
+                                margin: 10mm;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h3>TRƯỜNG THPT</h3>
+                        <h2>BẢNG TỔNG HỢP PHÂN CÔNG GIẢNG DẠY VÀ KIÊM NHIỆM</h2>
+                        <h3>Áp dụng cho: ${tenDotHienTai} | Nhóm chuyên môn: ${nhomChon}</h3>
+                    </div>
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">STT</th>
+                                <th style="width: 90px;">Mã GV</th>
+                                <th style="width: 150px;">Họ và tên</th>
+                                <th style="width: 110px;">Nhóm CM</th>
+                                <th>Chi tiết Giảng dạy</th>
+                                <th style="width: 180px;">Công việc Kiêm nhiệm</th>
+                                <th style="width: 70px;">Tổng tiết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+
+                    <div class="footer">
+                        <div class="footer-box">
+                            <p><b>DUYỆT CỦA BAN GIÁM HIỆU</b></p>
+                            <br><br><br>
+                        </div>
+                        <div class="footer-box">
+                            <p><i>........., Ngày ...... Tháng ...... Năm 20...</i></p>
+                            <p><b>NGƯỜI LẬP BÁO CÁO</b></p>
+                            <br><br><br>
+                        </div>
+                    </div>
+
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `;
+
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+        });
+    });
+}
+//Xuất mẫu TKB ra excel
+
+ async function xuatFileExcelChuanTKB() {
+
+    let selectTuanEl = document.getElementById('selectTuanBaoCao');
+    if (!selectTuanEl || !selectTuanEl.value) {
+        alert("⚠ Vui lòng chọn tuần cần xuất báo cáo!");
+        return;
+    }
+
+    let tuanText = selectTuanEl.options[selectTuanEl.selectedIndex]?.text.trim() || "";
+    let soTuần = parseInt(tuanText.replace(/\D/g, '')) || 1;
+    let hocKyStr = (soTuần <= 18) ? "HK1" : "HK2";
+    let tenDotHienTai = `${tuanText} (${hocKyStr})`;
+
+    alert("Đang tổng hợp dữ liệu xuất file đúng chuẩn mẫu TKB...");
+
+    try {
+        let { data: dataGiangDay, error } = await db.from('phan_cong_giang_day')
+            .select('*')
+            .eq('dot', tenDotHienTai);
+
+        if (error) {
+            alert("❌ Lỗi khi tải dữ liệu: " + error.message);
+            return;
+        }
+
+        if (!dataGiangDay || dataGiangDay.length === 0) {
+            alert("⚠ Không tìm thấy dữ liệu phân công giảng dạy trong đợt này!");
+            return;
+        }
+
+        let mapGvTenTKB = {};
+        if (typeof danhSachUsers !== 'undefined' && danhSachUsers.length > 0) {
+            danhSachUsers.forEach(u => {
+                let ma = String(u.ma_nhan_su || u.username || "").trim();
+                let tenTKB = u.ten_tkb || u.ho_va_ten || u.fullname || u.ten || ma;
+                if (ma) {
+                    mapGvTenTKB[ma] = tenTKB;
+                }
+            });
+        }
+
+        // Định nghĩa tiêu đề các cột chuẩn xác theo ảnh mẫu bạn gửi
+        let excelData = [
+            ["TT", "Lớp học", "Môn học", "Giáo viên", "Phòng học", "Số tiết", "Giới hạn"]
+        ];
+
+        let stt = 1;
+        dataGiangDay.forEach(item => {
+            let lop = item.lop || "";
+            let monHoc = item.mon_hoc || item.ten_mon || "";
+            let maNS = String(item.ma_nhan_su || "").trim();
+            let tenGvTKB = mapGvTenTKB[maNS] || ""; 
+            let phongHoc = item.phong_hoc || ""; 
+            let soTiet = parseFloat(item.so_tiet) || 2;
+            let gioiHan = item.gioi_han || 1; 
+
+
+            // Thứ tự các phần tử mảng khớp hoàn toàn 7 cột từ A đến G
+            excelData.push([
+                stt++,       // Cột A: TT
+                lop,         // Cột B: Lớp học
+                monHoc,      // Cột C: Môn
+                tenGvTKB,    // Cột D: Tên TKB
+                phongHoc,    // Cột E: Phòng học
+                soTiet,      // Cột F: Số tiết
+                gioiHan      // Cột G: Giới hạn
+            ]);
+        });
+
+        let worksheet = XLSX.utils.aoa_to_sheet(excelData);
+        
+        worksheet['!cols'] = [
+            { wch: 6 },  // A: TT
+            { wch: 12 }, // B: Lớp học
+            { wch: 15 }, // C: Môn
+            { wch: 20 }, // D: Tên TKB
+            { wch: 12 }, // E: Phòng học
+            { wch: 10 }, // F: Số tiết
+            { wch: 10 }  // G: Giới hạn
+        ];
+
+        let workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "PCCM_TKB");
+
+        let fileName = `Mau_PCCM_TKB_${tuanText.replace(/\s+/g, '_')}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+
+        alert("✅ Xuất file Excel mẫu TKB thành công!");
+
+    } catch (e) {
+        console.error("Lỗi xuất file:", e);
+        alert("❌ Lỗi hệ thống khi xuất file: " + e.message);
     }
 }
 
