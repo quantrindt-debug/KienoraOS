@@ -36,7 +36,7 @@
 
     <div onclick="launchApp('tuyensinh10')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-rose-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
-        <i class="fa-solid fa-user-plus"></i>
+        <i class="fa-solid fa-user-graduate"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
         Tuyển sinh Lớp 10
@@ -54,7 +54,7 @@
 
     <div onclick="launchApp('phancong')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-amber-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
-        <i class="fa-solid fa-sitemap"></i>
+        <i class="fa-solid fa-users-gear"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
         Phân công chuyên môn
@@ -63,7 +63,7 @@
 
     <div onclick="launchApp('sdb')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-cyan-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
-        <i class="fa-solid fa-magnifying-glass"></i>
+        <i class="fa-solid fa-book-bookmark"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
         Kế hoạch - sổ đầu bài
@@ -81,7 +81,7 @@
 
     <div onclick="launchApp('SoChuNhiem')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-cyan-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
-        <i class="fa-solid fa-book-open"></i>
+        <i class="fa-solid fa-chalkboard-user"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
         Sổ chủ nhiệm
@@ -90,7 +90,7 @@
 
     <div onclick="launchApp('ThiDuaLop')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-cyan-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
-        <i class="fa-solid fa-award"></i>
+        <i class="fa-solid fa-trophy"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
         Thi đua lớp
@@ -99,7 +99,7 @@
 
     <div onclick="launchApp('QuanLyHoSoHocSinh')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-violet-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
-        <i class="fa-solid fa-folder-open"></i>
+        <i class="fa-solid fa-folder-tree"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
         Quản Lý Hồ Sơ Học Sinh
@@ -108,7 +108,7 @@
 
     <div onclick="launchApp('ThiDua')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-violet-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
-        <i class="fa-solid fa-shield-halved"></i>
+        <i class="fa-solid fa-ranking-star"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
         test thi đua
@@ -121,7 +121,7 @@
   <div id="desktop-windows-container"></div>
 
   <!-- ================= 3. START MENU ================= -->
-  <div id="startMenu" class="hidden absolute bottom-12 left-2 w-80 md:w-96 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 z-[9000] transition-all duration-200">
+  <div id="startMenu" class="hidden absolute bottom-12 left-2 w-72 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 z-[9000] transition-all duration-200">
     <div class="bg-gradient-to-r from-sky-700 to-blue-900 p-4 text-white flex items-center gap-3 rounded-t-2xl">
       <div class="w-12 h-12 bg-white/10 border border-white/20 text-amber-300 rounded-2xl flex items-center justify-center font-bold text-xl shadow-inner backdrop-blur-sm">
         <i class="fa-solid fa-user-tie"></i>
@@ -137,103 +137,56 @@
     </div>
 
     <div class="p-2 max-h-80 overflow-y-auto custom-scrollbar space-y-1">
+      
       <!-- NHÓM 1 -->
-      <div class="relative group">
-        <div class="flex items-center justify-between px-3 py-2.5 hover:bg-sky-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
+      <div class="relative">
+        <div id="item-submenu-1" onclick="toggleSubMenu('submenu-1', event)" class="flex items-center justify-between px-3 py-2.5 hover:bg-sky-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
           <div class="flex items-center gap-2.5">
             <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center text-xs">
               <i class="fa-solid fa-user-plus"></i>
             </div>
             <span>Quản lý Tuyển sinh</span>
           </div>
-          <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:translate-x-0.5 transition-transform"></i>
-        </div>
-        <div class="hidden group-hover:block absolute left-full top-0 ml-1 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 p-1.5 space-y-1 z-[9010]">
-          <button onclick="launchApp('tuyensinh10')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
-            <i class="fa-solid fa-user-plus text-rose-500 w-4 text-center"></i>
-            <span>Tuyển sinh Lớp 10 & Nguyện vọng</span>
-          </button>
-          <button onclick="launchApp('quantridaucap')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
-            <i class="fa-solid fa-sliders text-indigo-500 w-4 text-center"></i>
-            <span>Quản trị đầu cấp</span>
-          </button>
+          <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
         </div>
       </div>
 
       <!-- NHÓM 2 -->
-      <div class="relative group">
-        <div class="flex items-center justify-between px-3 py-2.5 hover:bg-violet-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
+      <div class="relative">
+        <div id="item-submenu-2" onclick="toggleSubMenu('submenu-2', event)" class="flex items-center justify-between px-3 py-2.5 hover:bg-violet-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
           <div class="flex items-center gap-2.5">
             <div class="w-7 h-7 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center text-xs">
               <i class="fa-solid fa-school"></i>
             </div>
             <span>Học sinh & Lớp học</span>
           </div>
-          <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:translate-x-0.5 transition-transform"></i>
-        </div>
-        <div class="hidden group-hover:block absolute left-full top-0 ml-1 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 p-1.5 space-y-1 z-[9010]">
-          <button onclick="launchApp('QuanLyHoSoHocSinh')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
-            <i class="fa-solid fa-folder-open text-violet-500 w-4 text-center"></i>
-            <span>Quản lý Hồ sơ học sinh</span>
-          </button>
-          <button onclick="launchApp('phancong')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
-            <i class="fa-solid fa-sitemap text-amber-500 w-4 text-center"></i>
-            <span>Xếp lớp vào 10</span>
-          </button>
-          <button onclick="launchApp('SoChuNhiem')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
-            <i class="fa-solid fa-book-open text-cyan-500 w-4 text-center"></i>
-            <span>Sổ Chủ Nhiệm</span>
-          </button>
-          <button onclick="launchApp('ThiDuaLop')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
-            <i class="fa-solid fa-award text-emerald-500 w-4 text-center"></i>
-            <span>Quản lý & Theo dõi thi đua lớp</span>
-          </button>
-          <button onclick="launchApp('ThiDua')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
-            <i class="fa-solid fa-shield-halved text-violet-500 w-4 text-center"></i>
-            <span>Test thi đua</span>
-          </button>
+          <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
         </div>
       </div>
 
       <!-- NHÓM 3 -->
-      <div class="relative group">
-        <div class="flex items-center justify-between px-3 py-2.5 hover:bg-emerald-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
+      <div class="relative">
+        <div id="item-submenu-3" onclick="toggleSubMenu('submenu-3', event)" class="flex items-center justify-between px-3 py-2.5 hover:bg-emerald-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
           <div class="flex items-center gap-2.5">
             <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
               <i class="fa-solid fa-gears"></i>
             </div>
             <span>Kế hoạch công việc</span>
           </div>
-          <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:translate-x-0.5 transition-transform"></i>
-        </div>
-        <div class="hidden group-hover:block absolute left-full top-0 ml-1 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 p-1.5 space-y-1 z-[9010]">
-          <button onclick="openDbLink()" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
-            <i class="fa-solid fa-database text-emerald-600 w-4 text-center"></i>
-            <span>Cơ sở dữ liệu trường</span>
-          </button>
-          <button onclick="launchApp('KeHoachChamCong')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
-            <i class="fa-solid fa-calendar-check text-blue-500 w-4 text-center"></i>
-            <span>Kế hoạch chấm công</span>
-          </button>
+          <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
         </div>
       </div>
 
       <!-- NHÓM 4 -->
-      <div class="relative group">
-        <div class="flex items-center justify-between px-3 py-2.5 hover:bg-emerald-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
+      <div class="relative">
+        <div id="item-submenu-4" onclick="toggleSubMenu('submenu-4', event)" class="flex items-center justify-between px-3 py-2.5 hover:bg-teal-50 rounded-xl transition cursor-pointer text-xs font-bold text-slate-700">
           <div class="flex items-center gap-2.5">
             <div class="w-7 h-7 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center text-xs">
               <i class="fa-solid fa-shield-halved"></i>
             </div>
             <span>Cam kết chất lượng GD</span>
           </div>
-          <i class="fa-solid fa-chevron-right text-[10px] text-slate-400 group-hover:translate-x-0.5 transition-transform"></i>
-        </div>
-        <div class="hidden group-hover:block absolute left-full top-0 ml-1 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-xl border border-slate-200 p-1.5 space-y-1 z-[9010]">
-          <button onclick="launchApp('ckdbclgd')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-slate-100 rounded-xl transition text-left text-xs text-slate-700 font-medium">
-            <i class="fa-solid fa-file-contract text-blue-500 w-4 text-center"></i>
-            <span>Cam kết đảm bảo chất lượng GD</span>
-          </button>
+          <i class="fa-solid fa-chevron-right text-[10px] text-slate-400"></i>
         </div>
       </div>
 
@@ -244,6 +197,71 @@
         <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất hệ thống
       </button>
     </div>
+  </div>
+
+  <!-- ================= FLYOUT SUBMENUS (ĐÃ ĐƯA RA NGOÀI KHUNG CUỘN ĐỂ THOÁT KHỎI KHUNG CHA) ================= -->
+  <!-- Menu con 1 -->
+  <div id="submenu-1" class="hidden fixed w-64 p-1.5 space-y-1 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 z-[9999]">
+    <div class="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quản lý Tuyển sinh</div>
+    <button onclick="launchApp('tuyensinh10')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-sky-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-user-graduate text-rose-500 w-4 text-center"></i>
+      <span>Tuyển sinh Lớp 10 & Nguyện vọng</span>
+    </button>
+    <button onclick="launchApp('quantridaucap')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-sky-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-sliders text-indigo-500 w-4 text-center"></i>
+      <span>Quản trị đầu cấp</span>
+    </button>
+  </div>
+
+  <!-- Menu con 2 -->
+  <div id="submenu-2" class="hidden fixed w-64 p-1.5 space-y-1 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 z-[9999]">
+    <div class="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Học sinh & Lớp học</div>
+    <button onclick="launchApp('QuanLyHoSoHocSinh')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-violet-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-folder-tree text-violet-500 w-4 text-center"></i>
+      <span>Quản lý Hồ sơ học sinh</span>
+    </button>
+    <button onclick="launchApp('phancong')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-violet-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-users-gear text-amber-500 w-4 text-center"></i>
+      <span>Xếp lớp vào 10 & Phân công</span>
+    </button>
+    <button onclick="launchApp('SoChuNhiem')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-violet-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-chalkboard-user text-cyan-500 w-4 text-center"></i>
+      <span>Sổ Chủ Nhiệm</span>
+    </button>
+    <button onclick="launchApp('ThiDuaLop')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-violet-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-trophy text-emerald-500 w-4 text-center"></i>
+      <span>Quản lý & Theo dõi thi đua lớp</span>
+    </button>
+    <button onclick="launchApp('ThiDua')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-violet-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-ranking-star text-violet-500 w-4 text-center"></i>
+      <span>Test thi đua</span>
+    </button>
+  </div>
+
+  <!-- Menu con 3 -->
+  <div id="submenu-3" class="hidden fixed w-64 p-1.5 space-y-1 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 z-[9999]">
+    <div class="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Kế hoạch công việc</div>
+    <button onclick="openDbLink()" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-emerald-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-database text-emerald-600 w-4 text-center"></i>
+      <span>Cơ sở dữ liệu trường</span>
+    </button>
+    <button onclick="launchApp('KeHoachChamCong')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-emerald-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-calendar-check text-blue-500 w-4 text-center"></i>
+      <span>Kế hoạch chấm công</span>
+    </button>
+    <button onclick="launchApp('sdb')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-emerald-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-book-bookmark text-cyan-500 w-4 text-center"></i>
+      <span>Kế hoạch dạy học - sổ đầu bài</span>
+    </button>
+  </div>
+
+  <!-- Menu con 4 -->
+  <div id="submenu-4" class="hidden fixed w-64 p-1.5 space-y-1 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 z-[9999]">
+    <div class="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Chất lượng GD</div>
+    <button onclick="launchApp('ckdbclgd')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-teal-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-file-signature text-blue-500 w-4 text-center"></i>
+      <span>Cam kết đảm bảo chất lượng GD</span>
+    </button>
   </div>
 
   <!-- ================= 4. TASKBAR ================= -->
@@ -273,16 +291,16 @@
     }
 
     const APP_REGISTRY = {
-      'tuyensinh10': { title: 'Tuyển sinh Lớp 10', icon: 'fa-solid fa-user-plus text-rose-400' },
+      'tuyensinh10': { title: 'Tuyển sinh Lớp 10', icon: 'fa-solid fa-user-graduate text-rose-400' },
       'quantridaucap': { title: 'Quản trị đầu cấp', icon: 'fa-solid fa-sliders text-indigo-400' },
-      'phancong': { title: 'Phân công', icon: 'fa-solid fa-sitemap text-amber-400' },
-      'QuanLyHoSoHocSinh': { title: 'Quản lý Hồ sơ học sinh', icon: 'fa-solid fa-folder-open text-violet-400' },
+      'phancong': { title: 'Phân công', icon: 'fa-solid fa-users-gear text-amber-400' },
+      'QuanLyHoSoHocSinh': { title: 'Quản lý Hồ sơ học sinh', icon: 'fa-solid fa-folder-tree text-violet-400' },
       'sdb': { title: 'Kế hoạch dạy học - sổ đầu bài', icon: 'fa-solid fa-book-bookmark text-cyan-400' },
-      'KeHoachChamCong': { title: 'Kế hoạch chấm công', icon: 'fa-solid fa-book-open text-cyan-400'  },
-      'SoChuNhiem': { title: 'Sổ chủ nhiệm', icon: 'fa-solid fa-book-open text-cyan-400' },
-      'ThiDuaLop': { title: 'Theo dõi thi đua lớp', icon: 'fa-solid fa-award text-emerald-400' },
-      'ThiDua': { title: 'Test thi đua', icon: 'fa-solid fa-shield-halved text-violet-400' },
-      'ckdbclgd': { title: 'Cam kết đảm bảo chất lượng GD', icon: 'fa-solid fa-file-contract text-blue-400' }
+      'KeHoachChamCong': { title: 'Kế hoạch chấm công', icon: 'fa-solid fa-calendar-check text-blue-400' },
+      'SoChuNhiem': { title: 'Sổ chủ nhiệm', icon: 'fa-solid fa-chalkboard-user text-cyan-400' },
+      'ThiDuaLop': { title: 'Theo dõi thi đua lớp', icon: 'fa-solid fa-trophy text-emerald-400' },
+      'ThiDua': { title: 'Test thi đua', icon: 'fa-solid fa-ranking-star text-violet-400' },
+      'ckdbclgd': { title: 'Cam kết đảm bảo chất lượng GD', icon: 'fa-solid fa-file-signature text-blue-400' }
     };
 
     let currentSession = { maTruong: '', maNhanSu: '', user: null, school: null };
@@ -359,6 +377,9 @@
         return;
       }
 
+      // Đóng Start Menu và toàn bộ menu con
+      hideAllMenus();
+
       const appMeta = APP_REGISTRY[appId] || { title: appId, icon: 'fa-solid fa-window-maximize text-cyan-600' };
 
       let existingWin = document.getElementById(`win-${appId}`);
@@ -369,9 +390,6 @@
         bringToFront(appId);
         return;
       }
-
-      const menu = document.getElementById('startMenu');
-      if (menu) menu.classList.add('hidden');
 
       openWindowsCount++;
       const offset = (openWindowsCount % 5) * 25;
@@ -415,7 +433,7 @@
       const localPageFiles = {
         'tuyensinh10': "tuyensinh10.html",
         'quantridaucap': "quantridaucap.html",
-        'phancong': "phancong.html",
+        'phancong': "phan-cong.html",
         'QuanLyHoSoHocSinh': "QuanLyHoSoHocSinh.html",
         'sdb': "sdbv2.html",
         'KeHoachChamCong': "KeHoachChamCong.html",
@@ -490,7 +508,8 @@
         tb.className = "flex items-center gap-2 px-3 py-1 bg-slate-900/50 border-b-2 border-transparent text-slate-400 rounded-t text-xs font-medium transition hover:bg-slate-800 hover:text-slate-200 shrink-0";
       }
     }
-function toggleMaximizeApp(appId) {
+
+    function toggleMaximizeApp(appId) {
       const win = document.getElementById(`win-${appId}`);
       const maxIcon = document.getElementById(`max-icon-${appId}`);
       if (!win) return;
@@ -548,18 +567,68 @@ function toggleMaximizeApp(appId) {
     function toggleStartMenu(event) {
       if (event) event.stopPropagation();
       const menu = document.getElementById('startMenu');
-      if (menu) menu.classList.toggle('hidden');
+      if (menu) {
+        menu.classList.toggle('hidden');
+        if (menu.classList.contains('hidden')) {
+          hideAllMenus();
+        }
+      }
     }
 
-    // ĐÃ SỬA: Kiểm tra an toàn hơn để tránh xung đột sự kiện click ẩn/hiện Start Menu
+    function hideAllMenus() {
+      const menu = document.getElementById('startMenu');
+      if (menu) menu.classList.add('hidden');
+      for (let i = 1; i <= 4; i++) {
+        let sub = document.getElementById(`submenu-${i}`);
+        if (sub) sub.classList.add('hidden');
+      }
+    }
+
+    // Hàm định vị chính xác và bật menu con nhảy ra ngoài khung cha
+    function toggleSubMenu(submenuId, event) {
+      if (event) event.stopPropagation();
+
+      const sub = document.getElementById(submenuId);
+      const parentItem = document.getElementById(`item-${submenuId}`);
+
+      // Ẩn các menu con khác trước
+      for (let i = 1; i <= 4; i++) {
+        let otherSub = document.getElementById(`submenu-${i}`);
+        if (otherSub && `submenu-${i}` !== submenuId) {
+          otherSub.classList.add('hidden');
+        }
+      }
+
+      if (sub && parentItem) {
+        if (sub.classList.contains('hidden')) {
+          const rect = parentItem.getBoundingClientRect();
+          // Đặt vị trí xuất hiện ngang với dòng được bấm và ngay bên cạnh khung Start Menu
+          sub.style.top = `${rect.top}px`;
+          sub.style.left = `${rect.right + 6}px`;
+          sub.classList.remove('hidden');
+        } else {
+          sub.classList.add('hidden');
+        }
+      }
+    }
+
     function closeStartMenuOnOutside(event) {
       const menu = document.getElementById('startMenu');
       const taskbarBtn = event.target.closest('button[onclick*="toggleStartMenu"]');
       
+      // Kiểm tra xem click có nằm trong các menu con hay không
+      let clickedInsideSub = false;
+      for (let i = 1; i <= 4; i++) {
+        let sub = document.getElementById(`submenu-${i}`);
+        if (sub && sub.contains(event.target)) {
+          clickedInsideSub = true;
+          break;
+        }
+      }
+
       if (menu && !menu.classList.contains('hidden')) {
-        // Nếu click ra ngoài menu và không phải click vào nút bật tắt Start Menu trên taskbar
-        if (!menu.contains(event.target) && !taskbarBtn) {
-          menu.classList.add('hidden');
+        if (!menu.contains(event.target) && !taskbarBtn && !clickedInsideSub) {
+          hideAllMenus();
         }
       }
     }
