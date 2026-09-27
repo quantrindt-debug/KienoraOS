@@ -413,7 +413,7 @@
                         danhSachUsers.forEach(u => {
                             let ten = u.ho_va_ten || u.fullname || u.ten || u.ma_nhan_su;
                             let cv = u.chuc_vu || u.quyen || 'GV';
-                            sel.innerHTML += `<option value="${u.ma_nhan_su || u.username}">${ten} (${cv} - Tổ ${u.nhom_cm || u.to_chuyen_mon || 'Chung'})</option>`;
+                            sel.innerHTML += `<option value="${u.ma_nhan_su || u.username}">${ten} (${cv} - Nhóm CM ${u.nhom_cm || u.to_chuyen_mon || 'Chung'})</option>`;
                         });
                         targetUser = danhSachUsers[0];
                     }
@@ -487,21 +487,21 @@
             let dsNhomUnique = [...new Set(danhSachUsers.map(u => u.nhom_cm || u.to_chuyen_mon).filter(Boolean))];
 
             if (laBGHHoacAdmin) {
-                selectNhom.innerHTML = `<option value="ALL">🌐 Toàn trường (Tất cả các tổ chuyên môn)</option>`;
+                selectNhom.innerHTML = `<option value="ALL">🌐 Toàn trường (Tất cả các nhóm chuyên môn)</option>`;
                 dsNhomUnique.forEach(nhom => {
-                    selectNhom.innerHTML += `<option value="${nhom}">Nhóm ${nhom}</option>`;
+                    selectNhom.innerHTML += `<option value="${nhom}">Nhóm CM ${nhom}</option>`;
                 });
                 selectNhom.value = "ALL";
                 selectNhom.disabled = false;
                 document.getElementById('lblSubTitle').innerText = `Chế độ quản lý toàn trường (Admin/BGH)`;
             } else if (laQuanLyChuyenMon && currentSession.nhomCmDb) {
-                selectNhom.innerHTML = `<option value="${currentSession.nhomCmDb}">Tổ ${currentSession.nhomCmDb} [${currentSession.chucVuDb}]</option>`;
+                selectNhom.innerHTML = `<option value="${currentSession.nhomCmDb}">Nhóm ${currentSession.nhomCmDb} [${currentSession.chucVuDb}]</option>`;
                 selectNhom.value = currentSession.nhomCmDb;
                 selectNhom.disabled = true;
-                document.getElementById('lblSubTitle').innerText = `Quản lý phân công chuyên môn cho Tổ ${currentSession.nhomCmDb}`;
+                document.getElementById('lblSubTitle').innerText = `Quản lý phân công chuyên môn cho nhóm ${currentSession.nhomCmDb}`;
             } else {
                 dsNhomUnique.forEach(nhom => {
-                    selectNhom.innerHTML += `<option value="${nhom}">Tổ ${nhom}</option>`;
+                    selectNhom.innerHTML += `<option value="${nhom}">Nhóm CM ${nhom}</option>`;
                 });
                 if (currentSession.nhomCmDb) selectNhom.value = currentSession.nhomCmDb;
                 selectNhom.disabled = true;
@@ -618,7 +618,7 @@
                 <div class="p-2.5 hover:bg-blue-50 cursor-pointer flex items-center justify-between gv-item transition-all border-l-2 border-transparent" onclick="chonGiaoVien(this, '${gv.ma_nhan_su || gv.id}', '${tenHienThi}', '${nhomVal}')">
                     <div>
                         <div class="font-bold text-slate-800">${tenHienThi} <span class="text-[10px] text-blue-600 font-normal">(${chucVuHienThi})</span></div>
-                        <div class="text-[10px] text-slate-400">${gv.ma_nhan_su || ''} • Tổ ${nhomVal}</div>
+                        <div class="text-[10px] text-slate-400">${gv.ma_nhan_su || ''} • Nhóm CM ${nhomVal}</div>
                     </div>
                     <span class="text-[10px] bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded font-medium">Chọn</span>
                 </div>`;
@@ -1548,7 +1548,7 @@ function khoiTaoBoLocBaoCao() {
     
     let html = `<option value="ALL">🌐 Tất cả các tổ chuyên môn</option>`;
     dsNhomUnique.forEach(nhom => {
-        html += `<option value="${nhom}">Tổ ${nhom}</option>`;
+        html += `<option value="${nhom}">Nhóm ${nhom}</option>`;
     });
     selectNhomBC.innerHTML = html;
 
@@ -1606,7 +1606,7 @@ async function loadBangBaoCao() {
                         <th class="border border-slate-300 p-2 text-center w-10">STT</th>
                         <th class="border border-slate-300 p-2 text-left w-24">Mã GV</th>
                         <th class="border border-slate-300 p-2 text-left w-40">Họ và tên</th>
-                        <th class="border border-slate-300 p-2 text-left w-28">Tổ CM</th>
+                        <th class="border border-slate-300 p-2 text-left w-28">Nhóm CM</th>
                         <th class="border border-slate-300 p-2 text-left">Chi tiết Giảng dạy</th>
                         <th class="border border-slate-300 p-2 text-left w-48">Công việc Kiêm nhiệm</th>
                         <th class="border border-slate-300 p-2 text-center w-20">Tổng tiết</th>
@@ -1724,7 +1724,7 @@ function xuatFileExcel() {
                 "STT": cols[0].innerText.trim(),
                 "Mã GV": cols[1].innerText.trim(),
                 "Họ và tên": cols[2].innerText.trim(),
-                "Tổ CM": cols[3].innerText.trim(),
+                "Nhóm CM": cols[3].innerText.trim(),
                 "Chi tiết Giảng dạy": cols[4].innerText.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, ""),
                 "Công việc Kiêm nhiệm": cols[5].innerText.replace(/<br>/g, '\n').replace(/<\/?[^>]+(>|$)/g, ""),
                 "Tổng số tiết": cols[6].innerText.trim()
