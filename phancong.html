@@ -209,17 +209,30 @@
                 <div class="flex items-center gap-3">
                     <h3 class="font-bold text-slate-700 text-base">📊 Bảng Tổng Hợp Phân Công Chuyên Môn & Kiêm Nhiệm</h3>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4 bg-white p-3 rounded-lg shadow-sm border border-slate-200">
+                <div class="flex items-center gap-3">
+                    <!-- Ô chọn tuần để xem linh hoạt -->
+                    <div class="flex items-center gap-1.5">
+                        <label class="text-xs font-semibold text-slate-600">Chọn tuần xem:</label>
+                        <select id="selectTuanBaoCao" onchange="loadBangBaoCao()" class="px-3 py-1.5 border border-slate-300 rounded-md text-xs font-semibold text-blue-700 bg-blue-50/50 shadow-xs">
+                            <!-- JavaScript sẽ tự động nạp danh sách tuần vào đây -->
+                        </select>
+                    </div>
+
                     <!-- Bộ lọc theo tổ chuyên môn -->
-                    <select id="selectNhomBaoCao" onchange="loadBangBaoCao()" class="px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 bg-white shadow-xs">
-                        <option value="ALL">🌐 Tất cả các tổ chuyên môn</option>
-                    </select>
-                    
-                    <!-- Nút xuất Excel -->
-                    <button onclick="xuatFileExcel()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all">
-                        📊 Xuất File Excel
-                    </button>
+                    <div class="flex items-center gap-1.5">
+                        <label class="text-xs font-semibold text-slate-600">Nhóm CM:</label>
+                        <select id="selectNhomBaoCao" onchange="loadBangBaoCao()" class="px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium text-slate-700 bg-white shadow-xs">
+                            <option value="ALL">🌐 Tất cả các tổ</option>
+                        </select>
+                    </div>
                 </div>
+
+                <!-- Nút xuất Excel -->
+                <button onclick="xuatFileExcel()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all">
+                    📊 Xuất File Excel
+                </button>
+            
             </div>
 
             <!-- Khu vực hiển thị bảng dữ liệu báo cáo -->
@@ -553,7 +566,9 @@
 
         // Gọi hàm tải dữ liệu cho bảng báo cáo tổng hợp
         if (typeof loadBangBaoCao === 'function') {
+            khoiTaoBoLocTuan()
             loadBangBaoCao();
+
         }
     }
 }
@@ -656,7 +671,7 @@ async function chonGiaoVien(element, gvId, gvName, nhomVal) {
     });
 
     // 2. TỰ ĐỘNG TRUY VẤN DỮ LIỆU ĐÃ LƯU TRƯỚC ĐÓ CỦA GIÁO VIÊN NÀY TỪ SUPABASE
-    const selectDotElement = document.getElementById('selectTenDot');
+    const selectDotElement = document.getElementById('selectTuanBaoCao');
     const tenDotHienTai = selectDotElement ? selectDotElement.value.trim() : "";
 
     if (db && gvId) {
@@ -1571,13 +1586,16 @@ async function loadBangBaoCao() {
     container.innerHTML = '<p class="text-slate-400 italic text-center py-6">Đang tổng hợp dữ liệu phân công và kiêm nhiệm...</p>';
 
     try {
-        let tuanDangThaoTac = parseInt(document.getElementById('selectTuan')?.value) || 1;
-        const selectDotElement = document.getElementById('selectTenDot');
-        let tenDotHienTai = selectDotElement ? selectDotElement.value.trim() : "Tuần " + tuanDangThaoTac;
+        // Lấy trực tiếp con số tuần từ ô selectTuanBaoCao
+        let selectTuanEl = document.getElementById('selectTuanBaoCao');
+        let tuanDangThaoTac = selectTuanEl ? parseInt(selectTuanEl.value) || 1 : 1;
+        
+        // Ép tên đợt đi theo đúng tuần đang chọn trên giao diện (Ví dụ: "Tuần 1", "Tuần 2",...)
+        let tenDotHienTai = "Tuần " + tuanDangThaoTac;
         
         let nhomChon = document.getElementById('selectNhomBaoCao')?.value || "ALL";
 
-        // Truy vấn song song giảng dạy và kiêm nhiệm trong đợt
+        // Truy vấn song song giảng dạy và kiêm nhiệm theo đúng đợt
         let [resGiangDay, resKiemNhiem] = await Promise.all([
             db.from('phan_cong_giang_day').select('*').eq('dot', tenDotHienTai),
             db.from('phan_cong_kiem_nhiem').select('*').eq('dot', tenDotHienTai)
@@ -1585,6 +1603,7 @@ async function loadBangBaoCao() {
 
         let dataGiangDay = resGiangDay.data || [];
         let dataKiemNhiem = resKiemNhiem.data || [];
+        // ... (các đoạn code phía dưới giữ nguyên)
 
         console.log("Dữ liệu kiêm nhiệm tải về:", dataKiemNhiem); // Kiểm tra F12 xem có dữ liệu không
 
@@ -1770,7 +1789,68 @@ function taoVaTaiFileExcel(data, tenDot) {
     let fileName = "BaoCao_PhanCong_" + tenDot.replace(/[\/\\?%*:|"<>]/g, '_') + ".xlsx";
     XLSX.writeFile(wb, fileName);
 }
+//Khởi tạo bộ lọc tuần báo cao
+async function khoiTaoBoLocTuan() {
+    let selectTuan = document.getElementById('selectTuanBaoCao');
+    if (!selectTuan) return;
 
+    selectTuan.innerHTML = '<option value="">Đang tải tuần...</option>';
+
+    try {
+        // Truy vấn lấy danh sách các tuần đã lưu trong bảng phân công giảng dạy
+        let { data, error } = await db.from('phan_cong_giang_day').select('tuan, dot');
+        
+        let danhSachTuanSet = new Set();
+        
+        if (!error && data && data.length > 0) {
+            data.forEach(item => {
+                // Lấy giá trị tuần nếu có (hoặc tách từ tên đợt nếu đợt có chữ Tuần)
+                let tuanVal = item.tuan;
+                if (!tuanVal && item.dot) {
+                    let match = item.dot.match(/\d+/); // Bóc tách số từ tên đợt (ví dụ "Tuần 2" -> 2)
+                    if (match) tuanVal = parseInt(match[0]);
+                }
+                if (tuanVal) {
+                    danhSachTuanSet.add(parseInt(tuanVal));
+                }
+            });
+        }
+
+        // Chuyển Set thành mảng và sắp xếp theo thứ tự tăng dần
+        let arrTuans = Array.from(danhSachTuanSet).sort((a, b) => a - b);
+
+        // Nếu chưa có dữ liệu tuần nào, mặc định tạo từ 1 đến 18 để phòng hờ
+        if (arrTuans.length === 0) {
+            arrTuans = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
+        }
+
+        selectTuan.innerHTML = "";
+        arrTuans.forEach((tuan, index) => {
+            let opt = document.createElement('option');
+            opt.value = tuan;
+            opt.textContent = "Tuần " + tuan;
+            // Mặc định chọn tuần mới nhất (tuần ở cuối cùng của danh sách hoặc tuần lớn nhất)
+            if (index === arrTuans.length - 1) {
+                opt.selected = true;
+            }
+            selectTuan.appendChild(opt);
+        });
+
+        // Sau khi nạp xong danh sách tuần, tự động load bảng báo cáo cho tuần mặc định đó
+        if (typeof loadBangBaoCao === 'function') {
+            loadBangBaoCao();
+        }
+
+    } catch (err) {
+        console.error("Lỗi khởi tạo bộ lọc tuần:", err);
+        // Fallback dự phòng nếu lỗi mạng/DB
+        selectTuan.innerHTML = `
+            <option value="1">Tuần 1</option>
+            <option value="2" selected>Tuần 2</option>
+        `;
+        if (typeof loadBangBaoCao === 'function') loadBangBaoCao();
+    }
+}
 
 </script>                
             </body>
