@@ -1836,7 +1836,7 @@ function inBangBaoCao() {
     let tuanText = selectTuanEl.options[selectTuanEl.selectedIndex]?.text.trim() || "";
     let soTuần = parseInt(tuanText.replace(/\D/g, '')) || 1;
     let hocKyStr = (soTuần <= 18) ? "HK1" : "HK2";
-    let tenDotHienTai = `${tuanText} (${hocKyStr})`;
+    let tenDotHienTai = `${tuanText}`;
     let nhomChon = document.getElementById('selectNhomBaoCao')?.value || "ALL";
 
     if (typeof danhSachUsers === 'undefined' || danhSachUsers.length === 0) {
@@ -1983,7 +1983,7 @@ function inBangBaoCao() {
                 </head>
                 <body>
                     <div class="header">
-                        <h3>TRƯỜNG THPT</h3>
+                        <h3>TRƯỜNG THPT NGUYỄN DUY TRINH</h3>
                         <h2>BẢNG TỔNG HỢP PHÂN CÔNG GIẢNG DẠY VÀ KIÊM NHIỆM</h2>
                         <h3>Áp dụng cho: ${tenDotHienTai} | Nhóm chuyên môn: ${nhomChon}</h3>
                     </div>
@@ -2044,7 +2044,7 @@ function inBangBaoCao() {
     let tuanText = selectTuanEl.options[selectTuanEl.selectedIndex]?.text.trim() || "";
     let soTuần = parseInt(tuanText.replace(/\D/g, '')) || 1;
     let hocKyStr = (soTuần <= 18) ? "HK1" : "HK2";
-    let tenDotHienTai = `${tuanText} (${hocKyStr})`;
+    let tenDotHienTai = `${tuanText}`;
 
     alert("Đang tổng hợp dữ liệu xuất file đúng chuẩn mẫu TKB...");
 
