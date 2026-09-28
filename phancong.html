@@ -455,16 +455,26 @@
 
        function hienThiCacKhoiLop() {
     ['10', '11', '12'].forEach(khoi => {
-        // Tìm trực tiếp thẻ tbody theo ID có sẵn trong HTML
-        const tbodyEl = document.getElementById(`tableKhoi${khoi}`);
-        if (!tbodyEl) return; // Bảo vệ an toàn nếu chưa tìm thấy
+        // Tìm thẻ chứa (div) theo ID, ví dụ: id="tableKhoi10" nằm ở thẻ div bọc ngoài bảng
+        const containerEl = document.getElementById(`tableKhoi${khoi}`);
+        if (!containerEl) return; // Bảo vệ an toàn nếu chưa tìm thấy
 
         const listLop = (typeof danhSachLopTheoKhoi !== 'undefined' && danhSachLopTheoKhoi[khoi]) ? danhSachLopTheoKhoi[khoi] : [];
         
-        let htmlNoiDung = '';
+        let htmlNoiDung = `
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-100 text-[10px] text-slate-600 border-b border-slate-200">
+                        <th class="p-2 pl-2.5 font-bold">Lớp</th>
+                        <th class="p-2 text-center w-8 font-bold" title="Học kỳ 1">HK1</th>
+                        <th class="p-2 text-center w-8 font-bold" title="Học kỳ 2">HK2</th>
+                        <th class="p-2 text-right font-bold pr-2.5">Số tiết</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 text-slate-700">`;
 
         if (listLop.length === 0) {
-            htmlNoiDung = `<tr><td colspan="4" class="p-3 text-center text-slate-400 italic">Trống</td></tr>`;
+            htmlNoiDung += `<tr><td colspan="4" class="p-3 text-center text-slate-400 italic">Trống</td></tr>`;
         } else {
             listLop.forEach(lop => {
                 htmlNoiDung += `
@@ -479,8 +489,11 @@
             });
         }
         
-        // Chỉ nạp danh sách các dòng vào tbody mà không làm mất ID
-        tbodyEl.innerHTML = htmlNoiDung;
+        // Đóng thẻ tbody và table hoàn chỉnh
+        htmlNoiDung += `</tbody></table>`;
+
+        // Nạp toàn bộ bảng mới vào container
+        containerEl.innerHTML = htmlNoiDung;
     });
 }
 
