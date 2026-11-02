@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Hồ Sơ Giáo Viên & Ký Số</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- PDF-Lib & PDF.js -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .tab-active { border-bottom: 3px solid #2563eb; color: #2563eb; font-weight: 600; }
+        canvas { touch-action: none; }
+        .sig-overlay {
+            position: absolute;
+            cursor: move;
+            border: 2px dashed #2563eb;
+            background: rgba(37, 99, 235, 0.15);
+            user-select: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+
+    <!-- Header Navigation -->
+    <header class="bg-indigo-900 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white p-2 rounded-lg text-indigo-900 font-bold text-xl">
+                    <i class="fa-solid fa-file-signature"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">HỆ THỐNG QUẢN LÝ HỒ SƠ GIÁO VIÊN</h1>
+                    <p class="text-xs text-indigo-200">Hệ sinh thái Giáo dục - EduDoc Suite</p>
+                </div>
+            </div>
+            
+            <!-- Khu vực hiển thị thông tin phiên làm việc chuẩn từ hệ thống cha & Nút cấu hình API -->
+            <div class="flex items-center space-x-4">
+                <div class="text-right bg-indigo-950/60 px-3 py-1.5 rounded-lg border border-indigo-700/50">
+                    <div id="userFullName" class="font-semibold text-sm text-indigo-100">Đang tải...</div>
+                    <div class="text-[11px] text-indigo-300 flex items-center justify-end space-x-2">
+                        <span id="userSchoolCode" class="font-mono">MÃ: --</span>
+                        <span>•</span>
+                        <span id="userRole" class="bg-indigo-800 px-1.5 py-0.5 rounded text-[10px]">Giáo viên</span>
+                    </div>
+                    <!-- Hidden tag dự phòng cho hàm badge cũ -->
+                    <div id="userInfoBadge" class="hidden"></div>
+                </div>
+
+                <button onclick="openConfigModal()" class="bg-indigo-800 hover:bg-indigo-700 p-2.5 rounded-lg text-indigo-100 transition shadow" title="Cấu hình Google Drive API">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- App Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+        <!-- Tabs Navigation Bar -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 overflow-x-auto">
+            <nav class="flex text-sm font-medium whitespace-nowrap min-w-max">
+                <button onclick="switchTab(1)" id="tab-btn-1" class="tab-btn tab-active px-6 py-4 flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-pen-nib"></i><span>Tab 1: Đăng ký chữ ký</span>
+                </button>
+                <button onclick="switchTab(2)" id="tab-btn-2" class="tab-btn text-slate-500 px-6 py-4 flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-file-arrow-up"></i><span>Tab 2: Tải hồ sơ & Ký số</span>
+                </button>
+                <button onclick="switchTab(3)" id="tab-btn-3" class="tab-btn text-slate-500 px-6 py-4 flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-paper-plane"></i><span>Tab 3: Gửi trình duyệt</span>
+                </button>
+                <button onclick="switchTab(4)" id="tab-btn-4" class="tab-btn text-slate-500 px-6 py-4 flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-users-gear"></i><span>Tab 4: Hồ sơ Tổ chuyên môn</span>
+                </button>
+                <button onclick="switchTab(5)" id="tab-btn-5" class="tab-btn text-slate-500 px-6 py-4 flex items-center space-x-2 transition">
+                    <i class="fa-solid fa-building-columns"></i><span>Tab 5: Hồ sơ Ban giám hiệu</span>
+                </button>
+            </nav>
+        </div>
+
+        <!-- ================= TAB 1: ĐĂNG KÝ CHỮ KÝ ================= -->
+        <section id="tab-content-1" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center">
+                        <i class="fa-solid fa-id-card text-blue-600 mr-2"></i> Thông Tin Định Danh
+                    </h2>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Mã Định Danh Nhân Sự (MAGV)*</label>
+                        <input type="text" id="teacher-id" value="GV001" oninput="updateProfileInfo()" class="w-full px-3 py-2 border rounded-lg text-sm font-mono bg-slate-50">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Họ và Tên Giáo Viên*</label>
+                        <input type="text" id="teacher-name" value="Nguyễn Văn A" oninput="updateProfileInfo()" class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tổ Chuyên Môn*</label>
+                        <select id="teacher-dept" onchange="updateProfileInfo()" class="w-full px-3 py-2 border rounded-lg text-sm">
+                            <option value="Toán-Tin">Tổ Toán - Tin</option>
+                            <option value="Ngữ-Văn">Tổ Ngữ Văn</option>
+                            <option value="Ngoại-Ngữ">Tổ Ngoại Ngữ</option>
+                            <option value="Lý-Hóa-Sinh">Tổ Lý - Hóa - Sinh</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-center border-b pb-2 mb-4">
+                            <h2 class="text-base font-bold text-slate-800 flex items-center">
+                                <i class="fa-solid fa-signature text-blue-600 mr-2"></i> Bảng Vẽ Chữ Ký Số Của Bạn
+                            </h2>
+                            <button onclick="clearCanvas()" class="text-xs text-rose-600 font-semibold px-2 py-1 rounded bg-rose-50 hover:bg-rose-100">
+                                <i class="fa-solid fa-rotate-left mr-1"></i> Xóa vẽ lại
+                            </button>
+                        </div>
+                        <div class="border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 flex justify-center items-center relative overflow-hidden mb-4">
+                            <canvas id="signature-pad" width="600" height="200" class="cursor-crosshair bg-white w-full rounded-lg shadow-inner"></canvas>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold border">
+                            <i class="fa-solid fa-upload mr-1"></i> Tải ảnh chữ ký (PNG)
+                            <input type="file" id="sig-file-input" accept="image/*" class="hidden" onchange="uploadSignatureImage(event)">
+                        </label>
+                        <button onclick="saveSignature()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold text-sm shadow">
+                            <i class="fa-solid fa-floppy-disk mr-2"></i> Lưu Chữ Ký Số
+                        </button>
+                    </div>
+                    <div id="saved-signature-preview" class="mt-4 p-3 border rounded-lg bg-emerald-50 hidden">
+                        <p class="text-xs font-semibold text-emerald-800 mb-2">✓ Chữ ký mẫu đã được đăng ký thành công:</p>
+                        <img id="sig-preview-img" src="" alt="Chữ ký đã lưu" class="h-16 object-contain border bg-white p-1 rounded mx-auto">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: TẢI HỒ SƠ & KÝ SỐ ================= -->
+        <section id="tab-content-2" class="tab-content space-y-6 hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Form Tải Hồ sơ -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4 h-fit">
+                    <h2 class="text-base font-bold text-slate-800 border-b pb-2 flex items-center">
+                        <i class="fa-solid fa-file-circle-plus text-blue-600 mr-2"></i> Tải Lên Hồ Sơ Mới
+                    </h2>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tên Hồ Sơ / Giáo Án*</label>
+                        <input type="text" id="doc-title" placeholder="VD: GiaoAn_Tuan10" class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Chọn Tệp PDF*</label>
+                        <input type="file" id="document-file" accept=".pdf" onchange="handleFileSelect(event)" class="w-full text-xs text-slate-500 border rounded-lg p-2">
+                    </div>
+                    <div class="p-3 bg-slate-100 rounded-lg">
+                        <span class="text-xs text-slate-500 font-semibold block">Mã tệp Google Drive dự kiến:</span>
+                        <p id="preview-formatted-filename" class="text-xs font-mono font-semibold text-indigo-700 break-all">GV001_Toan-Tin_ChuaDatTen.pdf</p>
+                    </div>
+
+                    <button onclick="processAndSignDocument()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-lg text-sm shadow flex items-center justify-center">
+                        <i class="fa-solid fa-file-signature mr-2"></i> Ký Số & Lưu Vào Kho Hồ Sơ
+                    </button>
+                </div>
+
+                <!-- Khu vực Xem Trực Quan & Kéo Thả Chữ Ký -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="border-b pb-3 flex justify-between items-center">
+                        <h2 class="text-base font-bold text-slate-800">Xem Trước PDF & Vị Trí Ký Số (Kéo-Thả)</h2>
+                        <span class="text-xs text-slate-500 bg-slate-100 px-2.5 py-1 rounded">Kéo khung chữ ký đến vị trí cần ký</span>
+                    </div>
+
+                    <div id="pdf-viewer-container" class="border rounded-lg bg-slate-200 p-4 min-h-[380px] max-h-[550px] overflow-y-auto space-y-4 flex flex-col items-center relative">
+                        <p class="text-xs text-slate-500 m-auto">Vui lòng chọn tệp PDF để xem trước toàn bộ các trang.</p>
+                    </div>
+
+                    <!-- Bảng Hồ sơ Cá nhân -->
+                    <div class="pt-4 border-t">
+                        <h3 class="text-sm font-bold text-slate-800 mb-3">Hồ Sơ Cá Nhân Đã Ký</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-600 text-xs uppercase border-b">
+                                        <th class="p-3">Tên File Google Drive Standard</th>
+                                        <th class="p-3">Ngày Ký</th>
+                                        <th class="p-3">Trạng Thái</th>
+                                        <th class="p-3 text-center">Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="personal-docs-table-body" class="divide-y divide-slate-100 text-xs"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: GỬI TRÌNH DUYỆT ================= -->
+        <section id="tab-content-3" class="tab-content space-y-6 hidden">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-base font-bold text-slate-800 border-b pb-4 mb-4 flex items-center">
+                    <i class="fa-solid fa-paper-plane text-blue-600 mr-2"></i> Gửi Hồ Sơ Lên Cấp Trên Duyệt & Đồng Bộ Google Drive
+                </h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-xs uppercase border-b">
+                                <th class="p-3">Tên Tệp Chuẩn Hóa Drive</th>
+                                <th class="p-3">Tổ Chuyên Môn</th>
+                                <th class="p-3">Trạng Thái</th>
+                                <th class="p-3 text-center">Gửi Tổ Chuyên Môn</th>
+                                <th class="p-3 text-center">Gửi Ban Giám Hiệu</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab3-docs-table-body" class="divide-y divide-slate-100 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 4: HỒ SƠ TỔ CHUYÊN MÔN ================= -->
+        <section id="tab-content-4" class="tab-content space-y-6 hidden">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-base font-bold text-slate-800 border-b pb-4 mb-4">Quản Lý Hồ Sơ Tổ Chuyên Môn Phê Duyệt</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-xs uppercase border-b">
+                                <th class="p-3">Mã GV</th>
+                                <th class="p-3">Tên Hồ Sơ Drive</th>
+                                <th class="p-3">Tổ</th>
+                                <th class="p-3">Trạng Thái Duyệt</th>
+                                <th class="p-3 text-center">Tổ Trưởng Duyệt</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab4-docs-table-body" class="divide-y divide-slate-100 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 5: HỒ SƠ BAN GIÁM HIỆU ================= -->
+        <section id="tab-content-5" class="tab-content space-y-6 hidden">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center border-b pb-4 mb-4">
+                    <h2 class="text-base font-bold text-slate-800">Kho Hồ Sơ Nhà Trường & BGH Phê Duyệt</h2>
+                    <button onclick="syncAllToDrive()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold shadow">
+                        <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Đồng Bộ Tất Cả Lên Google Drive
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-xs uppercase border-b">
+                                <th class="p-3">Mã Định Danh Drive</th>
+                                <th class="p-3">Giáo Viên</th>
+                                <th class="p-3">Trạng Thái BGH</th>
+                                <th class="p-3">Google Drive Status</th>
+                                <th class="p-3 text-center">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tab5-docs-table-body" class="divide-y divide-slate-100 text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Cấu hình API Google Drive -->
+    <div id="config-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex justify-center items-center hidden">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 relative">
+            <h3 class="text-lg font-bold text-slate-800 border-b pb-2 flex items-center">
+                <i class="fa-brands fa-google-drive text-emerald-600 mr-2"></i> Cấu Hình Google Drive API
+            </h3>
+            <div class="mt-4 space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Google Apps Script Web App URL (API Endpoint)</label>
+                    <input type="text" id="api-drive-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-blue-500 font-mono">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Google Drive Folder ID (Thư mục gốc)</label>
+                    <input type="text" id="api-drive-folder" placeholder="1A2b3C4d5E6f7G8h9I0J..." class="w-full px-3 py-2 border rounded-lg text-xs focus:ring-2 focus:ring-blue-500 font-mono">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-2">
+                <button onclick="closeConfigModal()" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700">Đóng</button>
+                <button onclick="saveDriveConfig()" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-xs font-semibold text-white">Lưu Cấu Hình</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-lg shadow-lg text-xs font-medium transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <span id="toast-message">Thông báo</span>
+    </div>
+
+    <!-- JavaScript Xử Lý Toàn Bộ Hệ Thống -->
+    <script>
+        // ============================================================
+        // CẤU HÌNH KẾT NỐI HỆ THỐNG & SUPABASE
+        // ============================================================
+        const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
+        let db = null;
+
+        if (window.supabase) {
+            db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        } else {
+            console.error("Thư viện Supabase chưa được tải vào trang!");
+        }
+        // Hàm kiểm tra và chặn truy cập trái phép nếu không có phiên từ trang cha
+function enforceParentLogin() {
+    let hasSession = false;
+
+    // 1. Kiểm tra session hiện tại từ các nguồn lưu trữ chuẩn của hệ thống cha (KienoraOS / LocalStorage / SessionStorage)
+    const rawSession = localStorage.getItem('kienora_user') || localStorage.getItem('kienora_session') || sessionStorage.getItem('currentUser');
+    
+    // Kiểm tra thêm các biến khóa phụ phổ biến
+    const commonKeys = ['user', 'account', 'session', 'loginData', 'userData', 'maNhanSu'];
+    let foundKey = rawSession;
+    if (!foundKey) {
+        for (let key of commonKeys) {
+            if (localStorage.getItem(key) || sessionStorage.getItem(key)) {
+                foundKey = true;
+                break;
+            }
+        }
+    }
+
+    if (foundKey) {
+        hasSession = true;
+    }
+
+    // 2. Nếu KHÔNG tìm thấy phiên đăng nhập hợp lệ -> Cảnh báo và tự động out ra trang cha / trang đăng nhập
+    if (!hasSession) {
+        alert("⚠️ Truy cập bị từ chối! Bạn chưa đăng nhập hoặc không đi từ trang chủ hệ thống.");
+        
+        // Thay thế 'login.html' bằng đường dẫn trang đăng nhập hoặc trang cha thực tế của bạn
+        window.location.replace('login.html'); 
+        
+        // Hoặc chuyển hướng về trang cha:
+        // window.location.replace('https://ten-mien-trang-cha.com/login.html');
+        return false;
+    }
+    return true;
+}
+//==========================================
+// Gọi thực thi ngay khi nạp script
+window.onload = function() {
+    // Kiểm tra đăng nhập từ trang cha trước tiên
+    if (!enforceParentLogin()) return;
+
+    // Các hàm khởi tạo tiếp theo của ứng dụng
+    initSessionData();
+    hienThiQuyen();
+    initCanvas();
+    updateProfileInfo();
+    renderAllTables();
+};
+        let currentRole = "Giáo viên";
+        let isAdmin = false;
+
+        // ĐỐI TƯỢNG PHIÊN LÀM VIỆC ĐỒNG BỘ CHUẨN TỪ KIENORAOS
+        let currentSession = {
+            maNhanSu: "GV001",
+            maTruong: "THPT_NGUYEN_DUY_TRINH",
+            hoVaTen: "Nguyễn Văn A",
+            tenTKB: "A",
+            vaiTro: "Giáo viên"
+        };
+
+        let currentUser = { id: 'GV001', name: 'Nguyễn Văn A', dept: 'Toán-Tin', signature: null };
+        let loadedPdfRawData = null;
+        let documentsStore = [];
+
+        let driveConfig = {
+            apiUrl: localStorage.getItem('drive_api_url') || '',
+            folderId: localStorage.getItem('drive_folder_id') || ''
+        };
+
+        let sigPosition = { pageIndex: 0, percentX: 65, percentY: 80 };
+        let canvas, ctx, isDrawing = false;
+
+        // 1. Hàm khởi tạo thông tin phiên làm việc từ localStorage chuẩn của KienoraOS
+        // ============================================================
+// 1. HÀM KHỞI TẠO PHIÊN LÀM VIỆC AN TOÀN & CHUẨN XÁC
+// ============================================================
+function initSessionData() {
+    try {
+        let savedData = null;
+        if (sessionStorage.getItem('currentUser')) {
+            savedData = sessionStorage.getItem('currentUser');
+        } else {
+            const commonKeys = ['kienora_user', 'kienora_session', 'user', 'account', 'session', 'loginData', 'userData', 'currentSession'];
+            for (let key of commonKeys) {
+                if (localStorage.getItem(key)) {
+                    savedData = localStorage.getItem(key);
+                    break;
+                }
+            }
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlMaNhanSu = urlParams.get('maNhanSu') || urlParams.get('username');
+        const urlMaTruong = urlParams.get('maTruong') || urlParams.get('schoolCode');
+
+        // Kiểm tra qua window.parent / window.opener nếu không có sẵn storage
+        if (!savedData && !urlMaNhanSu) {
+            const parentWin = window.parent !== window ? window.parent : window.opener;
+            if (parentWin && parentWin.currentSession) {
+                let pS = parentWin.currentSession;
+                currentSession.maNhanSu = pS.maNhanSu || pS.username || pS.ma_nhan_su || pS.id || '';
+                currentSession.maTruong = pS.maTruong || pS.ma_truong || pS.schoolCode || 'THPT_NGUYEN_DUY_TRINH';
+                currentSession.hoVaTen = pS.hoVaTen || pS.user?.fullName || pS.fullName || pS.ten_gv || 'Giáo viên';
+                currentSession.tenTruongDb = pS.school?.tenTruong || pS.tenTruongDb || pS.schoolName || 'Trường THPT Nguyễn Duy Trinh';
+                currentSession.vaiTro = pS.vaiTro || pS.quyen || 'Giáo viên';
+                
+                // Đồng bộ sang currentUser
+                currentUser.id = currentSession.maNhanSu;
+                currentUser.name = currentSession.hoVaTen;
+                return true;
+            }
+            return false;
+        }
+
+        let userData = {};
+        if (savedData) {
+            try {
+                userData = JSON.parse(savedData);
+            } catch (err) {
+                userData = { fullName: savedData, username: savedData };
+            }
+        }
+
+        const schoolCode = userData.schoolCode || userData.ma_truong || localStorage.getItem('current_school_code') || urlMaTruong || 'THPT_NGUYEN_DUY_TRINH';
+        const schoolName = userData.schoolName || userData.ten_truong || localStorage.getItem('current_school_name') || 'Trường THPT Nguyễn Duy Trinh';
+        
+        // 🔍 BÓC TÁCH HỌ TÊN CHUẨN XÁC (Tránh tuyệt đối không lấy mã nhân sự làm tên)
+        let rawName = userData.fullName || userData.ho_va_ten || userData.name || userData.tenGiaoVien || userData.hoTen || userData.tenNhanSu || userData.ten_gv;
+        
+        // Nếu tên rỗng hoặc trùng với mã nhân sự / chứa ký tự hệ thống thì gán mặc định là "Giáo viên" hoặc lấy username phụ
+        const maNhanSu = userData.username || userData.ma_nhan_su || userData.account || urlMaNhanSu || '';
+        if (!rawName || rawName === maNhanSu || rawName.includes('supabase.co') || rawName.startsWith('http')) {
+            rawName = userData.account || userData.username || 'Giáo viên hệ thống';
+        }
+
+        const role = userData.roleName || userData.quyen || userData.chuc_vu || 'Giáo viên';
+
+        currentSession.maNhanSu = maNhanSu;
+        currentSession.maTruong = schoolCode;
+        currentSession.hoVaTen = rawName;
+        currentSession.tenTruongDb = schoolName;
+        currentSession.vaiTro = role;
+        currentSession.chucVuDb = role;
+        currentSession.nhomCmDb = userData.to_cm || userData.to_chuyen_mon || userData.nhom_cm || userData.chuyen_mon || userData.to || 'Toán-Tin';
+
+        // Đồng bộ sang biến quản lý cục bộ của ứng dụng ký số
+        currentUser.id = currentSession.maNhanSu;
+        currentUser.name = currentSession.hoVaTen;
+        currentUser.dept = currentSession.nhomCmDb;
+
+        return true;
+    } catch (e) {
+        console.warn("Lỗi kiểm tra phiên:", e);
+    }
+    return false;
+}
+
+// ============================================================
+// 2. TRUY VẤN SUPABASE ĐỂ CẬP NHẬT CHÍNH XÁC THÔNG TIN TỪ CSDL
+// ============================================================
+// ============================================================
+// HÀM KHỞI TẠO VÀ TRUY VẤN TRỰC TIẾP TỪ SUPABASE DỰA VÀO MÃ NHÂN SỰ
+// ============================================================
+// ============================================================
+// HÀM TRUY VẤN SUPABASE QUÉT LINH HOẠT TÊN CỘT HỌ VÀ TÊN
+// ============================================================
+async function taiVaiTro() {
+    try {
+        // 1. Lấy mã nhân sự từ trang cha (localStorage hoặc URL hoặc window.opener)
+        let maNhanSu = '';
+        
+        const rawSession = localStorage.getItem('kienora_user') || localStorage.getItem('kienora_session') || sessionStorage.getItem('currentUser');
+        if (rawSession) {
+            try {
+                const uData = JSON.parse(rawSession);
+                maNhanSu = uData.username || uData.maNhanSu || uData.ma_nhan_su || '';
+            } catch (e) {
+                maNhanSu = rawSession;
+            }
+        }
+        
+        if (!maNhanSu) {
+            maNhanSu = localStorage.getItem('maNhanSu') || localStorage.getItem('taiKhoan') || '';
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!maNhanSu) {
+            maNhanSu = urlParams.get('maNhanSu') || urlParams.get('username') || '';
+        }
+
+        if (!maNhanSu) {
+            const parentWin = window.parent !== window ? window.parent : window.opener;
+            if (parentWin && parentWin.currentSession) {
+                maNhanSu = parentWin.currentSession.maNhanSu || parentWin.currentSession.username || '';
+            }
+        }
+
+        if (!maNhanSu) {
+            alert("⚠️ Không tìm thấy mã nhân sự đăng nhập! Vui lòng đăng nhập lại từ trang cha.");
+            window.location.href = 'login.html';
+            return;
+        }
+
+        currentSession.maNhanSu = maNhanSu;
+        currentUser.id = maNhanSu;
+
+        // 2. TRUY VẤN SUPABASE (Quét toàn bộ các biến thể tên cột họ tên thường gặp)
+        if (db) {
+            let { data, error } = await db
+                .from('users')
+                .select('*') // Lấy tất cả các cột để tránh lỗi lệch tên cột
+                .eq('ma_nhan_su', maNhanSu)
+                .limit(1);
+
+            if (data && data.length > 0 && !error) {
+                const userObj = data[0];
+                
+                // Lọc tìm cột chứa tên giáo viên một cách linh hoạt nhất
+                const realName = userObj.ho_va_ten || userObj.ten_nhan_su || userObj.full_name || userObj.name || userObj.ten || userObj.hoTen;
+                
+                currentSession.hoVaTen = (realName && realName !== maNhanSu) ? realName : "Chưa cập nhật tên";
+                currentSession.vaiTro = userObj.quyen || userObj.role || 'Giáo viên';
+                currentSession.maTruong = userObj.ma_truong || localStorage.getItem('current_school_code') || 'THPT_NGUYEN_DUY_TRINH';
+                currentSession.nhomCmDb = userObj.to_chuyen_mon || userObj.to_cm || userObj.chuyen_mon || 'Toán-Tin';
+
+                currentUser.name = currentSession.hoVaTen;
+                currentUser.dept = currentSession.nhomCmDb;
+                currentRole = currentSession.vaiTro;
+            } else {
+                currentSession.hoVaTen = "Không tìm thấy tên trong CSDL";
+            }
+        }
+
+        const roleLower = String(currentSession.vaiTro).toLowerCase();
+        isAdmin = roleLower.includes("admin") || roleLower.includes("quản trị");
+
+        // 3. Đưa thông tin lên giao diện Header & Form
+        hienThiQuyen();
+        applySessionToUI();
+
+    } catch (err) {
+        console.error("Lỗi khi truy vấn thông tin nhân sự từ Supabase:", err);
+    }
+}
+
+// Hàm cập nhật giao diện
+function hienThiQuyen() {
+    const userFullNameElem = document.getElementById('userFullName');
+    const userSchoolCodeElem = document.getElementById('userSchoolCode');
+    const userRoleElem = document.getElementById('userRole');
+
+    if (userFullNameElem) userFullNameElem.innerText = currentSession.hoVaTen;
+    if (userSchoolCodeElem) userSchoolCodeElem.innerText = "MÃ: " + currentSession.maNhanSu; // Hiển thị mã nhân sự rõ ràng ở thẻ mã
+    if (userRoleElem) userRoleElem.innerText = currentSession.vaiTro;
+}
+
+function applySessionToUI() {
+    const inputGiaoVien = document.getElementById('teacher-name');
+    const inputId = document.getElementById('teacher-id');
+    const selectDept = document.getElementById('teacher-dept');
+
+    // Gán chính xác họ tên và mã nhân sự vào ô input bên trái
+    if (inputGiaoVien) inputGiaoVien.value = currentSession.hoVaTen || currentUser.name;
+    if (inputId) inputId.value = currentSession.maNhanSu || currentUser.id;
+    
+    // Cập nhật lại đối tượng currentUser để chuẩn hóa lúc ký hồ sơ và tạo tên file Drive
+    currentUser.id = currentSession.maNhanSu || currentUser.id;
+    currentUser.name = currentSession.hoVaTen || currentUser.name;
+    if (currentSession.nhomCmDb) {
+        currentUser.dept = currentSession.nhomCmDb;
+    }
+
+    // Chọn đúng tổ chuyên môn trong dropdown
+    if (selectDept && currentUser.dept) {
+        for (let opt of selectDept.options) {
+            if (opt.value.toLowerCase() === currentUser.dept.toLowerCase() || opt.text.toLowerCase().includes(currentUser.dept.toLowerCase())) {
+                selectDept.value = opt.value;
+                break;
+            }
+        }
+    }
+
+    if (typeof updateProfileInfo === 'function') {
+        updateProfileInfo();
+    }
+}
+// Khởi chạy khi trang tải xong
+document.addEventListener("DOMContentLoaded", function() {
+    if (typeof taiVaiTro === 'function') {
+        taiVaiTro();
+    }
+});
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        }
+
+        window.onload = function() {
+            initSessionData();
+            hienThiQuyen();
+            if (typeof taiVaiTro === 'function') {
+                taiVaiTro();
+            }
+
+            initCanvas();
+            updateProfileInfo();
+            const docTitleElem = document.getElementById('doc-title');
+            if (docTitleElem) docTitleElem.addEventListener('input', updateFilenamePreview);
+
+            document.getElementById('api-drive-url').value = driveConfig.apiUrl;
+            document.getElementById('api-drive-folder').value = driveConfig.folderId;
+
+            renderAllTables();
+        };
+
+        function initCanvas() {
+            canvas = document.getElementById('signature-pad');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d');
+            ctx.strokeStyle = "#000080";
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = "round";
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                const rect = canvas.getBoundingClientRect();
+                ctx.beginPath();
+                ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+            });
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                const rect = canvas.getBoundingClientRect();
+                ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                ctx.stroke();
+            });
+            canvas.addEventListener('mouseup', () => isDrawing = false);
+            canvas.addEventListener('mouseleave', () => isDrawing = false);
+        }
+
+        function clearCanvas() {
+            if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function saveSignature() {
+            if (!canvas) return;
+            currentUser.signature = canvas.toDataURL("image/png");
+            const prevImg = document.getElementById('sig-preview-img');
+            const previewContainer = document.getElementById('saved-signature-preview');
+            if (prevImg) prevImg.src = currentUser.signature;
+            if (previewContainer) previewContainer.classList.remove('hidden');
+            showToast('Đã lưu chữ ký số!');
+
+            if (loadedPdfRawData) renderPdfPreview(loadedPdfRawData);
+        }
+
+        function uploadSignatureImage(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const img = new Image();
+                img.onload = function() {
+                    clearCanvas();
+                    if (ctx && canvas) ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateProfileInfo() {
+            const idInput = document.getElementById('teacher-id');
+            const nameInput = document.getElementById('teacher-name');
+            const deptInput = document.getElementById('teacher-dept');
+
+            if (idInput) currentUser.id = idInput.value.trim() || currentSession.maNhanSu || 'GV001';
+            if (nameInput) currentUser.name = nameInput.value.trim() || currentSession.hoVaTen || 'Nguyễn Văn A';
+            if (deptInput) currentUser.dept = deptInput.value;
+
+            updateFilenamePreview();
+        }
+
+        function updateFilenamePreview() {
+            const titleInput = document.getElementById('doc-title');
+            const title = titleInput ? titleInput.value.trim() : '';
+            const safeTitle = title ? title.replace(/\s+/g, '_') : 'ChuaDatTen';
+            const formatted = `${currentUser.id}_${currentUser.dept}_${safeTitle}.pdf`;
+            
+            const prevElem = document.getElementById('preview-formatted-filename');
+            if (prevElem) prevElem.innerText = formatted;
+        }
+
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                loadedPdfRawData = new Uint8Array(evt.target.result);
+                renderPdfPreview(loadedPdfRawData);
+                showToast('Đã mở tệp PDF!');
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        async function renderPdfPreview(pdfData) {
+            const container = document.getElementById('pdf-viewer-container');
+            if (!container) return;
+            container.innerHTML = '<p class="text-xs text-slate-500">Đang hiển thị toàn bộ trang PDF...</p>';
+
+            try {
+                const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(pdfData) });
+                const pdfDoc = await loadingTask.promise;
+                container.innerHTML = '';
+
+                for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                    const page = await pdfDoc.getPage(pageNum);
+                    const viewport = page.getViewport({ scale: 1.0 });
+
+                    const pageWrapper = document.createElement('div');
+                    pageWrapper.className = "relative bg-white shadow-md rounded mb-4";
+                    pageWrapper.style.width = viewport.width + 'px';
+                    pageWrapper.style.height = viewport.height + 'px';
+
+                    const canvasElement = document.createElement('canvas');
+                    const context = canvasElement.getContext('2d');
+                    canvasElement.height = viewport.height;
+                    canvasElement.width = viewport.width;
+
+                    pageWrapper.appendChild(canvasElement);
+                    container.appendChild(pageWrapper);
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                    if (pageNum === pdfDoc.numPages) {
+                        makeSignatureOverlay(pageWrapper, viewport.width, viewport.height);
+                    }
+                }
+            } catch (err) {
+                console.error("Lỗi render PDF:", err);
+                container.innerHTML = '<p class="text-xs text-rose-500">Không thể xem tệp PDF này.</p>';
+            }
+        }
+
+        function makeSignatureOverlay(parent, pageW, pageH) {
+            const overlay = document.createElement('div');
+            overlay.className = "sig-overlay flex items-center justify-center rounded p-1";
+            overlay.style.width = "140px";
+            overlay.style.height = "60px";
+
+            let posX = (pageW * sigPosition.percentX) / 100;
+            let posY = (pageH * sigPosition.percentY) / 100;
+            overlay.style.left = posX + "px";
+            overlay.style.top = posY + "px";
+
+            if (currentUser.signature) {
+                overlay.innerHTML = `<img src="${currentUser.signature}" class="w-full h-full object-contain pointer-events-none">`;
+            } else {
+                overlay.innerHTML = `<span class="text-[10px] text-blue-700 font-semibold pointer-events-none">Vị trí ký (Kéo thả)</span>`;
+            }
+
+            let isDragging = false, startX, startY, initialLeft, initialTop;
+            overlay.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                initialLeft = overlay.offsetLeft;
+                initialTop = overlay.offsetTop;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                let dx = e.clientX - startX;
+                let dy = e.clientY - startY;
+
+                let newLeft = Math.max(0, Math.min(pageW - 140, initialLeft + dx));
+                let newTop = Math.max(0, Math.min(pageH - 60, initialTop + dy));
+
+                overlay.style.left = newLeft + 'px';
+                overlay.style.top = newTop + 'px';
+
+                sigPosition.percentX = (newLeft / pageW) * 100;
+                sigPosition.percentY = (newTop / pageH) * 100;
+            });
+
+            document.addEventListener('mouseup', () => isDragging = false);
+            parent.appendChild(overlay);
+        }
+
+        async function processAndSignDocument() {
+            if (!currentUser.signature) {
+                showToast('Vui lòng đăng ký chữ ký số ở Tab 1 trước!');
+                return;
+            }
+
+            const titleInput = document.getElementById('doc-title');
+            const title = titleInput ? titleInput.value.trim() : '';
+            if (!title) {
+                showToast('Vui lòng nhập Tên Hồ Sơ!');
+                return;
+            }
+
+            try {
+                let pdfDoc;
+                if (loadedPdfRawData) {
+                    pdfDoc = await PDFLib.PDFDocument.load(new Uint8Array(loadedPdfRawData));
+                } else {
+                    pdfDoc = await PDFLib.PDFDocument.create();
+                    const page = pdfDoc.addPage([595.28, 841.89]);
+                    page.drawText(`HO SO GIAO VIEN: ${title}`, { x: 50, y: 780, size: 16 });
+                }
+
+                const sigImageEmbed = await pdfDoc.embedPng(currentUser.signature);
+                const pages = pdfDoc.getPages();
+                const targetPage = pages[pages.length - 1];
+                const pageW = targetPage.getWidth();
+                const pageH = targetPage.getHeight();
+
+                const embedX = (pageW * sigPosition.percentX) / 100;
+                const embedY = pageH - ((pageH * sigPosition.percentY) / 100) - 50;
+
+                targetPage.drawImage(sigImageEmbed, {
+                    x: embedX,
+                    y: embedY,
+                    width: 130,
+                    height: 50
+                });
+
+                const signedPdfBytes = await pdfDoc.save();
+                loadedPdfRawData = signedPdfBytes;
+
+                const safeTitle = title.replace(/\s+/g, '_');
+                const formattedFileName = `${currentUser.id}_${currentUser.dept}_${safeTitle}.pdf`;
+
+                const newDoc = {
+                    id: 'doc-' + Date.now(),
+                    teacherId: currentUser.id,
+                    teacherName: currentUser.name,
+                    dept: currentUser.dept,
+                    formattedFileName: formattedFileName,
+                    signedDate: new Date().toLocaleString('vi-VN'),
+                    pdfBytes: signedPdfBytes,
+                    sentToDept: false,
+                    sentToSchool: false,
+                    deptStatus: 'PENDING',
+                    schoolStatus: 'PENDING',
+                    driveStatus: 'CHƯA ĐỒNG BỘ'
+                };
+
+                documentsStore.unshift(newDoc);
+                renderAllTables();
+                showToast('Đã ký số & tạo hồ sơ thành công!');
+                
+                if (titleInput) titleInput.value = '';
+                updateFilenamePreview();
+            } catch (err) {
+                console.error("Lỗi ký PDF:", err);
+                showToast('Lỗi đóng dấu chữ ký số!');
+            }
+        }
+
+        // ================= THAO TÁC XEM, TẢI, XÓA, GỬI TỔ, GỬI BGH =================
+        function viewDocument(docId) {
+            const doc = documentsStore.find(d => d.id === docId);
+            if (doc && doc.pdfBytes) {
+                loadedPdfRawData = new Uint8Array(doc.pdfBytes);
+                switchTab(2);
+                renderPdfPreview(loadedPdfRawData);
+                showToast(`Đang xem: ${doc.formattedFileName}`);
+            }
+        }
+
+        function downloadDocument(docId) {
+            const doc = documentsStore.find(d => d.id === docId);
+            if (doc && doc.pdfBytes) {
+                const blob = new Blob([doc.pdfBytes], { type: 'application/pdf' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = doc.formattedFileName;
+                link.click();
+                showToast('Đã tải tệp về máy tính!');
+            }
+        }
+
+        function deleteDocument(docId) {
+            if (confirm("Bạn có chắc chắn muốn xóa hồ sơ này?")) {
+                documentsStore = documentsStore.filter(d => d.id !== docId);
+                renderAllTables();
+                showToast('Đã xóa hồ sơ khỏi danh sách');
+            }
+        }
+
+        function sendToDept(docId) {
+            const doc = documentsStore.find(d => d.id === docId);
+            if (doc) {
+                doc.sentToDept = true;
+                doc.deptStatus = 'PENDING';
+                renderAllTables();
+                showToast(`Đã gửi hồ sơ [${doc.formattedFileName}] lên Tổ Chuyên Môn!`);
+            }
+        }
+
+        function sendToSchool(docId) {
+            const doc = documentsStore.find(d => d.id === docId);
+            if (doc) {
+                doc.sentToSchool = true;
+                doc.schoolStatus = 'PENDING';
+                renderAllTables();
+                showToast(`Đã gửi hồ sơ [${doc.formattedFileName}] lên Ban Giám Hiệu!`);
+            }
+        }
+
+        function approveByDept(docId) {
+            const doc = documentsStore.find(d => d.id === docId);
+            if (doc) {
+                doc.deptStatus = 'APPROVED';
+                renderAllTables();
+                showToast(`Tổ trưởng đã duyệt: ${doc.formattedFileName}`);
+            }
+        }
+
+        function approveBySchool(docId) {
+            const doc = documentsStore.find(d => d.id === docId);
+            if (doc) {
+                doc.schoolStatus = 'APPROVED';
+                renderAllTables();
+                showToast(`BGH đã phê duyệt: ${doc.formattedFileName}`);
+                uploadFileToGoogleDrive(doc);
+            }
+        }
+
+        // ================= ĐỒNG BỘ GOOGLE DRIVE API =================
+        async function uploadFileToGoogleDrive(doc) {
+            if (!driveConfig.apiUrl) {
+                showToast('Vui lòng nhập Google Apps Script API URL trong phần cài đặt ⚙️!');
+                return;
+            }
+
+            showToast(`Đang đẩy tệp ${doc.formattedFileName} lên Google Drive...`);
+
+            try {
+                let binary = '';
+                const bytes = new Uint8Array(doc.pdfBytes);
+                for (let i = 0; i < bytes.byteLength; i++) {
+                    binary += String.fromCharCode(bytes[i]);
+                }
+                const base64Data = btoa(binary);
+
+                const payload = {
+                    fileName: doc.formattedFileName,
+                    fileData: base64Data,
+                    mimeType: 'application/pdf',
+                    dept: doc.dept,
+                    folderId: driveConfig.folderId
+                };
+
+                const response = await fetch(driveConfig.apiUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.status === 'success') {
+                    doc.driveStatus = 'ĐÃ LƯU DRIVE';
+                    renderAllTables();
+                    showToast('Đồng bộ tệp lên Google Drive thành công!');
+                } else {
+                    showToast('Lỗi Drive: ' + result.message);
+                }
+            } catch (err) {
+                console.error("Lỗi sync Drive:", err);
+                showToast('Không thể kết nối đến Google Drive API!');
+            }
+        }
+
+        function syncAllToDrive() {
+            const approvedDocs = documentsStore.filter(d => d.schoolStatus === 'APPROVED');
+            if (approvedDocs.length === 0) {
+                showToast('Không có hồ sơ nào đã duyệt để đồng bộ!');
+                return;
+            }
+            approvedDocs.forEach(doc => uploadFileToGoogleDrive(doc));
+        }
+
+        // ================= CẤU HÌNH MODAL =================
+        function openConfigModal() {
+            document.getElementById('config-modal').classList.remove('hidden');
+        }
+        function closeConfigModal() {
+            document.getElementById('config-modal').classList.add('hidden');
+        }
+        function saveDriveConfig() {
+            driveConfig.apiUrl = document.getElementById('api-drive-url').value.trim();
+            driveConfig.folderId = document.getElementById('api-drive-folder').value.trim();
+
+            localStorage.setItem('drive_api_url', driveConfig.apiUrl);
+            localStorage.setItem('drive_folder_id', driveConfig.folderId);
+
+            closeConfigModal();
+            showToast('Đã lưu cấu hình Google Drive API!');
+        }
+
+        // ================= RENDER CÁC BẢNG TAB =================
+        function renderAllTables() {
+            renderTab2Table();
+            renderTab3Table();
+            renderTab4Table();
+            renderTab5Table();
+        }
+
+        function renderTab2Table() {
+            const tbody = document.getElementById('personal-docs-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = documentsStore.map(doc => `
+                <tr>
+                    <td class="p-3 font-mono font-semibold text-indigo-700">${doc.formattedFileName}</td>
+                    <td class="p-3 text-slate-500">${doc.signedDate}</td>
+                    <td class="p-3"><span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-semibold text-[10px]">${doc.driveStatus}</span></td>
+                    <td class="p-3 text-center space-x-1">
+                        <button onclick="viewDocument('${doc.id}')" title="Xem PDF" class="px-2 py-1 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded"><i class="fa-solid fa-eye"></i></button>
+                        <button onclick="downloadDocument('${doc.id}')" title="Tải tệp" class="px-2 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded"><i class="fa-solid fa-download"></i></button>
+                        <button onclick="deleteDocument('${doc.id}')" title="Xóa" class="px-2 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTab3Table() {
+            const tbody = document.getElementById('tab3-docs-table-body');
+            if (!tbody) return;
+            if (documentsStore.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Chưa có hồ sơ nào.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = documentsStore.map(doc => `
+                <tr>
+                    <td class="p-3 font-mono font-semibold text-indigo-700">${doc.formattedFileName}</td>
+                    <td class="p-3">${doc.dept}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${doc.deptStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${doc.deptStatus === 'APPROVED' ? 'Tổ Đã Duyệt' : (doc.sentToDept ? 'Chờ Tổ Duyệt' : 'Chưa Gửi Tổ')}
+                        </span>
+                    </td>
+                    <td class="p-3 text-center">
+                        <button onclick="sendToDept('${doc.id}')" ${doc.sentToDept ? 'disabled class="opacity-50 text-slate-400 bg-slate-100 px-3 py-1 rounded text-xs"' : 'class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs shadow"'}>
+                            <i class="fa-solid fa-paper-plane mr-1"></i> ${doc.sentToDept ? 'Đã Gửi Tổ' : 'Gửi Tổ'}
+                        </button>
+                    </td>
+                    <td class="p-3 text-center">
+                        <button onclick="sendToSchool('${doc.id}')" ${doc.sentToSchool ? 'disabled class="opacity-50 text-slate-400 bg-slate-100 px-3 py-1 rounded text-xs"' : 'class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 text-xs shadow"'}>
+                            <i class="fa-solid fa-school mr-1"></i> ${doc.sentToSchool ? 'Đã Gửi BGH' : 'Gửi BGH'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTab4Table() {
+            const tbody = document.getElementById('tab4-docs-table-body');
+            if (!tbody) return;
+            const deptDocs = documentsStore.filter(d => d.sentToDept);
+            if (deptDocs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Chưa có hồ sơ nào gửi lên Tổ.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = deptDocs.map(doc => `
+                <tr>
+                    <td class="p-3 font-mono">${doc.teacherId}</td>
+                    <td class="p-3 font-semibold text-indigo-700">${doc.formattedFileName}</td>
+                    <td class="p-3">${doc.dept}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${doc.deptStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${doc.deptStatus === 'APPROVED' ? 'Đã Duyệt' : 'Chờ Duyệt'}
+                        </span>
+                    </td>
+                    <td class="p-3 text-center">
+                        <button onclick="approveByDept('${doc.id}')" ${doc.deptStatus === 'APPROVED' ? 'disabled class="opacity-50 bg-slate-100 text-slate-400 px-3 py-1 rounded text-xs"' : 'class="bg-emerald-600 text-white px-3 py-1 rounded hover:bg-emerald-700 text-xs shadow"'}>
+                            <i class="fa-solid fa-check mr-1"></i> ${doc.deptStatus === 'APPROVED' ? 'Đã Phê Duyệt' : 'Tổ Trưởng Duyệt'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTab5Table() {
+            const tbody = document.getElementById('tab5-docs-table-body');
+            if (!tbody) return;
+            const schoolDocs = documentsStore.filter(d => d.sentToSchool);
+            if (schoolDocs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Chưa có hồ sơ nào gửi lên BGH.</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = schoolDocs.map(doc => `
+                <tr>
+                    <td class="p-3 font-mono font-semibold text-indigo-700">${doc.formattedFileName}</td>
+                    <td class="p-3">${doc.teacherName}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${doc.schoolStatus === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                            ${doc.schoolStatus === 'APPROVED' ? 'BGH Đã Duyệt' : 'Chờ Duyệt'}
+                        </span>
+                    </td>
+                    <td class="p-3"><span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-semibold text-[10px]">${doc.driveStatus}</span></td>
+                    <td class="p-3 text-center space-x-1">
+                        <button onclick="approveBySchool('${doc.id}')" ${doc.schoolStatus === 'APPROVED' ? 'disabled class="opacity-50 bg-slate-100 text-slate-400 px-3 py-1 rounded text-xs"' : 'class="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700 text-xs shadow"'}>
+                            <i class="fa-solid fa-stamp mr-1"></i> ${doc.schoolStatus === 'APPROVED' ? 'Đã Duyệt' : 'BGH Phê Duyệt'}
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function switchTab(tabIndex) {
+            for (let i = 1; i <= 5; i++) {
+                const btn = document.getElementById(`tab-btn-${i}`);
+                const content = document.getElementById(`tab-content-${i}`);
+                if (btn && content) {
+                    if (i === tabIndex) {
+                        btn.classList.add('tab-active');
+                        btn.classList.remove('text-slate-500');
+                        content.classList.remove('hidden');
+                    } else {
+                        btn.classList.remove('tab-active');
+                        btn.classList.add('text-slate-500');
+                        content.classList.add('hidden');
+                    }
+                }
+            }
+            renderAllTables();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            if (toast && toastMsg) {
+                toastMsg.innerText = msg;
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
+            }
+        }
+    </script>
+</body>
+</html>
