@@ -955,6 +955,7 @@ function renderTKBTable(dataArray) {
     });
     tbody.innerHTML = html;
 }
+// Tải dữ liệu báo cáo thống kê trên trang báo cáo thống k
 
 // 5. Tải danh sách TKB từ Supabase lên Dropdown
 // 5. Tải danh sách tuần / số TKB trực tiếp từ bảng thoi_khoa_bieu lên Dropdown
@@ -2554,6 +2555,7 @@ async function taiBaoCaoChiTiet() {
         });
 
         // Nạp dữ liệu vào dropdown và tiến hành lọc/hiển thị trang đầu tiên
+        renderQuanTriVaThongKe(globalBaoCaoData);
         populateDropdowns(globalBaoCaoData);
         filterBaoCaoTable(); 
 
