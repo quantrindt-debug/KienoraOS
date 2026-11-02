@@ -43,12 +43,12 @@
       </span>
     </div>
 
-    <div onclick="launchApp('quantridaucap')" class="flex flex-col items-center group cursor-pointer w-20">
+    <div onclick="launchApp('xep_tkb')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
         <i class="fa-solid fa-sliders"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
-        Quản trị đầu cấp
+        Xếp TKB tự động
       </span>
     </div>
 
@@ -67,6 +67,14 @@
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
         Kế hoạch - sổ đầu bài
+      </span>
+    </div>
+    <div onclick="launchApp('quanlygiaoan')" class="flex flex-col items-center group cursor-pointer w-20">
+      <div class="w-13 h-13 p-3.5 bg-cyan-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
+        <i class="fa-solid fa-book-bookmark"></i>
+      </div>
+      <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
+        Quản lý giáo án
       </span>
     </div>
     
@@ -105,7 +113,14 @@
         Quản Lý Hồ Sơ Học Sinh
       </span>
     </div>
-
+    <div onclick="launchApp('QuanLyHoSoCBVC')" class="flex flex-col items-center group cursor-pointer w-20">
+      <div class="w-13 h-13 p-3.5 bg-violet-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
+        <i class="fa-solid fa-folder-tree"></i>
+      </div>
+      <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
+        Quản Lý Hồ Sơ Sổ Sách
+      </span>
+    </div>
     <div onclick="launchApp('ThiDua')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-violet-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
         <i class="fa-solid fa-ranking-star"></i>
@@ -220,6 +235,10 @@
       <i class="fa-solid fa-folder-tree text-violet-500 w-4 text-center"></i>
       <span>Quản lý Hồ sơ học sinh</span>
     </button>
+    <button onclick="launchApp('QuanLyHoSoCBVC')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-violet-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-folder-tree text-violet-500 w-4 text-center"></i>
+      <span>Quản lý Hồ sơ Sổ sách</span>
+    </button>
     <button onclick="launchApp('phancong')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-violet-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
       <i class="fa-solid fa-users-gear text-amber-500 w-4 text-center"></i>
       <span>Xếp lớp vào 10 & Phân công</span>
@@ -235,6 +254,10 @@
     <button onclick="launchApp('ThiDua')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-violet-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
       <i class="fa-solid fa-ranking-star text-violet-500 w-4 text-center"></i>
       <span>Test thi đua</span>
+    </button>
+    <button onclick="launchApp('quanlygiaoan')" class="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-violet-50 rounded-xl transition text-left text-xs text-slate-700 font-medium">
+      <i class="fa-solid fa-ranking-star text-violet-500 w-4 text-center"></i>
+      <span>Quản Lý giáo án</span>
     </button>
   </div>
 
@@ -292,14 +315,15 @@
 
     const APP_REGISTRY = {
       'tuyensinh10': { title: 'Tuyển sinh Lớp 10', icon: 'fa-solid fa-user-graduate text-rose-400' },
-      'quantridaucap': { title: 'Quản trị đầu cấp', icon: 'fa-solid fa-sliders text-indigo-400' },
+      'xep_tkb': { title: 'Xếp TKB tự động', icon: 'fa-solid fa-sliders text-indigo-400' },
       'phancong': { title: 'Phân công', icon: 'fa-solid fa-users-gear text-amber-400' },
-      'QuanLyHoSoHocSinh': { title: 'Quản lý Hồ sơ học sinh', icon: 'fa-solid fa-folder-tree text-violet-400' },
+      'quanlygiaoan': { title: 'Quản lý Hồ sơ giáo án', icon: 'fa-solid fa-folder-tree text-violet-400' },
       'sdb': { title: 'Kế hoạch dạy học - sổ đầu bài', icon: 'fa-solid fa-book-bookmark text-cyan-400' },
       'KeHoachChamCong': { title: 'Kế hoạch chấm công', icon: 'fa-solid fa-calendar-check text-blue-400' },
       'SoChuNhiem': { title: 'Sổ chủ nhiệm', icon: 'fa-solid fa-chalkboard-user text-cyan-400' },
       'ThiDuaLop': { title: 'Theo dõi thi đua lớp', icon: 'fa-solid fa-trophy text-emerald-400' },
-      'ThiDua': { title: 'Test thi đua', icon: 'fa-solid fa-ranking-star text-violet-400' },
+      'QuanLyHoSoCBVC': { title: 'Test thi đua', icon: 'fa-solid fa-ranking-star text-violet-400' },
+      'QuanLyHoSoHocSinh': { title: 'Quản lý Hồ sơ học sinh', icon: 'fa-solid fa-folder-tree text-violet-400' },
       'ckdbclgd': { title: 'Cam kết đảm bảo chất lượng GD', icon: 'fa-solid fa-file-signature text-blue-400' }
     };
 
@@ -432,15 +456,16 @@
 
       const localPageFiles = {
         'tuyensinh10': "tuyensinh10.html",
-        'quantridaucap': "quantridaucap.html",
-        'phancong': "phancong.html",
+        'xep_tkb': "xep_tkb.html",
+        'phancong - V2': "phan-cong.html",
+        'quanlygiaoan': "quanlygiaoan.html",
         'QuanLyHoSoHocSinh': "QuanLyHoSoHocSinh.html",
-        'sdb': "sdbv4.html",
+        'sdb': "sdb.html",
         'KeHoachChamCong': "KeHoachChamCong.html",
         'SoChuNhiem': "SoChuNhiem.html",
         'ThiDuaLop': "THPT_NguyenDuyTrinh/ThiDuaLop.html",
-        'ThiDua': "THPT_NguyenDuyTrinh/ThiDua.html",
-        'ckdbclgd': "ckclgdv4.html"
+        'QuanLyHoSoCBVC': "THPT_NguyenDuyTrinh/quan_ly_ho_so.html",
+        'ckdbclgd': "ckdbclgd.html"
       };
       
       if (appId in localPageFiles) {
