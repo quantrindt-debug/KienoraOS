@@ -2743,10 +2743,10 @@ function filterBaoCaoTable() {
     renderBaoCaoTable(currentFilteredData);
 }
 
-async function renderBaoCaoTable(data) {
+function renderBaoCaoTable(data) {
     const tbody = document.getElementById('baoCaoTableBody');
     if(!tbody) return;
-    tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400">Đang tải dữ liệu và đồng bộ tên giáo viên...</td></tr>`;
+    tbody.innerHTML = "";
     
     if(data.length === 0) {
         tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
@@ -2764,9 +2764,9 @@ async function renderBaoCaoTable(data) {
     const pageItems = data.slice(startIdx, endIdx);
     
     let rowsHtml = "";
-    for (const item of pageItems) {
+    pageItems.forEach(item => {
         const maGV = item.giao_vien || item.giaoVien || item.ma_nhan_su || '';
-        const tenGVKH = await layTenNhanSuAsync(maGV); // 💡 Đợi lấy tên từ bảng users
+        const tenGVKH = layTenNhanSu(maGV); // 💡 Đổi từ mã sang Tên nhân sự
         
         const monVal = item.mon_hoc || item.monHoc || '';
         const phanMonVal = item.phan_mon || item.phanMon || '';
@@ -2799,7 +2799,7 @@ async function renderBaoCaoTable(data) {
                 </td>
             </tr>
         `;
-    }
+    });
     
     tbody.innerHTML = rowsHtml;
     veThanhPhanTrang(totalPages, totalItems, startIdx, endIdx);
@@ -3262,33 +3262,16 @@ window.xuatPDFBaoCao = function() {
         printFrame.contentWindow.print();
     }, 300);
 };
-// 1. Hàm tra cứu tên nhân sự (Tự động tải từ Supabase nếu chưa có sẵn)
-async function layTenNhanSuAsync(maNS) {
+function layTenNhanSu(maNS) {
     if (!maNS) return '';
-    
-    // Lấy danh sách từ biến toàn cục nếu đã tải trước đó
-    let danhSachUser = window.allUsers || window.danhSachNhanSu || window.usersData || [];
-    
-    // Nếu chưa có, tự động query trực tiếp từ bảng users của Supabase
-    if (danhSachUser.length === 0 && typeof supabaseClient !== 'undefined') {
-        try {
-            const { data, error } = await supabaseClient.from('users').select('ma_nhan_su, ten_nhan_su');
-            if (!error && data) {
-                window.allUsers = data; // Lưu vào biến toàn cục để dùng cho các lần sau
-                danhSachUser = data;
-            }
-        } catch (err) {
-            console.error("Lỗi tải bảng users:", err);
-        }
-    }
-
-    // Tìm kiếm khớp mã nhân sự
+    // Giả sử hệ thống của thầy có lưu danh sách user/nhân sự toàn cục ở biến window.allUsers hoặc window.danhSachNhanSu
+    const danhSachUser = window.allUsers || window.danhSachNhanSu || window.usersData || [];
     const userTimThay = danhSachUser.find(u => 
-        String(u.ma_nhan_su || '').trim() === String(maNS).trim()
+        String(u.ma_nhan_su || u.maNhanSu || u.id || '').trim() === String(maNS).trim()
     );
     
-    // Trả về tên nhân sự, nếu không tìm thấy thì hiển thị lại mã gốc
-    return userTimThay ? userTimThay.ten_nhan_su : maNS;
+    // Nếu tìm thấy trả về tên, nếu không tìm thấy trả về chính mã nhân sự để tránh bị trống
+    return userTimThay ? (userTimThay.ten_nhan_su || userTimThay.ho_ten || userTimThay.tenNhanSu || userTimThay.name || maNS) : maNS;
 }
     </script>
 </body>
