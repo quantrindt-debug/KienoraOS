@@ -295,7 +295,8 @@
 
                 students.forEach((hs, index) => {
                     let tenHS = hs.ho_va_ten || hs.ten || hs.hovaten || '';
-                    let ngaySinh = hs.ngay_sinh || hs.ngaysinh || '';
+                    let rawNgaySinh = hs.ngay_sinh || hs.ngaysinh || '';
+                    let ngaySinh = dinhDangNgaySinh(rawNgaySinh); // 🎯 Đã chuẩn hóa thành dd/mm/yyyy
                     let cccdHS = hs.cccd || hs.so_dinh_danh || hs.so_can_cuoc || '';
 
                     htmlContent += `
@@ -445,7 +446,16 @@ let minRows = students.length > 45 ? students.length : Math.max(students.length,
                 printWindow.print();
             }, 500);
         }
-
+// 🛠️ Hàm chuyển đổi định dạng ngày từ yyyy-mm-dd sang dd/mm/yyyy
+        function dinhDangNgaySinh(ngayStr) {
+            if (!ngayStr) return '';
+            // Nếu chuỗi có dạng yyyy-mm-dd (ví dụ: 2010-04-28)
+            let parts = ngayStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            return ngayStr; // Trả về nguyên bản nếu đã đúng định dạng khác
+        }
         window.onload = loadDuLieuTuSupabase;
     </script>
 </body>
