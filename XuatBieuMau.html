@@ -5,7 +5,19 @@
     <title>Biểu Mẫu Ký Cam Kết Học Sinh - H-CKCL</title>
     <!-- Thư viện Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
+   <style>
+        thead { 
+            display: table-header-group; 
+        }
+        tr { 
+            page-break-inside: avoid; 
+            break-inside: avoid; 
+        }
+        .summary-text, .footer-section { 
+            page-break-inside: avoid; 
+            break-inside: avoid; 
+        }
+
         :root {
             --primary-color: #1e3a8a;
             --accent-color: #2563eb;
@@ -21,7 +33,6 @@
             background: var(--bg-color); 
         }
 
-        /* Thanh điều khiển (Control Panel) - Ẩn khi in */
         .control-panel { 
             max-width: 900px; 
             margin: 0 auto 20px auto; 
@@ -68,80 +79,75 @@
 
         .btn-print:hover { background: #1d4ed8; }
 
-        /* Vùng chứa các trang biểu mẫu A4 */
         .print-container { max-width: 210mm; margin: 0 auto; }
 
         @media print {
             body { background: none; padding: 0; }
             .control-panel { display: none !important; }
-            @page { size: A4 portrait; margin: 15mm; }
+            @page { size: A4 portrait; margin: 8mm; } /* Thu hẹp lề giấy in xuống 8mm để tối đa hóa không gian */
             .cam-ket-page { 
-                page-break-after: always; 
-                break-after: page; 
                 box-shadow: none !important; 
                 margin: 0 !important; 
                 padding: 0 !important; 
+                page-break-after: always;
+                break-after: page;
             }
         }
 
-        /* Khung giấy A4 chuẩn */
         .cam-ket-page {
             background: #fff;
             width: 210mm;
-            min-height: 297mm;
-            padding: 15mm;
+            padding: 8mm 10mm;
             margin: 0 auto 20px auto;
             box-sizing: border-box;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             position: relative;
         }
 
-        .header-title { text-align: center; font-weight: bold; font-size: 16px; text-transform: uppercase; margin-bottom: 5px; }
-        .sub-title { text-align: center; font-style: italic; font-size: 13px; margin-bottom: 15px; }
-        .intro-text { font-size: 13px; text-align: justify; margin-bottom: 15px; line-height: 1.5; }
+        .header-title { text-align: center; font-weight: bold; font-size: 14px; text-transform: uppercase; margin-bottom: 2px; }
+        .sub-title { text-align: center; font-style: italic; font-size: 11px; margin-bottom: 6px; }
+        .intro-text { font-size: 11px; text-align: justify; margin-bottom: 6px; line-height: 1; }
 
-        /* Bảng danh sách - Cố định kích thước từng cột */
+        /* 🎯 CO GỌN TỐI ĐA CHIỀU CAO DÒNG BẢNG */
         table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin-bottom: 15px; 
+            margin-bottom: 6px; 
             table-layout: fixed; 
         }
         th, td { 
             border: 1px solid #000; 
-            padding: 6px 4px; 
+            padding: 1.5px 3px; /* Giảm padding cực mỏng giúp 55+ dòng vẫn nằm gọn */
             text-align: center; 
             vertical-align: middle; 
-            font-size: 12px; 
+            font-size: 10.5px; /* Giảm nhẹ cỡ chữ để tiết kiệm diện tích */
             word-wrap: break-word; 
         }
-        th { background-color: #f1f5f9; font-weight: bold; }
-        .text-left { text-align: left; padding-left: 8px; }
+        th { background-color: #f1f5f9; font-weight: bold; font-size: 10.5px; }
+        .text-left { text-align: left; padding-left: 5px; }
 
-        /* Phân bổ độ rộng chi tiết cho từng cột */
-        th:nth-child(1), td:nth-child(1) { width: 40px; }   /* STT */
-        th:nth-child(2), td:nth-child(2) { width: 150px; }  /* Họ và tên học sinh (Mở rộng) */
-        th:nth-child(3), td:nth-child(3) { width: 80px; }   /* Ngày, tháng, năm sinh (Thu nhỏ) */
-        th:nth-child(4), td:nth-child(4) { width: 100px; }  /* Số định danh cá nhân / CCCD (Thu nhỏ) */
-        th:nth-child(5), td:nth-child(5) { width: 75px; }   /* Học sinh ký */
-        th:nth-child(6), td:nth-child(6) { width: 65px; }   /* Ý kiến: Đồng ý */
-        th:nth-child(7), td:nth-child(7) { width: 65px; }   /* Ý kiến: Không đồng ý */
-        th:nth-child(8), td:nth-child(8) { width: 60px; }   /* Ghi chú */
+        /* Cố định độ rộng cột */
+        th:nth-child(1), td:nth-child(1) { width: 35px; }   
+        th:nth-child(2), td:nth-child(2) { width: 145px; }  
+        th:nth-child(3), td:nth-child(3) { width: 75px; }   
+        th:nth-child(4), td:nth-child(4) { width: 95px; }   
+        th:nth-child(5), td:nth-child(5) { width: 65px; }   
+        th:nth-child(6), td:nth-child(6) { width: 55px; }   
+        th:nth-child(7), td:nth-child(7) { width: 55px; }   
+        th:nth-child(8), td:nth-child(8) { width: 55px; }   
 
-        .summary-text { font-size: 12px; font-style: italic; margin-bottom: 30px; line-height: 1.4; }
+        .summary-text { font-size: 10.5px; font-style: italic; margin-top: 6px; margin-bottom: 10px; line-height: 1.2; }
         
-        /* Khu vực chữ ký */
         .footer-section { 
             display: flex; 
             justify-content: space-between; 
-            margin-top: 20px; 
+            margin-top: 10px; 
             font-weight: bold; 
-            font-size: 13px; 
-            page-break-inside: avoid; 
+            font-size: 11.5px; 
         }
         .footer-col { text-align: center; width: 45%; }
-        .footer-sub { font-weight: normal; font-style: italic; font-size: 11px; display: block; margin-bottom: 15px; }
-        .signer-name { font-weight: bold; font-size: 13px; margin-top: 45px; display: block; }
+        .footer-sub { font-weight: normal; font-style: italic; font-size: 10px; display: block; margin-bottom: 4px; }
+        .signer-name { font-weight: bold; font-size: 11.5px; margin-top: 30px; display: block; }
         
         .loading-state { text-align: center; padding: 40px; font-style: italic; color: #64748b; }
     </style>
@@ -167,50 +173,56 @@
         let danhSachHocSinh = [];
 
         // 1. Tải dữ liệu từ bảng `cau_hinh_lop_hoc_ckcl` và `hoc_sinh` trên Supabase
+        // 1. Tải toàn bộ học sinh từ Supabase (vượt qua giới hạn mặc định 1000 dòng của Supabase)
         async function loadDuLieuTuSupabase() {
             try {
                 let client = typeof db !== 'undefined' ? db : window.db;
                 
                 if (!client && typeof window.supabase !== 'undefined') {
-                    const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
+                     const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
                     client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 }
 
                 if (client) {
-                    // Lấy danh sách cấu hình lớp học (chứa ma_lop và ten_gvcn)
+                    // Lấy danh sách lớp từ bảng cau_hinh_lop_hoc_ckcl
                     let resLop = await client.from('cau_hinh_lop_hoc_ckcl').select('*');
                     if (resLop.data && !resLop.error) {
                         danhSachLop = resLop.data;
                     }
 
-                    // Lấy danh sách học sinh từ bảng hoc_sinh
-                    let resHS = await client.from('hoc_sinh').select('*');
-                    if (resHS.data && !resHS.error) {
-                        danhSachHocSinh = resHS.data;
+                    // 🎯 Lấy toàn bộ học sinh (phòng trường hợp > 1000 học sinh bằng cách phân đoạn range)
+                    let allHS = [];
+                    let pageSize = 1000;
+                    let page = 0;
+                    let fetchMore = true;
+
+                    while (fetchMore) {
+                        let { data, error } = await client
+                            .from('hoc_sinh')
+                            .select('*')
+                            .range(page * pageSize, (page + 1) * pageSize - 1);
+
+                        if (error || !data || data.length === 0) {
+                            fetchMore = false;
+                        } else {
+                            allHS = allHS.concat(data);
+                            if (data.length < pageSize) {
+                                fetchMore = false;
+                            } else {
+                                page++;
+                            }
+                        }
                     }
+                    danhSachHocSinh = allHS;
                 }
             } catch (e) {
                 console.log("Lỗi kết nối Supabase, sử dụng dữ liệu mẫu dự phòng:", e);
             }
 
-            // Dữ liệu mẫu dự phòng nếu chưa có kết nối DB thực tế
-            if (danhSachLop.length === 0) {
-                danhSachLop = [
-                    { ma_lop: "11A4", ten_lop: "11A4", ten_gvcn: "Nguyễn Thị Hoa" },
-                    { ma_lop: "12A1", ten_lop: "12A1", ten_gvcn: "Trần Văn Nam" }
-                ];
-            }
-            if (danhSachHocSinh.length === 0) {
-                danhSachHocSinh = [
-                    { id: 1, ho_ten: "Cao Thành Đạt", ngay_sinh: "2010-04-28", cccd: "040210023318", ma_lop: "11A4" },
-                    { id: 2, ho_ten: "Phan Văn Việt Anh", ngay_sinh: "2010-04-18", cccd: "040210008058", ma_lop: "11A4" }
-                ];
-            }
-
             // Đổ danh sách lớp vào thẻ select
             let selectLop = document.getElementById('selectLop');
-            selectLop.innerHTML = '<option value="ALL">-- Tất cả các lớp --</option>';
+            selectLop.innerHTML = '<option value="ALL">-- Tất cả các lớp (In toàn trường) --</option>';
             
             danhSachLop.sort((a, b) => (a.ma_lop || '').localeCompare(b.ma_lop || '')).forEach(lopObj => {
                 let maLop = lopObj.ma_lop || lopObj.lop || '';
@@ -225,7 +237,6 @@
 
             renderBieuMau();
         }
-
         // 2. Hàm tạo nội dung HTML cho biểu mẫu cam kết
         function taoHTMLDanhSachCamKet(filteredHS, groupedByLop) {
             let htmlContent = '';
@@ -242,7 +253,7 @@
             Object.keys(groupedByLop).sort().forEach(maLop => {
                 let students = groupedByLop[maLop];
                 let tenGVCN = gvcnMap[maLop] || ''; // Lấy tên GVCN tương ứng từ bảng cấu hình lớp học ckcl
-                let hieuTruong = "Nguyễn Văn A"; // Mặc định tên hiệu trưởng
+                let hieuTruong = "Nguyễn Hồng Hải"; // Mặc định tên hiệu trưởng
 
                 htmlContent += `
                     <div class="cam-ket-page">
@@ -302,7 +313,8 @@
                 });
 
                 // Đệm dòng trống tối thiểu 12 dòng để form chuẩn đẹp trên trang giấy
-                let minRows = Math.max(students.length, 12);
+                // Đệm dòng trống vừa phải (ví dụ tối đa chỉ đệm đến 35-40 dòng nếu lớp ít học sinh, còn lớp đông trên 50 học sinh thì giữ nguyên số lượng thực tế)
+let minRows = students.length > 45 ? students.length : Math.max(students.length, 30);
                 for (let i = students.length; i < minRows; i++) {
                     htmlContent += `
                         <tr>
