@@ -30,6 +30,41 @@
         background: white !important;
     }
 }
+@media print {
+    /* 1. Thiết lập khổ giấy in ngang (Landscape) */
+    @page {
+        size: A4 landscape;
+        margin: 10mm;
+    }
+
+    /* 2. Ẩn toàn bộ các thanh menu, nút bấm, bộ lọc khi in */
+    nav, header, .no-print, button, .filter-container, #filter-bar {
+        display: none !important;
+    }
+
+    /* 3. Mỗi khối nội dung của một tuần sẽ bị ép ngắt sang một trang mới */
+    .print-tuan-page {
+        page-break-after: always;
+        break-after: page;
+        display: block;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+        .footer-sign { 
+        margin-top: 25px; 
+        width: 100%; 
+        display: flex; 
+        justify-content: space-between; 
+        font-weight: bold; 
+        padding: 0 30px; /* Giảm padding xuống 30px để nằm gọn trong lề giấy */
+        box-sizing: border-box; /* Bắt buộc có để tính padding nằm gọn trong 100% chiều rộng */
+        page-break-inside: avoid;
+    }
+    .sign-box { 
+        text-align: center; 
+        width: 220px; 
+    }
+}
 </style>
 </head>
 <body class="bg-slate-100 min-h-screen text-slate-800">
@@ -708,57 +743,68 @@ if (pageType === 'baocao') {
                     </button>
                     <!-- ✅ Đã sửa đúng tên hàm -->
                     <button onclick="xuatPDFBaoCao()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700">
-    🖨️ Xuất PDF Chi Tiết
-</button>
+                        🖨️ Xuất PDF Chi Tiết
+                    </button>
+                            <button onclick="inSoDauBaiTheoTuan()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5">
+                        🖨️ In Sổ Đầu Bài Theo Tuần (Khổ Ngang)
+                    </button>
                 </div>
             </div>
 
             <!-- THANH BỘ LỌC NÂNG CAO -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80">
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-bold text-slate-600 px-1">📅 Tuần</label>
-                    <select id="filterBCCoGiTuan" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">-- Tất cả Tuần --</option>
-                    </select>
-                </div>
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2.5 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200/80">
+    <div class="flex flex-col gap-1">
+        <label class="text-[11px] font-bold text-slate-600 px-1">📅 Tuần</label>
+        <select id="filterBCCoGiTuan" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">-- Tất cả Tuần --</option>
+        </select>
+    </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-bold text-slate-600 px-1">👨‍🏫 Giáo Viên</label>
-                    <select id="filterBCCoGiGV" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">-- Tất cả Giáo Viên --</option>
-                    </select>
-                </div>
+    <div class="flex flex-col gap-1">
+        <label class="text-[11px] font-bold text-slate-600 px-1">👨‍🏫 Giáo Viên</label>
+        <select id="filterBCCoGiGV" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">-- Tất cả Giáo Viên --</option>
+        </select>
+    </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-bold text-slate-600 px-1">📚 Môn Học</label>
-                    <select id="filterBCCoGiMon" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">-- Tất cả Môn --</option>
-                    </select>
-                </div>
+    <div class="flex flex-col gap-1">
+        <label class="text-[11px] font-bold text-slate-600 px-1">📚 Môn Học</label>
+        <select id="filterBCCoGiMon" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">-- Tất cả Môn --</option>
+        </select>
+    </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-bold text-slate-600 px-1">🎯 Phân Môn</label>
-                    <select id="filterBCCoGiPhanMon" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">-- Tất cả Phân Môn --</option>
-                    </select>
-                </div>
+    <div class="flex flex-col gap-1">
+        <label class="text-[11px] font-bold text-slate-600 px-1">🎯 Phân Môn</label>
+        <select id="filterBCCoGiPhanMon" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">-- Tất cả Phân Môn --</option>
+        </select>
+    </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-bold text-slate-600 px-1">🏫 Lớp</label>
-                    <select id="filterBCCoGiLop" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">-- Tất cả Lớp --</option>
-                    </select>
-                </div>
+    <!-- 🎯 THÊM MỤC CHỌN KHỐI Ở ĐÂY -->
+    <div class="flex flex-col gap-1">
+        <label class="text-[11px] font-bold text-slate-600 px-1">🏫 Khối</label>
+        <select id="filterBCCoGiKhoi" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">-- Tất cả Khối --</option>
+        </select>
+    </div>
 
-                <div class="flex flex-col gap-1">
-                    <label class="text-[11px] font-bold text-slate-600 px-1">⚡ Trạng Thái SĐB</label>
-                    <select id="filterBCCoGiTrangThai" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <option value="">Tất cả trạng thái</option>
-                        <option value="chua-ky">Chưa ký SĐB</option>
-                        <option value="da-ky">Đã ký SĐB</option>
-                    </select>
-                </div>
-            </div>
+    <div class="flex flex-col gap-1">
+        <label class="text-[11px] font-bold text-slate-600 px-1">🏫 Lớp</label>
+        <select id="filterBCCoGiLop" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">-- Tất cả Lớp --</option>
+        </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+        <label class="text-[11px] font-bold text-slate-600 px-1">⚡ Trạng Thái SĐB</label>
+        <select id="filterBCCoGiTrangThai" onchange="filterBaoCaoTable()" class="px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">Tất cả trạng thái</option>
+            <option value="chua-ky">Chưa ký SĐB</option>
+            <option value="da-ky">Đã ký SĐB</option>
+        </select>
+    </div>
+</div>
 
             <!-- BẢNG HIỂN THỊ DỮ LIỆU -->
             <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-xs">
@@ -2684,14 +2730,51 @@ function populateDropdowns(data) {
         });
     }
 
+    // 🎯 THAY THẾ PHẦN XỬ LÝ PHÂN MÔN Ở ĐÂY ĐỂ GOM NHÓM "ÔN TẬP"
     const selectPhanMon = document.getElementById('filterBCCoGiPhanMon');
     if(selectPhanMon) {
         selectPhanMon.innerHTML = '<option value="">-- Tất cả Phân Môn --</option>';
+        
+        let normalPhanMon = [];
+        let hasOnTap = false;
+
         Array.from(phanMonSet).sort().forEach(pm => {
+            let pmStr = String(pm).trim();
+            // Kiểm tra nếu có chứa từ "ôn tập" (không phân biệt hoa thường, khoảng trắng hay gạch dưới)
+            if (pmStr.toLowerCase().replace(/[_]/g, ' ').includes('ôn tập')) {
+                hasOnTap = true;
+            } else {
+                normalPhanMon.push(pmStr);
+            }
+        });
+
+        // Nếu có phân môn ôn tập, thêm tùy chọn gom nhóm lên đầu
+        if (hasOnTap) {
+            selectPhanMon.innerHTML += `<option value="GROUP_ON_TAP">📚 Ôn tập (Tất cả các loại)</option>`;
+        }
+
+        // Nạp tiếp các phân môn bình thường còn lại
+        normalPhanMon.forEach(pm => {
             selectPhanMon.innerHTML += `<option value="${pm}">${pm}</option>`;
         });
     }
-    
+    // 🎯 THÊM ĐOẠN XỬ LÝ NẠP DỮ LIỆU CHO DROPDOWN KHỐI
+    const khoiSet = new Set();
+    data.forEach(item => {
+        let lopStr = String(item.lop || '').trim();
+        if (lopStr.length >= 2) {
+            let khoi = lopStr.substring(0, 2); // Lấy 2 ký tự đầu của lớp (ví dụ: "12" từ "12A1")
+            khoiSet.add(khoi);
+        }
+    });
+
+    const selectKhoi = document.getElementById('filterBCCoGiKhoi');
+    if (selectKhoi) {
+        selectKhoi.innerHTML = '<option value="">-- Tất cả Khối --</option>';
+        Array.from(khoiSet).sort().forEach(khoi => {
+            selectKhoi.innerHTML += `<option value="${khoi}">Khối ${khoi}</option>`;
+        });
+    }
     const selectLop = document.getElementById('filterBCCoGiLop');
     if(selectLop) {
         selectLop.innerHTML = '<option value="">-- Tất cả Lớp --</option>';
@@ -2702,27 +2785,47 @@ function populateDropdowns(data) {
 }
 
 // Hàm lọc cập nhật theo các điều kiện
+// Hàm lọc cập nhật theo các điều kiện
 function filterBaoCaoTable() {
     const tuanKey = document.getElementById('filterBCCoGiTuan')?.value || '';
     const gvKey = document.getElementById('filterBCCoGiGV')?.value || '';
     const monKey = document.getElementById('filterBCCoGiMon')?.value || '';
     const phanMonKey = document.getElementById('filterBCCoGiPhanMon')?.value || '';
     const lopKey = document.getElementById('filterBCCoGiLop')?.value || '';
+    const khoiKey = document.getElementById('filterBCCoGiKhoi')?.value || ''; // 🎯 Lấy giá trị Khối chọn
     const ttKey = document.getElementById('filterBCCoGiTrangThai')?.value || '';
     
     currentFilteredData = globalBaoCaoData.filter(item => {
         const gvVal = item.giao_vien || item.giaoVien || '';
         const monVal = item.mon_hoc || item.monHoc || '';
         const phanMonVal = item.phan_mon || item.phanMon || '';
+        const lopVal = String(item.lop || '').trim();
 
         const matchTuan = !tuanKey || String(item.tuan) === String(tuanKey);
         const matchGV = !gvKey || gvVal === gvKey;
         const matchMon = !monKey || monVal === monKey;
-        const matchPhanMon = !phanMonKey || phanMonVal === phanMonKey;
-        const matchLop = !lopKey || item.lop === lopKey;
+        const matchLop = !lopKey || lopVal === lopKey;
+        
+        // 🎯 Điều kiện kiểm tra Khối (Lấy 2 ký tự đầu của lớp so với khối được chọn)
+        let matchKhoi = true;
+        if (khoiKey) {
+            let khoiItem = lopVal.length >= 2 ? lopVal.substring(0, 2) : '';
+            matchKhoi = (khoiItem === khoiKey);
+        }
+
+        // Xử lý phân môn (Hỗ trợ nhóm Ôn tập)
+        let matchPhanMon = true;
+        if (phanMonKey) {
+            if (phanMonKey === 'GROUP_ON_TAP') {
+                let pmLower = String(phanMonVal).toLowerCase().replace(/[_]/g, ' ');
+                matchPhanMon = pmLower.includes('ôn tập');
+            } else {
+                matchPhanMon = phanMonVal === phanMonKey;
+            }
+        }
         
         const trangThaiText = String(item.trang_thai_sdb || item.trang_thai_ky || item.trang_thai || '').trim().toLowerCase();
-        const isDaKy = item.da_ky === true || item.daKy === true || item.da_ky === 1 || item.da_ky === 1 || trangThaiText.includes('đã ký') || trangThaiText === 'da_ky';
+        const isDaKy = item.da_ky === true || item.daKy === true || item.da_ky === 1 || trangThaiText.includes('đã ký') || trangThaiText === 'da_ky';
 
         let matchTT = true;
         if (ttKey === 'chua-ky') {
@@ -2731,10 +2834,23 @@ function filterBaoCaoTable() {
             matchTT = isDaKy; 
         }
         
-        return matchTuan && matchGV && matchMon && matchPhanMon && matchLop && matchTT;
+        return matchTuan && matchGV && matchMon && matchPhanMon && matchLop && matchKhoi && matchTT;
     });
-    
-    // 🟢 QUAN TRỌNG: Khi thay đổi bộ lọc, phải reset về trang 1
+
+    // Sắp xếp theo Tuần và Tiết PPCT như cũ
+    currentFilteredData.sort((a, b) => {
+        let tuanA = parseInt(String(a.tuan || '').replace(/\D/g, '')) || 0;
+        let tuanB = parseInt(String(b.tuan || '').replace(/\D/g, '')) || 0;
+        
+        if (tuanA !== tuanB) {
+            return tuanA - tuanB;
+        }
+        
+        let tietA = parseInt(String(a.tiet_ppct || a.tiet || '').replace(/\D/g, '')) || 0;
+        let tietB = parseInt(String(b.tiet_ppct || b.tiet || '').replace(/\D/g, '')) || 0;
+        return tietA - tietB;
+    });
+
     currentBaoCaoPage = 1;
 
     const countEl = document.getElementById('countBaoCao');
@@ -2909,6 +3025,7 @@ function xuatExcelBaoCao() {
         "Phân Môn Học": item.phan_mon || item.phanMon || '',
         "Lớp": item.lop || '',
         "Tiết": item.tiet || '',
+        "Tiết PPCT": item.tiet_ppct || '',
         "Nội Dung Kế Hoạch": item.ten_bai || item.noiDung || '',
         "Trạng Thái Ký Sổ": (item.trang_thai_ky !== undefined ? item.trang_thai_ky : item.daKy) ? "Đã ký sổ đầu bài" : "Chưa ký sổ đầu bài"
     }));
@@ -3262,16 +3379,328 @@ window.xuatPDFBaoCao = function() {
         printFrame.contentWindow.print();
     }, 300);
 };
+// Bộ nhớ tạm lưu danh sách nhân sự để tra cứu ngay lập tức
+window.cachedNhanSu = window.cachedNhanSu || {};
+
+// Hàm lấy tên đồng bộ, siêu nhanh, không lỗi 404
 function layTenNhanSu(maNS) {
     if (!maNS) return '';
-    // Giả sử hệ thống của thầy có lưu danh sách user/nhân sự toàn cục ở biến window.allUsers hoặc window.danhSachNhanSu
-    const danhSachUser = window.allUsers || window.danhSachNhanSu || window.usersData || [];
-    const userTimThay = danhSachUser.find(u => 
-        String(u.ma_nhan_su || u.maNhanSu || u.id || '').trim() === String(maNS).trim()
-    );
+    let maStr = String(maNS).trim();
     
-    // Nếu tìm thấy trả về tên, nếu không tìm thấy trả về chính mã nhân sự để tránh bị trống
-    return userTimThay ? (userTimThay.ten_nhan_su || userTimThay.ho_ten || userTimThay.tenNhanSu || userTimThay.name || maNS) : maNS;
+    // Nếu trong bộ nhớ tạm đã có tên vị này thì trả về luôn
+    if (window.cachedNhanSu[maStr]) {
+        return window.cachedNhanSu[maStr];
+    }
+    
+    // Nếu chưa có, trả về tạm mã và âm thầm gọi tải về cho lần hiển thị sau
+    return maStr;
+}    
+ async function loadDanhCacheNhanSu() {
+    try {
+        const client = typeof db !== 'undefined' ? db : window.db;
+        if (!client) return;
+
+        // 🎯 Thầy đổi chữ 'nhan_su' thành đúng tên bảng chứa nhân sự của thầy trong Supabase (vd: 'users', 'giao_vien'...)
+        let { data, error } = await client.from('users').select('*'); 
+        
+        if (data && !error) {
+            window.cachedNhanSu = {};
+            data.forEach(u => {
+                let ma = String(u.ma_nhan_su || u.maNhanSu || u.username || u.id || '').trim();
+                let ten = u.ten_nhan_su || u.ho_ten || u.name || ma;
+                if (ma) {
+                    window.cachedNhanSu[ma] = ten;
+                }
+            });
+            
+            // Vẽ lại bảng báo cáo sau khi đã có tên đầy đủ
+            if (typeof filterBaoCaoTable === 'function') {
+                filterBaoCaoTable();
+            }
+        }
+    } catch (e) {
+        console.log("Đã tải cache nhân sự hoàn tất hoặc bảng tên khác.");
+    }
+}
+
+// Gọi hàm này ngay khi trang tải xong hoặc chạy kèm lúc tải báo cáo
+loadDanhCacheNhanSu();
+//Sắp xếp theo tuần 
+function generateReportHTML(reportData) {
+  // Sắp xếp dữ liệu theo thứ tự tuần tăng dần (phòng hờ dữ liệu bị lệch)
+  reportData.sort((a, b) => (Number(a.tuan) || 0) - (Number(b.tuan) || 0));
+
+  let html = `
+    <div class="p-6 bg-white text-black">
+      <h2 class="text-center font-bold text-lg mb-4">BÁO CÁO TỔNG HỢP SỔ ĐẦU BÀI</h2>
+      <table class="w-full border-collapse border border-slate-400 text-xs">
+        <thead>
+          <tr class="bg-slate-100">
+            <th class="border border-slate-300 p-2">STT</th>
+            <!-- 🎯 THÊM CỘT TUẦN VÀO ĐÂY -->
+            <th class="border border-slate-300 p-2">Tuần</th>
+            <th class="border border-slate-300 p-2">Ngày / Tiết</th>
+            <th class="border border-slate-300 p-2">Lớp</th>
+            <th class="border border-slate-300 p-2">Môn học</th>
+            <th class="border border-slate-300 p-2">Nội dung bài học</th>
+            <th class="border border-slate-300 p-2">Xếp loại / Nhận xét</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  reportData.forEach((item, index) => {
+    html += `
+      <tr>
+        <td class="border border-slate-300 p-2 text-center">${index + 1}</td>
+        <!-- 🎯 HIỂN THỊ DỮ LIỆU CỘT TUẦN -->
+        <td class="border border-slate-300 p-2 text-center font-bold text-purple-700">Tuần ${item.tuan || ''}</td>
+        <td class="border border-slate-300 p-2">${item.ngay || ''} (Tiết ${item.tiet || ''})</td>
+        <td class="border border-slate-300 p-2 text-center">${item.lop || ''}</td>
+        <td class="border border-slate-300 p-2">${item.mon_hoc || ''}</td>
+        <td class="border border-slate-300 p-2">${item.noi_dung || ''}</td>
+        <td class="border border-slate-300 p-2 text-center">${item.xep_loai || ''}</td>
+      </tr>
+    `;
+  });
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+  
+  return html;
+}
+//In theo tuầ
+function inSoDauBaiTheoTuan() {
+    if (!currentFilteredData || currentFilteredData.length === 0) {
+        alert("Không có dữ liệu để in!");
+        return;
+    }
+
+    // 1. Lấy nhanh cấu hình tuần từ biến cache toàn cục của hệ thống
+    let tuanDateMap = {};
+    let rawConfig = window.cachedCauHinhTuan || window.globalCauHinhTuan || window.cauHinhTuanData || [];
+    
+    if (Array.isArray(rawConfig)) {
+        rawConfig.forEach(cfg => {
+            let tuanNum = String(cfg.tuan || cfg.tuan_hoc || '').trim();
+            let ngayBD = cfg.ngay_bat_dau || cfg.ngayBD || cfg.tu_ngay || '';
+            if (tuanNum && ngayBD) {
+                tuanDateMap[tuanNum] = new Date(ngayBD);
+            }
+        });
+    }
+
+    // Ngày bắt đầu mặc định cho tuần 1 (07/09/2026)
+    let defaultFirstWeekStart = new Date('2026-09-07');
+
+    // Hàm tính ngày dạy tương ứng
+    function tinhNgayHoc(tuanStr, thuStr) {
+        let tuanNum = parseInt(String(tuanStr).replace(/\D/g, '')) || 1;
+        let baseDate = tuanDateMap[String(tuanStr)] || tuanDateMap[tuanNum];
+        
+        if (!baseDate) {
+            baseDate = new Date(defaultFirstWeekStart);
+            baseDate.setDate(baseDate.getDate() + (tuanNum - 1) * 7);
+        }
+
+        let thuLower = String(thuStr).toLowerCase();
+        let dayOffset = 0;
+        if (thuLower.includes('2')) dayOffset = 0;
+        else if (thuLower.includes('3')) dayOffset = 1;
+        else if (thuLower.includes('4')) dayOffset = 2;
+        else if (thuLower.includes('5')) dayOffset = 3;
+        else if (thuLower.includes('6')) dayOffset = 4;
+        else if (thuLower.includes('7')) dayOffset = 5;
+        else if (thuLower.includes('chủ nhật') || thuLower.includes('cn')) dayOffset = 6;
+
+        let targetDate = new Date(baseDate);
+        targetDate.setDate(baseDate.getDate() + dayOffset);
+
+        let dd = String(targetDate.getDate()).padStart(2, '0');
+        let mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+        let yyyy = targetDate.getFullYear();
+        return `${dd}/${mm}/${yyyy}`;
+    }
+
+    // 2. Gom nhóm dữ liệu theo Tuần
+    let groupedByTuan = {};
+    currentFilteredData.forEach(item => {
+        let tuan = item.tuan || 'Khác';
+        if (!groupedByTuan[tuan]) {
+            groupedByTuan[tuan] = [];
+        }
+        groupedByTuan[tuan].push(item);
+    });
+
+    let printWindow = window.open('', '_blank');
+    let htmlContent = `
+        <html>
+        <head>
+            <title>Sổ Ghi Đầu Bài - In Theo Tuần</title>
+            <style>
+                @page { size: A4 landscape; margin: 15mm; }
+                body { font-family: 'Times New Roman', Times, serif; font-size: 13px; color: #000; margin: 0; padding: 0; }
+                
+                /* Trang Bìa */
+                .cover-page {
+                    page-break-after: always;
+                    break-after: page;
+                    width: 100%;
+                    height: 90vh;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    align-items: center;
+                    text-align: center;
+                    box-sizing: border-box;
+                    padding: 40px 0;
+                }
+                .cover-top { font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+                .cover-center { margin: auto 0; }
+                .cover-title { font-size: 26px; font-weight: bold; text-transform: uppercase; margin-bottom: 25px; letter-spacing: 1px; }
+                .cover-class { font-size: 18px; font-weight: bold; }
+                .cover-bottom { font-size: 15px; font-weight: bold; }
+
+                /* Trang nội dung tuần */
+                .print-tuan-page { 
+                    page-break-after: always; 
+                    break-after: page; 
+                    width: 100%; 
+                    box-sizing: border-box; 
+                    margin-bottom: 20px; 
+                }
+                
+                h3 { text-align: center; text-transform: uppercase; font-size: 15px; margin-bottom: 8px; margin-top: 0; }
+                table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+                th, td { border: 1px solid #000; padding: 5px 6px; text-align: center; vertical-align: middle; }
+                th { background-color: #f2f2f2; font-weight: bold; }
+                .text-left { text-align: left; }
+                
+                /* 🎯 Phần chữ ký đã căn chỉnh lề trong (padding: 0 80px) giúp cả 2 bên cân xứng tuyệt đối */
+                .footer-sign { 
+                    margin-top: 25px; 
+                    width: 100%; 
+                    display: flex; 
+                    justify-content: space-between; 
+                    font-weight: bold; 
+                    padding: 0 80px; 
+                    page-break-inside: avoid;
+                }
+                .sign-box { 
+                    text-align: center; 
+                    width: 220px; 
+                }
+                .sub-sign { 
+                    font-weight: normal; 
+                    font-style: italic; 
+                    font-size: 11px; 
+                    display: block; 
+                    margin-bottom: 50px; 
+                }
+                .sign-name { 
+                    font-weight: bold; 
+                    font-size: 13px; 
+                }
+            </style>
+        </head>
+        <body>
+    `;
+
+    // 3. Dựng trang Bìa đầu tiên
+    htmlContent += `
+        <div class="cover-page">
+            <div class="cover-top">BỘ GIÁO DỤC VÀ ĐÀO TẠO</div>
+            <div class="cover-center">
+                <div class="cover-title">SỔ GHI ĐẦU BÀI</div>
+                <div class="cover-class">Lớp: Bồi dưỡng HSG Tin học 12</div>
+            </div>
+            <div class="cover-bottom">Năm học: 2026-2027</div>
+        </div>
+    `;
+
+    // 4. Duyệt qua từng tuần để dựng các trang nội dung
+    Object.keys(groupedByTuan).sort((a,b) => a - b).forEach(tuan => {
+        let items = groupedByTuan[tuan];
+        let gvDaiDienTuan = items.length > 0 ? (typeof layTenNhanSu === 'function' ? layTenNhanSu(items[0].giao_vien || items[0].giaoVien) : (items[0].giao_vien || '')) : '';
+
+        htmlContent += `
+            <div class="print-tuan-page">
+                <h3>TUẦN ${tuan} - SỔ ĐẦU BÀI CHI TIẾT</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thứ ngày tháng</th>
+                            <th>Tiết</th>
+                            <th>Môn học</th>
+                            <th>Tiết PPCT</th>
+                            <th>Tên HS nghỉ tiết</th>
+                            <th>Tên bài, nội dung công việc</th>
+                            <th>Địa điểm thực hiện</th>
+                            <th>Nhận xét của giáo viên</th>
+                            <th>Điểm</th>
+                            <th>Ký tên</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        items.forEach(row => {
+            let tenGV = typeof layTenNhanSu === 'function' ? layTenNhanSu(row.giao_vien || row.giaoVien) : (row.giao_vien || '');
+            let thuText = row.thu || '';
+            let ngayHocFormatted = tinhNgayHoc(tuan, thuText);
+
+            htmlContent += `
+                <tr>
+                    <td>${thuText} <br/> ${ngayHocFormatted}</td>
+                    <td>${row.tiet || ''}</td>
+                    <td class="text-left">${row.mon_hoc || row.monHoc || ''} (${row.phan_mon || row.phanMon || ''})</td>
+                    <td>${row.tiet_ppct || ''}</td>
+                    <td>${row.hs_nghi || 0}</td>
+                    <td class="text-left">${row.noi_dung || row.ten_bai || ''}</td>
+                    <td>${row.lop || ''}</td>
+                    <td>${row.nhan_xet || 'Tốt'}</td>
+                    <td>${row.diem || '10'}</td>
+                    <td>${tenGV}</td>
+                </tr>
+            `;
+        });
+
+        htmlContent += `
+                    </tbody>
+                </table>
+                <table style="width: 100%; margin-top: 30px; border: none !important; page-break-inside: avoid;">
+                    <tr style="border: none !important;">
+                        <td style="width: 50%; text-align: center; border: none !important; vertical-align: top; font-weight: bold;">
+                            GIÁO VIÊN BỒI DƯỠNG<br>
+                            <span style="font-weight: normal; font-style: italic; font-size: 11px; display: block; margin-bottom: 50px;">(Ký, ghi rõ họ tên)</span>
+                            <div style="font-weight: bold; font-size: 13px;">${gvDaiDienTuan}</div>
+                        </td>
+                        <td style="width: 50%; text-align: center; border: none !important; vertical-align: top; font-weight: bold;">
+                            BAN GIÁM HIỆU<br>
+                            <span style="font-weight: normal; font-style: italic; font-size: 11px; display: block; margin-bottom: 50px;">(Ký, ghi rõ họ tên)</span>
+                            <div style="font-weight: bold; font-size: 13px;">Cao Đức Tài</div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        `;
+    });
+
+    htmlContent += `
+        </body>
+        </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    
+    setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+    }, 300);
 }
     </script>
 </body>
