@@ -4001,41 +4001,38 @@ function inSoDauBaiTheoTuan() {
         try {
             let client = typeof db !== 'undefined' ? db : window.db;
             
-            // 1. Tải bảng cấu hình tuần và map toàn diện tất cả các cột định danh tuần
-            let { data: tuanConfigData } = await client.from('CauHinhTuan').select('*');
-            let tuanLockMap = {};
-            if (tuanConfigData) {
-                tuanConfigData.forEach(w => {
-                    let tuanVal = String(w.tuan || '').trim();
-                    let tenTuanVal = String(w.ten_tuan || '').trim();
-                    let idVal = String(w.id || '').trim();
+            // 1. Tải bảng cấu hình tuần và chỉ xét riêng trạng thái của khóa SĐB (khoa_sdb)
+    let { data: tuanConfigData } = await client.from('CauHinhTuan').select('*');
+    let tuanLockMap = {};
+    if (tuanConfigData) {
+        tuanConfigData.forEach(w => {
+            let tuanVal = String(w.tuan || '').trim();
+            let tenTuanVal = String(w.ten_tuan || '').trim();
+            let idVal = String(w.id || '').trim();
 
-                    let valKhoaSDB = String(w.khoa_sdb || w.khoaSDb || '').trim().toLowerCase();
-                    let valKhoaKH = String(w.khoa_ke_hoach || w.khoaKeHoach || '').trim().toLowerCase();
+            let valKhoaSDB = String(w.khoa_sdb || w.khoaSDb || '').trim().toLowerCase();
 
-                    // Kiểm tra xem có chứa chữ "khoá" hoặc "khóa" không
-                    let isLockedVal = valKhoaSDB.includes('khoá') || valKhoaSDB.includes('khóa') || 
-                                      valKhoaKH.includes('khoá') || valKhoaKH.includes('khóa');
+            // 🎯 CHỈ KIỂM TRA RIÊNG CỘT KHOA_SDB: Nếu cột này chứa chữ khóa thì mới tính là khóa
+            let isLockedVal = valKhoaSDB.includes('khoá') || valKhoaSDB.includes('khóa');
 
-                    // Lưu map theo mọi khả năng (cả dạng chữ lẫn dạng số trích xuất được)
-                    if (tuanVal) {
-                        tuanLockMap[tuanVal] = isLockedVal;
-                        let m = tuanVal.match(/\d+/);
-                        if (m) tuanLockMap[m[0]] = isLockedVal;
-                    }
-                    if (tenTuanVal) {
-                        tuanLockMap[tenTuanVal.toLowerCase()] = isLockedVal;
-                        let m = tenTuanVal.match(/\d+/);
-                        if (m) tuanLockMap[m[0]] = isLockedVal;
-                    }
-                    if (idVal) {
-                        tuanLockMap[idVal] = isLockedVal;
-                        let m = idVal.match(/\d+/);
-                        if (m) tuanLockMap[m[0]] = isLockedVal;
-                    }
-                });
+            // Lưu map theo mọi định dạng số/chữ của tuần
+            if (tuanVal) {
+                tuanLockMap[tuanVal] = isLockedVal;
+                let m = tuanVal.match(/\d+/);
+                if (m) tuanLockMap[m[0]] = isLockedVal;
             }
-
+            if (tenTuanVal) {
+                tuanLockMap[tenTuanVal.toLowerCase()] = isLockedVal;
+                let m = tenTuanVal.match(/\d+/);
+                if (m) tuanLockMap[m[0]] = isLockedVal;
+            }
+            if (idVal) {
+                tuanLockMap[idVal] = isLockedVal;
+                let m = idVal.match(/\d+/);
+                if (m) tuanLockMap[m[0]] = isLockedVal;
+            }
+        });
+    }
             // 2. Truy vấn trực tiếp danh sách từ bảng ke_hoach_tuan
             let query = client.from('ke_hoach_tuan').select('*').eq('ma_nhan_su', maGV);
             
