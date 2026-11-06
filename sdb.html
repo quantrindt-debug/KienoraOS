@@ -95,7 +95,10 @@
                 <button onclick="switchTab('so-dau-bai')" id="tab-so-dau-bai" class="tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all text-indigo-100 hover:bg-white/10">
                     Sổ Đầu Bài
                 </button>
-
+                <!-- 🎯 Thêm tab Giáo Viên nằm chung hàng ngang và đồng bộ style với các tab khác -->
+                <button onclick="switchTab('tabGiaoVien')" id="tab-tabGiaoVien" class="tab-btn px-4 py-2 rounded-lg font-semibold text-xs transition-all text-indigo-100 hover:bg-white/10">
+                    👩‍🏫 Tiết Dạy Của Tôi
+                </button>
             </nav>
             <div id="userInfoBadge" class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-medium border border-blue-100 shadow-sm">
                 Đang tải định danh...
@@ -200,6 +203,32 @@
         </div>
     </div>
 </div>
+<!-- 📌 Modal Sửa Nội Dung Bài Dạy -->
+<<!-- 📌 Modal Sửa Tiết PPCT và Tên Bài Dạy -->
+<div id="modalSuaBai" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: #fff; width: 450px; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+        <h4 style="margin-top: 0; color: #1e3a8a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; font-size: 15px; font-weight: bold;">Chỉnh sửa nội dung tiết dạy</h4>
+        <input type="hidden" id="editRowId">
+        
+        <!-- Ô nhập Tiết PPCT -->
+        <div style="margin-bottom: 12px;">
+            <label style="font-weight: bold; font-size: 12px; display: block; margin-bottom: 5px; color: #475569;">Tiết PPCT:</label>
+            <input type="text" id="editTietPPCT" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; box-sizing: border-box; outline: none;" placeholder="Nhập số tiết PPCT (VD: 15)">
+        </div>
+
+        <!-- Ô nhập Tên bài dạy -->
+        <div style="margin-bottom: 15px;">
+            <label style="font-weight: bold; font-size: 12px; display: block; margin-bottom: 5px; color: #475569;">Tên bài dạy / Nội dung kế hoạch:</label>
+            <textarea id="editTenBai" rows="3" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; box-sizing: border-box; outline: none;"></textarea>
+        </div>
+
+        <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+            <button onclick="dongModalSua()" style="background: #e2e8f0; color: #334155; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">Hủy</button>
+            <button onclick="luuSuaBaiDạy()" style="background: #2563eb; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px;">Lưu thay đổi</button>
+        </div>
+    </div>
+</div>
+
         </main>
     </div>
 
@@ -255,6 +284,7 @@
         }
 
         // 2. Truy vấn thông tin bổ sung từ Supabase (nếu cần)
+ // 2. Truy vấn thông tin bổ sung từ Supabase (nếu cần)
         async function taiVaiTro() {
             initSessionData();
 
@@ -279,7 +309,13 @@
                     if (userObj.ma_truong) currentSession.maTruong = userObj.ma_truong;
                     
                     const roleLower = currentRole.toLowerCase();
-                    isAdmin = roleLower.includes("admin") || roleLower.includes("quản trị");
+                    
+                    // 🎯 Mở rộng các từ khóa nhận diện quyền Quản trị / Kỹ thuật tối cao ở đây:
+                    isAdmin = roleLower.includes("admin") || 
+                              roleLower.includes("quản trị") || 
+                              roleLower.includes("kỹ thuật") || 
+                              roleLower.includes("tối cao") || 
+                              roleLower.includes("quản lý");
                 }
             } catch (err) {
                 console.warn("Không lấy được chi tiết từ CSDL, dùng giá trị trong session:", err);
@@ -831,6 +867,67 @@ if (pageType === 'baocao') {
     
     taiBaoCaoChiTiet();
 }
+
+// 7. Tab Quản lý tiết dạy cá nhân của giáo viên
+    if (pageType === 'tabGiaoVien') {
+        contentDiv.innerHTML = `
+            <div class="space-y-4 bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-slate-100">
+                <div class="flex flex-col md:flex-row justify-between items-center pb-4 border-b border-slate-100 gap-3">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span>👩‍🏫</span> Quản lý lịch dạy và nội dung Sổ đầu bài cá nhân
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Xem, chỉnh sửa hoặc xóa tiết dạy cá nhân khi tuần học chưa khóa SĐB.</p>
+                    </div>
+                </div>
+
+                <!-- Thanh chọn giáo viên và lọc tuần -->
+                <div class="flex flex-wrap items-center gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chọn giáo viên:</label>
+                        <select id="selectGiaoVien" onchange="loadTietDạyCuaGiaoVien()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="">-- Chọn giáo viên --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Lọc theo tuần:</label>
+                        <select id="selectTuanGV" onchange="loadTietDạyCuaGiaoVien()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="ALL">-- Tất cả các tuần --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Bảng danh sách tiết dạy -->
+                <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white max-h-[500px]">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0">
+                            <tr>
+                                <th class="p-3 text-center" style="width: 45px;">Tuần</th>
+                                <th class="p-3 text-center" style="width: 50px;">Thứ</th>
+                                <th class="p-3 text-center" style="width: 55px;">Tiết TKB</th>
+                                <th class="p-3 text-center" style="width: 80px;">Lớp</th>
+                                <th class="p-3" style="width: 120px;">Môn / Phân môn</th>
+                                <th class="p-3 text-center" style="width: 75px;">Tiết PPCT</th>
+                                <th class="p-3">Tên bài dạy (Nội dung kế hoạch)</th>
+                                <th class="p-3 text-center" style="width: 90px;">Trạng Thái Ký</th>
+                                <th class="p-3 text-center" style="width: 90px;">Trạng Thái Khóa</th>
+                                <th class="p-3 text-center" style="width: 110px;">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableGiaoVienBody" class="divide-y divide-slate-100 text-slate-600">
+                            <tr>
+                                <td colspan="8" class="text-center py-10 text-slate-400">Vui lòng chọn giáo viên để xem dữ liệu tiết dạy...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        // Gọi hàm khởi tạo dữ liệu cho tab giáo viên (nếu có)
+        if (typeof khoiTaoDuLieuTabGV === 'function') khoiTaoDuLieuTabGV();
+        return;
+    }
 
 
     }
@@ -3250,16 +3347,53 @@ async function toggleKhoaTheoTuan() {
         alert("❌ Thất bại: " + err.message);
     }
 }
-//in so dau bai ra pdf
 window.xuatPDFBaoCao = function() {
     const dataToExport = (typeof currentFilteredData !== 'undefined' && currentFilteredData.length > 0) 
-                         ? currentFilteredData 
-                         : (window.globalBaoCaoData || []);
+                       ? currentFilteredData 
+                       : (window.globalBaoCaoData || []);
 
     if(dataToExport.length === 0) {
         alert("Không có dữ liệu để in PDF!");
         return;
     }
+
+    // 🎯 Xử lý tên lớp và tên môn thông minh theo yêu cầu của thầy
+    let setLopClean = new Set();
+    let setMon = new Set();
+
+    dataToExport.forEach(item => {
+        let rawLop = item.lop || '';
+        let phanMon = item.phan_mon || item.phanMon || '';
+        let monHoc = item.mon_hoc || item.monHoc || '';
+
+        let processedLop = rawLop;
+
+        // Kiểm tra nếu là phân môn BDHSG hoặc tên lớp/phân môn có chứa từ BDHSG
+        if (phanMon.toUpperCase().includes('BDHSG') || rawLop.toUpperCase().includes('BDHSG')) {
+            // Lấy phần khối (ví dụ: lớp 12GDKTPL - BDHSG -> lấy số 12 hoặc khối tương ứng)
+            let matchKhoi = rawLop.match(/^(10|11|12)/);
+            processedLop = matchKhoi ? ` ${matchKhoi[0]} ` : 'BDHSG';
+        } else {
+            // Nếu không phải BDHSG, lấy các ký tự bên trái dấu gạch ngang (-)
+            if (rawLop.includes('-')) {
+                processedLop = rawLop.split('-')[0].trim();
+            }
+        }
+
+        if (processedLop) setLopClean.add(processedLop);
+
+        let fullMon = monHoc;
+        if (phanMon) {
+            fullMon += ` (${phanMon})`;
+        }
+        if (fullMon) setMon.add(fullMon);
+    });
+
+    let strLop = setLopClean.size > 0 ? Array.from(setLopClean).join(', ') : 'Toàn trường';
+    let strMon = setMon.size > 0 ? Array.from(setMon).join(', ') : 'Tất cả các môn';
+
+    // 💡 Dòng phụ đề hiển thị trang trọng trên trang bìa và đầu trang báo cáo
+    let coverSubText = `Lớp: ${strLop} — Môn: ${strMon}`;
 
     let rowsHTML = "";
     dataToExport.forEach((item, index) => {
@@ -3268,27 +3402,29 @@ window.xuatPDFBaoCao = function() {
         let badgeColor = rawTrangThai ? "color: #047857; font-weight: bold;" : "color: #b45309; font-weight: bold;";
 
         let maGV = item.giao_vien || item.giaoVien || item.ma_nhan_su || '';
-        let tenGVKH = layTenNhanSu(maGV); // 💡 Chuyển đổi mã sang tên giáo viên
+        let tenGVKH = layTenNhanSu(maGV);
 
         let monHocFull = item.mon_hoc || item.monHoc || '';
         if (item.phan_mon || item.phanMon) {
             monHocFull += ` (${item.phan_mon || item.phanMon})`;
         }
 
+        let tuanHoc = item.tuan || item.tuan_hoc || item.tuanHoc || '-';
         let thuNgay = item.thu || item.ngay_trong_tuan || '-';
         let tietHoc = item.tiet_ppct || item.tiet_ct || item.tiet || '';
         let tenBaiDay = item.ten_bai || item.noi_dung || '';
 
         rowsHTML += `
             <tr>
-                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${index + 1}</td>
-                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${thuNgay}</td>
-                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">Tiết ${tietHoc}</td>
-                <td style="border: 1px solid #94a3b8; padding: 6px;">${monHocFull}</td>
-                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center;">${item.lop || ''}</td>
-                <td style="border: 1px solid #94a3b8; padding: 6px;">${tenBaiDay}</td>
-                <td style="border: 1px solid #94a3b8; padding: 6px;">${tenGVKH}</td>
-                <td style="border: 1px solid #94a3b8; padding: 6px; text-align: center; ${badgeColor}">${trangThaiStr}</td>
+                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">${index + 1}</td>
+                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">${tuanHoc}</td>
+                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">${thuNgay}</td>
+                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">Tiết ${tietHoc}</td>
+                <td style="border: 1px solid #94a3b8; padding: 5px;">${monHocFull}</td>
+                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">${item.lop || ''}</td>
+                <td style="border: 1px solid #94a3b8; padding: 5px;">${tenBaiDay}</td>
+                <td style="border: 1px solid #94a3b8; padding: 5px;">${tenGVKH}</td>
+                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center; ${badgeColor}">${trangThaiStr}</td>
             </tr>
         `;
     });
@@ -3306,63 +3442,110 @@ window.xuatPDFBaoCao = function() {
         <html>
         <head>
             <meta charset="utf-8">
-            <title>Sổ Đầu Bài</title>
+            <title>Báo Cáo Sổ Đầu Bài Theo Tuần</title>
             <style>
-                body { font-family: 'Times New Roman', Times, serif; font-size: 12px; color: #1e293b; margin: 15px; }
-                .header { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 2px solid #1e293b; padding-bottom: 8px; }
+                @page { size: A4 landscape; margin: 10mm; }
+                body { font-family: 'Times New Roman', Times, serif; font-size: 12px; color: #1e293b; margin: 0; background: #fff; }
+                
+                /* Trang bìa */
+                .cover-page {
+                    width: 100%;
+                    height: 100vh;
+                    box-sizing: border-box;
+                    padding: 40mm 20mm;
+                    text-align: center;
+                    page-break-after: always;
+                    break-after: page;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                }
+                .cover-top { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; text-transform: uppercase; }
+                .cover-title-box { margin-top: 40px; }
+                .cover-school { font-size: 16px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+                .cover-main-title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 20px 0; color: #1e3a8a; line-height: 1.3; }
+                .cover-sub-title { font-size: 14px; font-weight: bold; font-style: italic; margin-bottom: 40px; color: #334155; max-width: 800px; margin-left: auto; margin-right: auto; }
+                .cover-footer { font-size: 14px; font-weight: bold; margin-bottom: 30px; }
+
+                /* Trang nội dung danh sách */
+                .content-page { padding: 5mm; }
+                .header { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 2px solid #1e293b; padding-bottom: 6px; }
                 .text-center { text-align: center; }
                 .font-bold { font-weight: bold; }
-                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                th { background-color: #f1f5f9; border: 1px solid #94a3b8; padding: 6px; text-align: center; font-size: 11px; }
+                
+                table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+                th { background-color: #f1f5f9; border: 1px solid #94a3b8; padding: 6px; text-align: center; font-size: 11px; font-weight: bold; }
                 td { border: 1px solid #94a3b8; padding: 5px; font-size: 11px; }
-                .footer { display: flex; justify-content: space-between; margin-top: 30px; text-align: center; page-break-inside: avoid; }
+                
+                .footer { display: flex; justify-content: space-between; margin-top: 25px; text-align: center; page-break-inside: avoid; break-inside: avoid; }
+                .signer-name { font-weight: bold; margin-top: 45px; display: block; font-size: 12px; }
             </style>
         </head>
         <body>
-            <div class="header">
-                <div>
-                    <div class="font-bold" style="font-size: 11px;">TRƯỜNG THPT NGUYỄN DUY TRINH</div>
-                    <div style="font-size: 10px;">Hội đồng Chuyên môn</div>
+            <!-- 📄 TRANG BÌA -->
+            <div class="cover-page">
+                <div class="cover-top">
+                    <div>SỞ GIÁO DỤC VÀ ĐÀO TẠO<br>TRƯỜNG THPT NGUYỄN DUY TRINH</div>
+                    <div>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>Độc lập - Tự do - Hạnh phúc</div>
                 </div>
-                <div class="text-center">
-                    <div class="font-bold" style="font-size: 14px;">SỔ ĐẦU BÀI - THỰC HIỆN CHƯƠNG TRÌNH</div>
-                    <div style="font-size: 11px; font-style: italic;">Báo cáo chi tiết theo tuần</div>
+                
+                <div class="cover-title-box">
+                    <div class="cover-school">HỘI ĐỒNG CHUYÊN MÔN</div>
+                    <div class="cover-main-title">BÁO CÁO CHI TIẾT SỔ ĐẦU BÀI<br>THỰC HIỆN CHƯƠNG TRÌNH</div>
+                    <div class="cover-sub-title">${coverSubText}</div>
                 </div>
-                <div>
-                    <div style="font-size: 11px;">Năm học: 2026 - 2027</div>
+
+                <div class="cover-footer">
+                    NĂM HỌC: 2026 - 2027
                 </div>
             </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 30px;">STT</th>
-                        <th style="width: 45px;">Thứ</th>
-                        <th style="width: 50px;">Tiết</th>
-                        <th>Môn / Phân Môn</th>
-                        <th style="width: 55px;">Lớp</th>
-                        <th>Tên Bài Dạy (Nội Dung)</th>
-                        <th>Giáo Viên</th>
-                        <th style="width: 75px;">Trạng Thái</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rowsHTML}
-                </tbody>
-            </table>
-
-            <div class="footer">
-                <div style="width: 45%;">
-                    <div class="font-bold" style="font-size: 11px;">GIÁO VIÊN BỘ MÔN / CHỦ NHIỆM</div>
-                    <div style="font-size: 10px; color: #64748b;">(Ký và ghi rõ họ tên)</div>
-                    <div style="height: 50px;"></div>
-                    <div style="border-bottom: 1px dotted #94a3b8; width: 60%; margin: 0 auto;"></div>
+            <!-- 📄 TRANG NỘI DUNG BÁO CÁO (KHỔ NGANG) -->
+            <div class="content-page">
+                <div class="header">
+                    <div>
+                        <div class="font-bold" style="font-size: 11px;">TRƯỜNG THPT NGUYỄN DUY TRINH</div>
+                        <div style="font-size: 10px;">Hội đồng Chuyên môn</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-bold" style="font-size: 13px;">BÁO CÁO CHI TIẾT THỰC HIỆN CHƯƠNG TRÌNH SỔ ĐẦU BÀI</div>
+                        <div style="font-size: 10px; font-style: italic;">(${coverSubText})</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 10px;">Năm học: 2026 - 2027</div>
+                    </div>
                 </div>
-                <div style="width: 45%;">
-                    <div class="font-bold" style="font-size: 11px;">XÁC NHẬN CỦA BAN GIÁM HIỆU</div>
-                    <div style="font-size: 10px; color: #64748b;">(Ký, đóng dấu duyệt tuần)</div>
-                    <div style="height: 50px;"></div>
-                    <div style="border-bottom: 1px dotted #94a3b8; width: 60%; margin: 0 auto;"></div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 35px;">STT</th>
+                            <th style="width: 45px;">Tuần</th>
+                            <th style="width: 50px;">Thứ</th>
+                            <th style="width: 50px;">Tiết</th>
+                            <th>Môn / Phân Môn</th>
+                            <th style="width: 60px;">Lớp</th>
+                            <th>Tên Bài Dạy (Nội Dung)</th>
+                            <th>Giáo Viên</th>
+                            <th style="width: 80px;">Trạng Thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHTML}
+                    </tbody>
+                </table>
+
+                <div class="footer">
+                    <div style="width: 45%;">
+                        <div class="font-bold" style="font-size: 11px;">GIÁO VIÊN BỘ MÔN</div>
+                        <div style="font-size: 10px; color: #64748b;">(Ký và ghi rõ họ tên)</div>
+                        <span class="signer-name">${dataToExport.length > 0 ? layTenNhanSu(dataToExport[0].giao_vien || dataToExport[0].giaoVien || dataToExport[0].ma_nhan_su || '') : ''}</span>
+                    </div>
+                    <div style="width: 45%;">
+                        <div class="font-bold" style="font-size: 11px;">XÁC NHẬN CỦA BAN GIÁM HIỆU</div>
+                        <div style="font-size: 10px; color: #64748b;">(Ký, ghi rõ họ tên, đóng dấu)</div>
+                        <span class="signer-name">Nguyễn Hồng Hai</span>
+                    </div>
                 </div>
             </div>
         </body>
@@ -3377,7 +3560,7 @@ window.xuatPDFBaoCao = function() {
     setTimeout(() => {
         printFrame.contentWindow.focus();
         printFrame.contentWindow.print();
-    }, 300);
+    }, 400);
 };
 // Bộ nhớ tạm lưu danh sách nhân sự để tra cứu ngay lập tức
 window.cachedNhanSu = window.cachedNhanSu || {};
@@ -3702,6 +3885,306 @@ function inSoDauBaiTheoTuan() {
         printWindow.print();
     }, 300);
 }
+// Hàm xử lý tiết dạy giáo viên
+// 🚀 Hàm khởi tạo Tab Giáo Viên (Đã tổng hợp kiểm tra tất cả các biến lưu quyền)
+    async function khoiTaoDuLieuTabGV() {
+        try {
+            let client = typeof db !== 'undefined' ? db : window.db;
+            if (!client) return;
+
+            let selectGV = document.getElementById('selectGiaoVien');
+            if (!selectGV) return;
+
+            // 🎯 Tổng hợp lấy chuỗi quyền từ mọi nguồn biến có thể có trong hệ thống
+            let roleStr = '';
+            if (typeof currentRole !== 'undefined' && currentRole) roleStr += ' ' + currentRole;
+            if (typeof currentSession !== 'undefined') {
+                if (currentSession.vaiTro) roleStr += ' ' + currentSession.vaiTro;
+                if (currentSession.quyen) roleStr += ' ' + currentSession.quyen;
+                if (currentSession.role) roleStr += ' ' + currentSession.role;
+            }
+            roleStr = roleStr.toLowerCase();
+
+            // Kiểm tra các từ khóa quản trị / kỹ thuật tối cao
+            let isAdmin = roleStr.includes('admin') || 
+                          roleStr.includes('kỹ thuật') || 
+                          roleStr.includes('tối cao') || 
+                          roleStr.includes('quản lý') || 
+                          (typeof currentSession !== 'undefined' && currentSession.maNhanSu === 'admin');
+
+            let { data: usersData, error: userErr } = await client.from('users').select('*');
+
+            if (usersData && !userErr) {
+                selectGV.innerHTML = '';
+                selectGV.disabled = false; // Mở khóa ô chọn
+                selectGV.style.backgroundColor = "#fff";
+                selectGV.style.cursor = "pointer";
+
+                if (isAdmin) {
+                    // 👉 NẾU LÀ ADMIN / KỸ THUẬT TỐI CAO: Cho phép chọn tất cả giáo viên
+                    selectGV.innerHTML = '<option value="">-- Chọn giáo viên để quản lý --</option>';
+                    
+                    usersData.sort((a, b) => {
+                        let nameA = (a.ten_tkb || a.ho_va_ten || a.ho_ten || '').toString();
+                        let nameB = (b.ten_tkb || b.ho_va_ten || b.ho_ten || '').toString();
+                        return nameA.localeCompare(nameB);
+                    });
+
+                    usersData.forEach(u => {
+                        let maNS = u.ma_nhan_su || u.id || '';
+                        let tenGV = u.ten_tkb || u.ho_va_ten || u.ho_ten || maNS;
+                        if (maNS) {
+                            let opt = document.createElement('option');
+                            opt.value = maNS;
+                            opt.textContent = tenGV;
+                            selectGV.appendChild(opt);
+                        }
+                    });
+                } else {
+                    // 👉 NẾU LÀ GIÁO VIÊN THƯỜNG: Khóa cứng tên cá nhân
+                    let myMaNS = (typeof currentSession !== 'undefined' && currentSession.maNhanSu) || '';
+                    let myUser = usersData.find(u => (u.ma_nhan_su === myMaNS || u.id === myMaNS));
+                    let myTen = myUser ? (myUser.ten_tkb || myUser.ho_va_ten || myUser.ho_ten) : myMaNS;
+
+                    let opt = document.createElement('option');
+                    opt.value = myMaNS;
+                    opt.textContent = myTen + " (Cá nhân)";
+                    selectGV.appendChild(opt);
+                    
+                    selectGV.value = myMaNS;
+                    selectGV.disabled = true; 
+                    selectGV.style.backgroundColor = "#f1f5f9";
+                    selectGV.style.cursor = "not-allowed";
+                }
+            }
+
+            // Tải danh sách tuần học
+            let { data: tuanData, error: tuanErr } = await client.from('CauHinhTuan').select('*').order('id', { ascending: true });
+            let selectTuan = document.getElementById('selectTuanGV');
+
+            if (selectTuan && tuanData && !tuanErr) {
+                selectTuan.innerHTML = '<option value="ALL">-- Tất cả các tuần --</option>';
+                tuanData.forEach(w => {
+                    let tenTuan = w.ten_tuan || `Tuần ${w.id}`;
+                    let opt = document.createElement('option');
+                    opt.value = tenTuan;
+                    opt.textContent = tenTuan;
+                    selectTuan.appendChild(opt);
+                });
+            }
+
+            if (!isAdmin) {
+                loadTietDạyCuaGiaoVien();
+            } else {
+                document.getElementById('tableGiaoVienBody').innerHTML = `<tr><td colspan="9" style="text-align: center; padding: 25px; font-style: italic; color: #64748b;">Vui lòng chọn một giáo viên ở danh sách phía trên để xem chi tiết tiết dạy.</td></tr>`;
+            }
+
+        } catch (e) {
+            console.error("Lỗi phân quyền tab giáo viên:", e);
+        }
+    }
+// 🔀 Hàm xử lý hiển thị danh sách tiết dạy của giáo viên được chọn
+ // 🔀 Hàm xử lý hiển thị danh sách tiết dạy của giáo viên (Đã đồng bộ kiểm tra trạng thái Khóa từ bảng CauHinhTuan)
+    // 🔀 Hàm xử lý hiển thị danh sách tiết dạy (Khớp khóa tuần toàn diện mọi định dạng)
+    async function loadTietDạyCuaGiaoVien() {
+        let maGV = document.getElementById('selectGiaoVien').value;
+        let selectedTuan = document.getElementById('selectTuanGV').value;
+        let tbody = document.getElementById('tableGiaoVienBody');
+
+        if (!maGV) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px; font-style: italic; color: #64748b;">Vui lòng chọn giáo viên cụ thể.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px; font-style: italic;">Đang tải dữ liệu tiết dạy...</td></tr>`;
+
+        try {
+            let client = typeof db !== 'undefined' ? db : window.db;
+            
+            // 1. Tải bảng cấu hình tuần và map toàn diện tất cả các cột định danh tuần
+            let { data: tuanConfigData } = await client.from('CauHinhTuan').select('*');
+            let tuanLockMap = {};
+            if (tuanConfigData) {
+                tuanConfigData.forEach(w => {
+                    let tuanVal = String(w.tuan || '').trim();
+                    let tenTuanVal = String(w.ten_tuan || '').trim();
+                    let idVal = String(w.id || '').trim();
+
+                    let valKhoaSDB = String(w.khoa_sdb || w.khoaSDb || '').trim().toLowerCase();
+                    let valKhoaKH = String(w.khoa_ke_hoach || w.khoaKeHoach || '').trim().toLowerCase();
+
+                    // Kiểm tra xem có chứa chữ "khoá" hoặc "khóa" không
+                    let isLockedVal = valKhoaSDB.includes('khoá') || valKhoaSDB.includes('khóa') || 
+                                      valKhoaKH.includes('khoá') || valKhoaKH.includes('khóa');
+
+                    // Lưu map theo mọi khả năng (cả dạng chữ lẫn dạng số trích xuất được)
+                    if (tuanVal) {
+                        tuanLockMap[tuanVal] = isLockedVal;
+                        let m = tuanVal.match(/\d+/);
+                        if (m) tuanLockMap[m[0]] = isLockedVal;
+                    }
+                    if (tenTuanVal) {
+                        tuanLockMap[tenTuanVal.toLowerCase()] = isLockedVal;
+                        let m = tenTuanVal.match(/\d+/);
+                        if (m) tuanLockMap[m[0]] = isLockedVal;
+                    }
+                    if (idVal) {
+                        tuanLockMap[idVal] = isLockedVal;
+                        let m = idVal.match(/\d+/);
+                        if (m) tuanLockMap[m[0]] = isLockedVal;
+                    }
+                });
+            }
+
+            // 2. Truy vấn trực tiếp danh sách từ bảng ke_hoach_tuan
+            let query = client.from('ke_hoach_tuan').select('*').eq('ma_nhan_su', maGV);
+            
+            if (selectedTuan && selectedTuan !== 'ALL') {
+                let matchSel = selectedTuan.match(/\d+/);
+                let soTuanSel = matchSel ? matchSel[0] : selectedTuan;
+                query = query.eq('tuan', soTuanSel);
+            }
+
+            let { data, error } = await query;
+
+            if (error || !data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; padding: 20px; color: #64748b;">Không tìm thấy tiết dạy nào của giáo viên này.</td></tr>`;
+                return;
+            }
+
+            // 3. Sắp xếp dữ liệu theo: Tuần -> Thứ -> Tiết PPCT tăng dần
+            data.sort((a, b) => {
+                let tuanA = parseInt(a.tuan) || 0;
+                let tuanB = parseInt(b.tuan) || 0;
+                if (tuanA !== tuanB) return tuanA - tuanB;
+
+                let parseThu = (thuStr) => {
+                    if (!thuStr) return 0;
+                    if (typeof thuStr === 'number') return thuStr;
+                    let match = thuStr.toString().match(/\d+/);
+                    if (match) return parseInt(match[0]);
+                    if (thuStr.toString().toLowerCase().includes('chủ nhật')) return 8;
+                    return 0;
+                };
+                let thuA = parseThu(a.thu || a.ngay_trong_tuan);
+                let thuB = parseThu(b.thu || b.ngay_trong_tuan);
+                if (thuA !== thuB) return thuA - thuB;
+
+                let tietA = parseInt(a.tiet_ppct || a.tietPPCT || a.tiet_ct) || 0;
+                let tietB = parseInt(b.tiet_ppct || b.tietPPCT || b.tiet_ct) || 0;
+                return tietA - tietB;
+            });
+
+            let html = '';
+            data.forEach((item, index) => {
+               // 🔍 KIỂM TRA TRẠNG THÁI KÝ (Quét toàn diện tất cả các tên cột có thể lưu trạng thái ký)
+               // 🔍 KIỂM TRA TRẠNG THÁI KÝ (Đọc chính xác từ cột trang_thai hoặc trang_thai_ky)
+                let trangThaiVal = String(item.trang_thai || '').trim().toLowerCase();
+                let trangThaiKyVal = String(item.trang_thai_ky || '').trim().toLowerCase();
+                
+                let isSigned = trangThaiVal.includes('đã ký') || 
+                               trangThaiVal.includes('da ky') || 
+                               trangThaiKyVal.includes('đã ký') ||
+                               trangThaiKyVal.includes('da ky') ||
+                               item.trang_thai_ky === true || 
+                               item.trang_thai_ky === '1' ||
+                               String(item.trang_thai_ky || '').toLowerCase() === 'true';
+
+                let trangThaiKyStr = isSigned 
+                    ? '<span style="color: #047857; font-weight: bold;">Đã ký</span>' 
+                    : '<span style="color: #b45309; font-weight: bold;">Chưa ký</span>';
+                
+                // 🔍 KIỂM TRA TRẠNG THÁI KHÓA TUẦN (Tra cứu linh hoạt theo số tuần)
+                let tuanNumStr = String(item.tuan || '').trim();
+                let isLocked = tuanLockMap[tuanNumStr] === true || item.da_khoa === true || item.khoa_tuan === true;
+
+                let trangThaiKhoaStr = isLocked 
+                    ? '<span style="color: #b91c1c; font-weight: bold;">Đã khóa</span>' 
+                    : '<span style="color: #047857; font-weight: bold;">Chưa khóa</span>';
+
+                let monFull = item.mon_hoc || item.monHoc || '';
+                if (item.phan_mon || item.phanMon) monFull += ` (${item.phan_mon || item.phanMon})`;
+
+                let tietPPCTVal = item.tiet_ppct || item.tietPPCT || item.tiet_ct || '';
+
+                // 🛠️ CHỈ KHÓA NÚT SỬA/XÓA KHI TUẦN ĐÃ KHÓA (khoa_sdb). Nếu chưa khóa thì vẫn cho phép sửa/xóa bình thường.
+                let actionButtons = isLocked 
+                    ? `<span style="color: #94a3b8; font-style: italic; font-size: 11px;">Đã khóa</span>`
+                    : `
+                        <button onclick="moModalSua('${item.id}', '${tietPPCTVal}', '${encodeURIComponent(item.ten_bai || item.noi_dung || '')}')" style="background: #2563eb; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; margin-right: 4px;">Sửa</button>
+                        <button onclick="xoaTietDạy('${item.id}')" style="background: #dc2626; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px;">Xóa</button>
+                      `;
+                html += `
+                    <tr>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${item.tuan || '-'}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${item.thu || '-'}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">Tiết ${item.tiet || item.tiet_tkb || ''}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${item.lop || ''}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px;">${monFull}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center; font-weight: bold; color: #2563eb;">${tietPPCTVal || '-'}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px;">${item.ten_bai || item.noi_dung || '<span style="color:#cbd5e1">Chưa cập nhật nội dung</span>'}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${trangThaiKyStr}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${trangThaiKhoaStr}</td>
+                        <td style="border: 1px solid #cbd5e1; padding: 6px; text-align: center;">${actionButtons}</td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        } catch (e) {
+            console.error("Lỗi tải tiết dạy giáo viên:", e);
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: red; padding: 20px;">Lỗi kết nối cơ sở dữ liệu!</td></tr>`;
+        }
+    }
+    // 🛠️ Mở popup sửa bài dạy
+    // 🛠️ Mở popup sửa bài dạy (bao gồm cả tiết PPCT và tên bài)
+    function moModalSua(id, tietPPCT, currentText) {
+        let modal = document.getElementById('modalSuaBai');
+        let inputId = document.getElementById('editRowId');
+        let inputTiet = document.getElementById('editTietPPCT');
+        let inputTxt = document.getElementById('editTenBai');
+
+        if (modal && inputId && inputTiet && inputTxt) {
+            inputId.value = id;
+            inputTiet.value = tietPPCT || '';
+            inputTxt.value = decodeURIComponent(currentText || '');
+            modal.style.display = 'flex';
+        }
+    }
+
+    function dongModalSua() {
+        let modal = document.getElementById('modalSuaBai');
+        if (modal) modal.style.display = 'none';
+    }
+
+    // 💾 Lưu cập nhật Tiết PPCT và Tên bài lên Supabase
+    async function luuSuaBaiDạy() {
+        let id = document.getElementById('editRowId').value;
+        let newTietPPCT = document.getElementById('editTietPPCT').value;
+        let newContent = document.getElementById('editTenBai').value;
+
+        try {
+            let client = typeof db !== 'undefined' ? db : window.db;
+            let { error } = await client
+                .from('ke_hoach_tuan')
+                .update({ 
+                    tiet_ppct: newTietPPCT, // Cập nhật cột tiết PPCT
+                    ten_bai: newContent     // Cập nhật cột nội dung bài dạy
+                })
+                .eq('id', id);
+
+            if (error) {
+                alert("Lỗi khi cập nhật: " + error.message);
+            } else {
+                alert("Cập nhật thông tin tiết dạy thành công!");
+                dongModalSua();
+                loadTietDạyCuaGiaoVien(); // Tải lại bảng ngay lập tức
+            }
+        } catch (e) {
+            alert("Lỗi hệ thống khi lưu!");
+            console.error(e);
+        }
+    }
     </script>
 </body>
 </html>
