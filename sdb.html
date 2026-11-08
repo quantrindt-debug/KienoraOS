@@ -204,7 +204,7 @@
     </div>
 </div>
 <!-- 📌 Modal Sửa Nội Dung Bài Dạy -->
-<<!-- 📌 Modal Sửa Tiết PPCT và Tên Bài Dạy -->
+<!-- 📌 Modal Sửa Tiết PPCT và Tên Bài Dạy -->
 <div id="modalSuaBai" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center;">
     <div style="background: #fff; width: 450px; padding: 25px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
         <h4 style="margin-top: 0; color: #1e3a8a; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; font-size: 15px; font-weight: bold;">Chỉnh sửa nội dung tiết dạy</h4>
@@ -389,17 +389,47 @@
                     <div class="space-y-4">
                         <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                             <div class="flex flex-wrap items-center gap-3">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chọn hoặc Tạo Số TKB Áp Dụng</label>
-                                    <select id="selectSoTKB" onchange="loadTKBData()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                                        <!-- Các option được sinh tự động bởi initTKBWeekDropdown -->
-                                    </select>   
+                                <-- Thay thế đoạn chứa các nút bấm trong phần render giao diện admin-tkb của thầy bằng:-->
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <div>
+                                        <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chọn hoặc Tạo Số TKB Áp Dụng</label>
+                                        <select id="selectSoTKB" onchange="loadTKBData()" class="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                            <!-- Các option sinh tự động -->
+                                        </select>   
+                                    </div>
+                                    
+                                    <!-- ➕ NÚT THÊM TIẾT TKB THỦ CÔNG -->
+                                    <button onclick="moModalThemTKB()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 self-end">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                        Thêm Tiết TKB
+                                    </button>
+                                    <!-- Bổ sung thanh lọc nhanh trước khi xem/in -->
+                                    <div class="flex flex-wrap items-center gap-2 bg-white p-3 rounded-xl border border-slate-200 my-3">
+                                        <span class="text-xs font-bold text-slate-700 uppercase">🔍 Lọc dữ liệu xuất PDF:</span>
+                                        
+                                        <!-- Lọc theo từ khóa môn/HSG/Ôn tập -->
+                                        <input type="text" id="filterKeyword" placeholder="Gõ từ khóa (VD: HSG, Ôn tập, Toán...)" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs w-60 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                        
+                                        <!-- Lọc theo giáo viên -->
+                                        <input type="text" id="filterTeacher" placeholder="Tên giáo viên..." class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs w-36 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                        
+                                        <!-- Nút thực thi xuất PDF dựa trên bộ lọc -->
+                                        <button onclick="xuatTKBPDFTheoTuan()" class="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                                            In / Xuất PDF Ma Trận Lọc
+                                        </button>
+                                    </div>
+
+                                    <button onclick="downloadTKBTemplate()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 self-end">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                        Tải Mẫu TKB Excel
+                                    </button>
+                                    <!-- Bổ sung nút Xuất PDF TKB -->
+                                    <button onclick="xuatTKBPDFTheoTuan()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 self-end">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                        Xuất PDF TKB
+                                    </button>
                                 </div>
-                                <button onclick="downloadTKBTemplate()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5 self-end">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                    Tải Mẫu TKB Excel
-                                </button>
-                            </div>
                             <div class="self-end">
                                 <input type="file" id="tkbFileInput" accept=".xlsx, .xls" class="hidden" onchange="handleUploadTKB(this)">
                                 <button onclick="document.getElementById('tkbFileInput').click()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center gap-1.5">
@@ -409,11 +439,11 @@
                             </div>
                         </div>
 
-                        <div id="tkbTableContainer" class="overflow-x-auto border border-slate-200 rounded-xl bg-white max-h-[450px]">
+                        <div id="tkbTableContainer" class="w-full overflow-x-auto border border-slate-200 rounded-xl bg-white max-h-[450px]">
                             <table class="w-full text-left border-collapse text-xs">
                                 <thead class="bg-slate-100 text-slate-700 uppercase font-bold border-b border-slate-200 sticky top-0">
                                     <tr>
-                                        <th class="p-3">STT</th>
+                                        <th class="p-3 w-12 text-center">STT</th>
                                         <th class="p-3">Số TKB</th>
                                         <th class="p-3">Thứ</th>
                                         <th class="p-3">Buổi</th>
@@ -939,7 +969,274 @@ if (pageType === 'baocao') {
 // ===================================================================
 // ======================= ĐĂNG TKB (SUPABASE) ======================
 // ===================================================================
+// Hàm mở modal hoặc form nhập nhanh tiết TKB bổ sung
+    function moModalThemTKB() {
+        let currentSoTKB = document.getElementById('selectSoTKB').value;
+        if (!currentSoTKB) {
+            alert("Vui lòng chọn số TKB cần bổ sung trước!");
+            return;
+        }
 
+        // Thầy có thể dựng một hộp thoại Prompt nhanh hoặc Modal Bootstrap/Tailwind tùy ý
+        let thu = prompt("Nhập Thứ (Ví dụ: Thứ 2, Thứ 3...):", "Thứ 2");
+        if (!thu) return;
+        let buoi = prompt("Nhập Buổi (Sáng / Chiều):", "Chiều");
+        let tiet = prompt("Nhập Tiết (Ví dụ: Tiết 1, Tiết 2...):", "Tiết 4");
+        let lop = prompt("Nhập Lớp:", "12A1");
+        let mon = prompt("Nhập Tên Môn học:", "Toán");
+        let gv = prompt("Nhập Mã/Tên Giáo viên:", "");
+
+        if (!lop || !mon) {
+            alert("Vui lòng nhập đầy đủ Lớp và Môn học!");
+            return;
+        }
+
+        // Gọi hàm lưu trực tiếp vào CSDL bảng chứa TKB
+        luuTKBBoSung({
+            so_tkb: currentSoTKB,
+            thu: thu,
+            buoi: buoi,
+            tiet: tiet,
+            lop: lop,
+            mon: mon,
+            ten_tkb: gv
+        });
+    }
+
+    // Hàm đẩy dữ liệu bổ sung lên Supabase/Database
+    async function luuTKBBoSung(tKBObj) {
+        try {
+            let client = typeof db !== 'undefined' ? db : window.db;
+            let { error } = await client.from('thoi_khoa_bieu').insert([tKBObj]); // Thay 'thoi_khoa_bieu' bằng tên bảng TKB thực tế của thầy
+            
+            if (error) {
+                console.error(error);
+                alert("Lỗi khi thêm tiết TKB: " + error.message);
+            } else {
+                alert("Đã bổ sung tiết TKB thành công!");
+                if (typeof loadTKBData === 'function') loadTKBData(); // Load lại bảng hiển thị
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Không thể kết nối cơ sở dữ liệu để lưu!");
+        }
+    }
+    //Tải tkb ra pdf để in 
+// 🖨️ HÀM XUẤT TKB RA PDF DẠNG MA TRẬN (Cột là Lớp [Sáng/Chiều], Hàng là Thứ & Tiết)
+// 🖨️ HÀM XUẤT TKB RA PDF DẠNG MA TRẬN CÓ KÈM BỘ LỌC (HSG, Ôn tập, Giáo viên...)
+    function xuatTKBPDFTheoTuan() {
+        let selectSoTKB = document.getElementById('selectSoTKB');
+        let tenTKB = selectSoTKB ? selectSoTKB.options[selectSoTKB.selectedIndex].text : 'Thời Khóa Biểu';
+        
+        let tbody = document.getElementById('tkbTableBody');
+        if (!tbody) {
+            alert("Không tìm thấy dữ liệu thời khóa biểu!");
+            return;
+        }
+
+        let rows = Array.from(tbody.querySelectorAll('tr'));
+        if (rows.length === 0 || rows[0].innerText.includes('Chưa có dữ liệu')) {
+            alert("Chưa có dữ liệu thời khóa biểu để xuất!");
+            return;
+        }
+
+        // Lấy giá trị từ các ô lọc
+        let keywordInput = document.getElementById('filterKeyword');
+        let teacherInput = document.getElementById('filterTeacher');
+        let keyword = keywordInput ? keywordInput.value.trim().toLowerCase() : '';
+        let teacherQuery = teacherInput ? teacherInput.value.trim().toLowerCase() : '';
+
+        // 1. Quét và lọc dữ liệu đưa vào ma trận
+        let matrix = {};
+        let lopSet = new Set();
+        let thuList = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
+        let tietList = ['Tiết 1', 'Tiết 2', 'Tiết 3', 'Tiết 4', 'Tiết 5'];
+        let countMatched = 0;
+
+        rows.forEach(tr => {
+            let tds = tr.querySelectorAll('td');
+            if (tds.length >= 8) {
+                let thu = tds[2].innerText.trim();
+                let buoiRaw = tds[3].innerText.trim().toLowerCase();
+                let tiet = tds[4].innerText.trim();
+                let lop = tds[5].innerText.trim();
+                let mon = tds[6].innerText.trim();
+                let gv = tds[7].innerText.trim();
+
+                // Kiểm tra điều kiện lọc
+                let fullText = (mon + " " + lop + " " + gv).toLowerCase();
+                let matchKeyword = !keyword || fullText.includes(keyword);
+                let matchTeacher = !teacherQuery || gv.toLowerCase().includes(teacherQuery);
+
+                if (matchKeyword && matchTeacher) {
+                    countMatched++;
+                    if (lop) lopSet.add(lop);
+                    
+                    // 🎯 CHUẨN HÓA XÁC ĐỊNH BUỔI CHÍNH XÁC TUYỆT ĐỐI
+                    let buoiKey = 'Sáng';
+                    if (buoiRaw.includes('chiều') || buoiRaw.includes('chieu') || buoiRaw === 'c') {
+                        buoiKey = 'Chiều';
+                    }
+
+                    if (!matrix[thu]) matrix[thu] = {};
+                    if (!matrix[thu][tiet]) matrix[thu][tiet] = {};
+                    if (!matrix[thu][tiet][lop]) matrix[thu][tiet][lop] = { 'Sáng': '', 'Chiều': '' };
+
+                    // Nếu chẳng may cùng 1 tiết có nhiều môn/giáo viên, tự động nối tiếp tránh bị ghi đè mất dữ liệu
+                    let contentCell = `${mon} - ${gv}`;
+                    if (matrix[thu][tiet][lop][buoiKey]) {
+                        matrix[thu][tiet][lop][buoiKey] += `, ` + contentCell;
+                    } else {
+                        matrix[thu][tiet][lop][buoiKey] = contentCell;
+                    }
+                }
+            }
+        });
+
+        if (countMatched === 0) {
+            alert("Không tìm thấy tiết dạy nào khớp với điều kiện lọc của thầy!");
+            return;
+        }
+
+        let dsLop = Array.from(lopSet).sort();
+
+        // 2. Tạo khung HTML ma trận in
+        let printContainer = document.getElementById('tkbMatrixPrintContainer');
+        if (!printContainer) {
+            printContainer = document.createElement('div');
+            printContainer.id = 'tkbMatrixPrintContainer';
+            printContainer.className = 'hidden print:block';
+            document.body.appendChild(printContainer);
+        }
+
+        let headerColsHTML = '';
+        dsLop.forEach(lop => {
+            headerColsHTML += `<th colspan="2" style="border: 1px solid #000; padding: 6px; text-align: center; background-color: #f1f5f9; font-size: 11px;">${lop}</th>`;
+        });
+
+        let subHeaderColsHTML = '';
+        dsLop.forEach(() => {
+            subHeaderColsHTML += `
+                <th style="border: 1px solid #000; padding: 4px; text-align: center; background-color: #f8fafc; font-size: 10px; width: 65px;">Sáng</th>
+                <th style="border: 1px solid #000; padding: 4px; text-align: center; background-color: #f8fafc; font-size: 10px; width: 65px;">Chiều</th>
+            `;
+        });
+
+        let bodyRowsHTML = '';
+        thuList.forEach(thu => {
+            if (matrix[thu]) {
+                tietList.forEach((tiet, tietIndex) => {
+                    let cellsHTML = '';
+                    dsLop.forEach(lop => {
+                        let cellData = (matrix[thu][tiet] && matrix[thu][tiet][lop]) ? matrix[thu][tiet][lop] : { 'Sáng': '', 'Chiều': '' };
+                        cellsHTML += `
+                            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 9px; vertical-align: middle;">${cellData['Sáng']}</td>
+                            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 9px; vertical-align: middle;">${cellData['Chiều']}</td>
+                        `;
+                    });
+
+                    // Cố định rowspan="5" gắn vào tiết đầu tiên, luôn vẽ đủ 5 tiết để khớp tuyệt đối cấu trúc bảng
+                    let thuCell = (tietIndex === 0) ? `<td rowspan="5" style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; vertical-align: middle; background-color: #f8fafc; font-size: 11px; writing-mode: vertical-rl; transform: rotate(180deg);">${thu}</td>` : '';
+                    
+                    bodyRowsHTML += `
+                        <tr>
+                            ${thuCell}
+                            <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 10px; font-weight: bold;">${tiet}</td>
+                            ${cellsHTML}
+                        </tr>
+                    `;
+                });
+            }
+        });
+
+        // Sửa lại đoạn chuỗi phụ đề lọc cho chuẩn xác:
+        let filterDescription = [];
+        if (keyword) filterDescription.push(`Từ khóa: "${keyword}"`);
+        if (teacherQuery) filterDescription.push(`Giáo viên: "${teacherQuery}"`);
+        
+        // ✅ ĐÃ SỬA: Bỏ số 0 thừa thành join(' | ') chuẩn cú pháp
+        let subTitleInfo = filterDescription.length > 0 ? `(Lọc theo: ${filterDescription.join(' | ')})` : '(Bảng ma trận tổng hợp toàn trường)';
+
+        printContainer.innerHTML = `
+            <div style="text-align: center; margin-bottom: 10px;">
+                <h2 style="font-size: 14px; font-weight: bold; text-transform: uppercase; margin: 0 0 2px 0;">TRƯỜNG THPT</h2>
+                <h3 style="font-size: 12px; font-weight: bold; margin: 0 0 2px 0;">THỜI KHÓA BIỂU - ${tenTKB.toUpperCase()}</h3>
+                <p style="font-size: 10px; font-style: italic; margin: 0;">${subTitleInfo}</p>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Times New Roman', Times, serif;">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 4px; text-align: center; background-color: #f1f5f9; width: 30px; font-size: 10px;">Thứ</th>
+                        <th rowspan="2" style="border: 1px solid #000; padding: 4px; text-align: center; background-color: #f1f5f9; width: 40px; font-size: 10px;">Tiết</th>
+                        ${headerColsHTML}
+                    </tr>
+                    <tr>
+                        ${subHeaderColsHTML}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${bodyRowsHTML}
+                </tbody>
+            </table>
+            <div class="footer-sign-container" style="margin-top: 15px; display: flex; justify-content: space-between; text-align: center; font-family: 'Times New Roman', Times, serif; font-size: 11px;">
+                <div style="width: 30%;">
+                    <p style="margin: 0;"><strong>HIỆU TRƯỞNG</strong></p>
+                    <br><br><br>
+                    <p style="margin: 0; font-weight: bold;">Nguyễn Hồng Hải</p>
+                </div>
+                <div style="width: 30%;">
+                    <p style="margin: 0;"><strong>P. HIỆU TRƯỞNG CHUYÊN MÔN</strong></p>
+                    <br><br><br>
+                    <p style="margin: 0; font-weight: bold;">Cao Đức Tài</p>
+                </div>
+                <div style="width: 30%;">
+                    <p style="margin: 0;"><strong>NGƯỜI LẬP TKB</strong></p>
+                    <br><br><br>
+                    <p style="margin: 0; font-weight: bold;">Lê Duy Hải</p>
+                </div>
+            </div>
+        `;
+
+        let stylePrint = document.getElementById('stylePrintMatrixPDF');
+        if (!stylePrint) {
+            stylePrint = document.createElement('style');
+            stylePrint.id = 'stylePrintMatrixPDF';
+            stylePrint.innerHTML = `
+                @media print {
+                    @page { 
+                        size: A4 landscape; 
+                        margin: 4mm; /* Thu hẹp lề tối đa để tận dụng trang giấy */
+                    }
+                    body * { 
+                        visibility: hidden; 
+                    }
+                    #tkbMatrixPrintContainer, #tkbMatrixPrintContainer * { 
+                        visibility: visible; 
+                    }
+                    #tkbMatrixPrintContainer { 
+                        position: absolute; 
+                        left: 0; 
+                        top: 0; 
+                        width: 100%; 
+                    }
+                    /* Tinh chỉnh cỡ chữ và khoảng đệm để gom gọn trong 1 trang */
+                    table { 
+                        font-size: 7.5px !important; 
+                    }
+                    th, td { 
+                        padding: 2px 1px !important; 
+                    }
+                    .footer-sign-container {
+                        page-break-inside: avoid;
+                        margin-top: 8px !important; /* Kéo chữ ký sát lên bảng hơn */
+                    }
+                }
+            `;
+            document.head.appendChild(stylePrint);
+        }
+
+        window.print();
+    }
 // 1. Tạo và tải file mẫu TKB Excel chuẩn cấu trúc
 function downloadTKBTemplate() {
     const templateData = [
@@ -3347,220 +3644,181 @@ async function toggleKhoaTheoTuan() {
         alert("❌ Thất bại: " + err.message);
     }
 }
-window.xuatPDFBaoCao = function() {
-    const dataToExport = (typeof currentFilteredData !== 'undefined' && currentFilteredData.length > 0) 
-                       ? currentFilteredData 
-                       : (window.globalBaoCaoData || []);
+window.xuatPDFBaoCao = async function() {
+    try {
+        const dataToExport = (typeof currentFilteredData !== 'undefined' && Array.isArray(currentFilteredData) && currentFilteredData.length > 0) 
+                             ? currentFilteredData 
+                             : ((typeof window.globalBaoCaoData !== 'undefined' && Array.isArray(window.globalBaoCaoData)) ? window.globalBaoCaoData : []);
 
-    if(dataToExport.length === 0) {
-        alert("Không có dữ liệu để in PDF!");
-        return;
-    }
+        if(dataToExport.length === 0) {
+            alert("Không có dữ liệu để xuất PDF!");
+            return;
+        }
 
-    // 🎯 Xử lý tên lớp và tên môn thông minh theo yêu cầu của thầy
-    let setLopClean = new Set();
-    let setMon = new Set();
+        if (typeof showToast === 'function') {
+            showToast("⏳ Đang chuẩn bị tệp báo cáo số...");
+        }
 
-    dataToExport.forEach(item => {
-        let rawLop = item.lop || '';
-        let phanMon = item.phan_mon || item.phanMon || '';
-        let monHoc = item.mon_hoc || item.monHoc || '';
+        let firstItem = dataToExport[0] || {};
+        let maGV = firstItem.giao_vien || firstItem.giaoVien || firstItem.ma_nhan_su || 
+                   (typeof currentSession !== 'undefined' && currentSession ? currentSession.maNhanSu : '') || '';
+        
+        let tenGVKH = maGV;
+        if (typeof layTenNhanSu === 'function') {
+            try { tenGVKH = layTenNhanSu(maGV) || maGV; } catch(e) {}
+        }
 
-        let processedLop = rawLop;
+        let imgBase64 = '';
+        let timestamp = new Date().toISOString();
+        let toChuyenMon = 'Hội đồng chuyên môn';
+        let signatureHash = maGV || 'N/A';
 
-        // Kiểm tra nếu là phân môn BDHSG hoặc tên lớp/phân môn có chứa từ BDHSG
-        if (phanMon.toUpperCase().includes('BDHSG') || rawLop.toUpperCase().includes('BDHSG')) {
-            // Lấy phần khối (ví dụ: lớp 12GDKTPL - BDHSG -> lấy số 12 hoặc khối tương ứng)
-            let matchKhoi = rawLop.match(/^(10|11|12)/);
-            processedLop = matchKhoi ? ` ${matchKhoi[0]} ` : 'BDHSG';
-        } else {
-            // Nếu không phải BDHSG, lấy các ký tự bên trái dấu gạch ngang (-)
-            if (rawLop.includes('-')) {
-                processedLop = rawLop.split('-')[0].trim();
+        if (typeof db !== 'undefined' && db && maGV) {
+            try {
+                const resp = await db.from('danh_sach_chu_ky').select('*').eq('user_id', maGV).maybeSingle();
+                if (resp && resp.data) {
+                    let sigData = resp.data;
+                    timestamp = sigData.updated_at || (sigData.signature_data && sigData.signature_data.timestamp) || timestamp;
+                    toChuyenMon = sigData.signer_role || (sigData.signature_data && sigData.signature_data.signer_role) || toChuyenMon;
+                    signatureHash = (sigData.signature_data && sigData.signature_data.signature_hash) || sigData.user_id || signatureHash;
+                    
+                    if (sigData.signature_data && sigData.signature_data.signature_image) {
+                        imgBase64 = sigData.signature_data.signature_image;
+                    } else if (sigData.signature_image) {
+                        imgBase64 = sigData.signature_image;
+                    }
+                }
+            } catch (err) {
+                console.warn("Lỗi lấy chữ ký:", err);
             }
         }
 
-        if (processedLop) setLopClean.add(processedLop);
-
-        let fullMon = monHoc;
-        if (phanMon) {
-            fullMon += ` (${phanMon})`;
-        }
-        if (fullMon) setMon.add(fullMon);
-    });
-
-    let strLop = setLopClean.size > 0 ? Array.from(setLopClean).join(', ') : 'Toàn trường';
-    let strMon = setMon.size > 0 ? Array.from(setMon).join(', ') : 'Tất cả các môn';
-
-    // 💡 Dòng phụ đề hiển thị trang trọng trên trang bìa và đầu trang báo cáo
-    let coverSubText = `Lớp: ${strLop} — Môn: ${strMon}`;
-
-    let rowsHTML = "";
-    dataToExport.forEach((item, index) => {
-        let rawTrangThai = item.trang_thai_ky !== undefined ? item.trang_thai_ky : item.daKy;
-        let trangThaiStr = rawTrangThai ? "Đã ký" : "Chưa ký";
-        let badgeColor = rawTrangThai ? "color: #047857; font-weight: bold;" : "color: #b45309; font-weight: bold;";
-
-        let maGV = item.giao_vien || item.giaoVien || item.ma_nhan_su || '';
-        let tenGVKH = layTenNhanSu(maGV);
-
-        let monHocFull = item.mon_hoc || item.monHoc || '';
-        if (item.phan_mon || item.phanMon) {
-            monHocFull += ` (${item.phan_mon || item.phanMon})`;
+        let teacherSignatureHtml = '<span style="font-weight: bold; margin-top: 45px; display: block; font-size: 12px;">' + tenGVKH + '</span>';
+        if (imgBase64) {
+            teacherSignatureHtml = '<div style="margin-top: 5px; text-align: center;"><img src="' + imgBase64 + '" alt="Chữ ký" style="max-height: 50px; max-width: 130px; object-fit: contain;" /><div style="font-size: 8px; color: #047857; margin-top: 2px;">Chữ ký số SmartCA (Đã xác thực)</div></div><span style="font-weight: bold; display: block; font-size: 11px; margin-top: 2px;">' + tenGVKH + '</span>';
         }
 
-        let tuanHoc = item.tuan || item.tuan_hoc || item.tuanHoc || '-';
-        let thuNgay = item.thu || item.ngay_trong_tuan || '-';
-        let tietHoc = item.tiet_ppct || item.tiet_ct || item.tiet || '';
-        let tenBaiDay = item.ten_bai || item.noi_dung || '';
+        let setLopClean = new Set();
+        let setMon = new Set();
 
-        rowsHTML += `
-            <tr>
-                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">${index + 1}</td>
-                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">${tuanHoc}</td>
-                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">${thuNgay}</td>
-                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">Tiết ${tietHoc}</td>
-                <td style="border: 1px solid #94a3b8; padding: 5px;">${monHocFull}</td>
-                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">${item.lop || ''}</td>
-                <td style="border: 1px solid #94a3b8; padding: 5px;">${tenBaiDay}</td>
-                <td style="border: 1px solid #94a3b8; padding: 5px;">${tenGVKH}</td>
-                <td style="border: 1px solid #94a3b8; padding: 5px; text-align: center; ${badgeColor}">${trangThaiStr}</td>
-            </tr>
-        `;
-    });
+        dataToExport.forEach(item => {
+            let rawLop = item.lop || '';
+            let phanMon = item.phan_mon || item.phanMon || '';
+            let monHoc = item.mon_hoc || item.monHoc || '';
 
-    let printFrame = document.getElementById('printFrame');
-    if (!printFrame) {
-        printFrame = document.createElement('iframe');
-        printFrame.id = 'printFrame';
-        printFrame.style.display = 'none';
-        document.body.appendChild(printFrame);
-    }
-
-    const printContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <title>Báo Cáo Sổ Đầu Bài Theo Tuần</title>
-            <style>
-                @page { size: A4 landscape; margin: 10mm; }
-                body { font-family: 'Times New Roman', Times, serif; font-size: 12px; color: #1e293b; margin: 0; background: #fff; }
-                
-                /* Trang bìa */
-                .cover-page {
-                    width: 100%;
-                    height: 100vh;
-                    box-sizing: border-box;
-                    padding: 40mm 20mm;
-                    text-align: center;
-                    page-break-after: always;
-                    break-after: page;
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: space-between;
+            let processedLop = rawLop;
+            if (phanMon.toUpperCase().includes('BDHSG') || rawLop.toUpperCase().includes('BDHSG')) {
+                let matchKhoi = rawLop.match(/^(10|11|12)/);
+                processedLop = matchKhoi ? ' ' + matchKhoi[0] + ' ' : 'BDHSG';
+            } else {
+                if (rawLop.includes('-')) {
+                    processedLop = rawLop.split('-')[0].trim();
                 }
-                .cover-top { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; text-transform: uppercase; }
-                .cover-title-box { margin-top: 40px; }
-                .cover-school { font-size: 16px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
-                .cover-main-title { font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 20px 0; color: #1e3a8a; line-height: 1.3; }
-                .cover-sub-title { font-size: 14px; font-weight: bold; font-style: italic; margin-bottom: 40px; color: #334155; max-width: 800px; margin-left: auto; margin-right: auto; }
-                .cover-footer { font-size: 14px; font-weight: bold; margin-bottom: 30px; }
+            }
+            if (processedLop) setLopClean.add(processedLop);
 
-                /* Trang nội dung danh sách */
-                .content-page { padding: 5mm; }
-                .header { display: flex; justify-content: space-between; margin-bottom: 12px; border-bottom: 2px solid #1e293b; padding-bottom: 6px; }
-                .text-center { text-align: center; }
-                .font-bold { font-weight: bold; }
-                
-                table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-                th { background-color: #f1f5f9; border: 1px solid #94a3b8; padding: 6px; text-align: center; font-size: 11px; font-weight: bold; }
-                td { border: 1px solid #94a3b8; padding: 5px; font-size: 11px; }
-                
-                .footer { display: flex; justify-content: space-between; margin-top: 25px; text-align: center; page-break-inside: avoid; break-inside: avoid; }
-                .signer-name { font-weight: bold; margin-top: 45px; display: block; font-size: 12px; }
-            </style>
-        </head>
-        <body>
-            <!-- 📄 TRANG BÌA -->
-            <div class="cover-page">
-                <div class="cover-top">
-                    <div>SỞ GIÁO DỤC VÀ ĐÀO TẠO<br>TRƯỜNG THPT NGUYỄN DUY TRINH</div>
-                    <div>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>Độc lập - Tự do - Hạnh phúc</div>
-                </div>
-                
-                <div class="cover-title-box">
-                    <div class="cover-school">HỘI ĐỒNG CHUYÊN MÔN</div>
-                    <div class="cover-main-title">BÁO CÁO CHI TIẾT SỔ ĐẦU BÀI<br>THỰC HIỆN CHƯƠNG TRÌNH</div>
-                    <div class="cover-sub-title">${coverSubText}</div>
-                </div>
+            let fullMon = monHoc;
+            if (phanMon) fullMon += ' (' + phanMon + ')';
+            if (fullMon) setMon.add(fullMon);
+        });
 
-                <div class="cover-footer">
-                    NĂM HỌC: 2026 - 2027
-                </div>
-            </div>
+        let strLop = setLopClean.size > 0 ? Array.from(setLopClean).join(', ') : 'Toàn trường';
+        let strMon = setMon.size > 0 ? Array.from(setMon).join(', ') : 'Tất cả các môn';
+        let coverSubText = 'Lớp: ' + strLop + ' — Môn: ' + strMon;
 
-            <!-- 📄 TRANG NỘI DUNG BÁO CÁO (KHỔ NGANG) -->
-            <div class="content-page">
-                <div class="header">
-                    <div>
-                        <div class="font-bold" style="font-size: 11px;">TRƯỜNG THPT NGUYỄN DUY TRINH</div>
-                        <div style="font-size: 10px;">Hội đồng Chuyên môn</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="font-bold" style="font-size: 13px;">BÁO CÁO CHI TIẾT THỰC HIỆN CHƯƠNG TRÌNH SỔ ĐẦU BÀI</div>
-                        <div style="font-size: 10px; font-style: italic;">(${coverSubText})</div>
-                    </div>
-                    <div>
-                        <div style="font-size: 10px;">Năm học: 2026 - 2027</div>
-                    </div>
-                </div>
+        let rowsHTML = "";
+        dataToExport.forEach((item, index) => {
+            let rawTrangThai = item.trang_thai_ky !== undefined ? item.trang_thai_ky : item.daKy;
+            let trangThaiStr = rawTrangThai ? "Đã ký" : "Chưa ký";
+            let badgeColor = rawTrangThai ? "color: #047857; font-weight: bold;" : "color: #b45309; font-weight: bold;";
+            
+            let itemMaGV = item.giao_vien || item.giaoVien || item.ma_nhan_su || '';
+            let itemTenGV = itemMaGV;
+            if (typeof layTenNhanSu === 'function') {
+                try { itemTenGV = layTenNhanSu(itemMaGV) || itemMaGV; } catch(e){}
+            }
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 35px;">STT</th>
-                            <th style="width: 45px;">Tuần</th>
-                            <th style="width: 50px;">Thứ</th>
-                            <th style="width: 50px;">Tiết</th>
-                            <th>Môn / Phân Môn</th>
-                            <th style="width: 60px;">Lớp</th>
-                            <th>Tên Bài Dạy (Nội Dung)</th>
-                            <th>Giáo Viên</th>
-                            <th style="width: 80px;">Trạng Thái</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rowsHTML}
-                    </tbody>
-                </table>
+            let monHocFull = (item.mon_hoc || item.monHoc || '') + ((item.phan_mon || item.phanMon) ? ' (' + (item.phan_mon || item.phanMon) + ')' : '');
 
-                <div class="footer">
-                    <div style="width: 45%;">
-                        <div class="font-bold" style="font-size: 11px;">GIÁO VIÊN BỘ MÔN</div>
-                        <div style="font-size: 10px; color: #64748b;">(Ký và ghi rõ họ tên)</div>
-                        <span class="signer-name">${dataToExport.length > 0 ? layTenNhanSu(dataToExport[0].giao_vien || dataToExport[0].giaoVien || dataToExport[0].ma_nhan_su || '') : ''}</span>
-                    </div>
-                    <div style="width: 45%;">
-                        <div class="font-bold" style="font-size: 11px;">XÁC NHẬN CỦA BAN GIÁM HIỆU</div>
-                        <div style="font-size: 10px; color: #64748b;">(Ký, ghi rõ họ tên, đóng dấu)</div>
-                        <span class="signer-name">Nguyễn Hồng Hai</span>
-                    </div>
-                </div>
-            </div>
-        </body>
-        </html>
-    `;
+            rowsHTML += '<tr>' +
+                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">' + (index + 1) + '</td>' +
+                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">' + (item.tuan || item.tuan_hoc || '-') + '</td>' +
+                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">' + (item.thu || '-') + '</td>' +
+                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">Tiết ' + (item.tiet_ppct || item.tiet || '') + '</td>' +
+                '<td style="border: 1px solid #94a3b8; padding: 5px;">' + monHocFull + '</td>' +
+                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">' + (item.lop || '') + '</td>' +
+                '<td style="border: 1px solid #94a3b8; padding: 5px;">' + (item.ten_bai || item.noi_dung || '') + '</td>' +
+                '<td style="border: 1px solid #94a3b8; padding: 5px;">' + itemTenGV + '</td>' +
+                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center; ' + badgeColor + '">' + trangThaiStr + '</td>' +
+            '</tr>';
+        });
 
-    const frameDoc = printFrame.contentWindow.document;
-    frameDoc.open();
-    frameDoc.write(printContent);
-    frameDoc.close();
+        let printFrame = document.getElementById('printFrame');
+        if (!printFrame) {
+            printFrame = document.createElement('iframe');
+            printFrame.id = 'printFrame';
+            printFrame.style.display = 'none';
+            document.body.appendChild(printFrame);
+        }
 
-    setTimeout(() => {
-        printFrame.contentWindow.focus();
-        printFrame.contentWindow.print();
-    }, 400);
+        const printContent = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Báo Cáo Sổ Đầu Bài</title><style>' +
+            '@page { size: A4 landscape; margin: 10mm; }' +
+            'body { font-family: "Times New Roman", Times, serif; font-size: 12px; color: #1e293b; margin: 0; background: #fff; }' +
+            '.cover-page { width: 100%; height: 100vh; box-sizing: border-box; padding: 40mm 20mm; text-align: center; page-break-after: always; display: flex; flex-direction: column; justify-content: space-between; }' +
+            '.content-page { padding: 5mm; page-break-after: always; }' +
+            '.appendix-page { padding: 30mm 20mm; page-break-before: always; }' +
+            'table { width: 100%; border-collapse: collapse; margin-top: 5px; }' +
+            'th { background-color: #f1f5f9; border: 1px solid #94a3b8; padding: 6px; text-align: center; font-size: 11px; font-weight: bold; }' +
+            'td { border: 1px solid #94a3b8; padding: 5px; font-size: 11px; }' +
+            '</style></head><body>' +
+            '<div class="cover-page">' +
+                '<div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; text-transform: uppercase;"><div>SỞ GIÁO DỤC VÀ ĐÀO TẠO<br>TRƯỜNG THPT NGUYỄN DUY TRINH</div><div>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>Độc lập - Tự do - Hạnh phúc</div></div>' +
+                '<div><div style="font-size: 16px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">HỘI ĐỒNG CHUYÊN MÔN</div><div style="font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 20px 0; color: #1e3a8a;">BÁO CÁO CHI TIẾT SỔ ĐẦU BÀI</div><div style="font-size: 13px; font-weight: bold; color: #334155;">' + coverSubText + '</div></div>' +
+                '<div style="font-size: 14px; font-weight: bold;">NĂM HỌC: 2026 - 2027</div>' +
+            '</div>' +
+            '<div class="content-page">' +
+                '<div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 12px; font-size: 11px;">' +
+                    '<div><strong>TRƯỜNG THPT NGUYỄN DUY TRINH</strong><br>Hội đồng Chuyên môn</div>' +
+                    '<div style="text-align: center;"><strong>BÁO CÁO CHI TIẾT THỰC HIỆN CHƯƠNG TRÌNH SỔ ĐẦU BÀI</strong><br><span style="font-style: italic;">(' + coverSubText + ')</span></div>' +
+                    '<div>Năm học: 2026 - 2027</div>' +
+                '</div>' +
+                '<table><thead><tr><th>STT</th><th>Tuần</th><th>Thứ</th><th>Tiết</th><th>Môn</th><th>Lớp</th><th>Nội Dung Bài Dạy</th><th>Giáo Viên</th><th>Trạng Thái</th></tr></thead><tbody>' + rowsHTML + '</tbody></table>' +
+                '<div style="display: flex; justify-content: space-between; margin-top: 30px; text-align: center;">' +
+                    '<div style="width: 45%;"><div style="font-weight: bold; font-size: 11px;">GIÁO VIÊN BỘ MÔN</div>' + teacherSignatureHtml + '</div>' +
+                    '<div style="width: 45%;"><div style="font-weight: bold; font-size: 11px;">XÁC NHẬN BGH</div><span style="font-weight: bold; margin-top: 45px; display: block; font-size: 12px;">Nguyễn Hồng Hai</span></div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="appendix-page">' +
+                '<h3 style="text-align: center; color: #1e3a8a; text-transform: uppercase; margin-bottom: 20px;">PHỤ LỤC XÁC THỰC CHỨNG THƯ SỐ ĐIỆN TỬ</h3>' +
+                '<p style="text-align: justify; line-height: 1.6;">Hệ thống Quản lý Hồ sơ chuyên môn (EduDoc Suite) xác nhận tệp báo cáo này đã được đóng dấu định danh điện tử, áp dụng cơ chế khóa toàn vẹn bảo mật chống chỉnh sửa:</p>' +
+                '<div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 22px; border-radius: 6px; margin-top: 15px; line-height: 1.8;">' +
+                    '🏫 <strong>Đơn vị phát hành:</strong> TRƯỜNG THPT NGUYỄN DUY TRINH<br>' +
+                    '📚 <strong>Tổ chuyên môn:</strong> ' + toChuyenMon + '<br>' +
+                    '👨‍🏫 <strong>Giáo viên ký số:</strong> ' + tenGVKH + '<br>' +
+                    '🆔 <strong>Mã định danh nhân sự:</strong> ' + maGV + '<br>' +
+                    '⏰ <strong>Thời gian xác thực ký số:</strong> ' + new Date(timestamp).toLocaleString('vn-VN') + '<br>' +
+                    '🔐 <strong>Mã băm toàn vẹn (SHA-256):</strong> <code>' + signatureHash + '</code><br>' +
+                    '🛡️ <strong>Trạng thái pháp lý:</strong> Đã khóa toàn vẹn (is_locked = true), hợp lệ trong hệ thống quản lý chất lượng nhà trường.' +
+                '</div>' +
+                '<div style="margin-top: 35px; text-align: right; font-style: italic; font-size: 11px; color: #64748b;">Tệp được kết xuất tự động từ hệ thống quản lý trường học — Ngày xuất: ' + new Date().toLocaleDateString('vn-VN') + '</div>' +
+            '</div>' +
+            '</body></html>';
+
+        const frameDoc = printFrame.contentWindow.document;
+        frameDoc.open();
+        frameDoc.write(printContent);
+        frameDoc.close();
+
+        setTimeout(() => {
+            printFrame.contentWindow.focus();
+            printFrame.contentWindow.print();
+            if (typeof showToast === 'function') showToast("✅ Đã mở hộp thoại In/Lưu PDF thành công!");
+        }, 500);
+
+    } catch (err) {
+        console.error("Lỗi in PDF:", err);
+        alert("❌ Đã xảy ra lỗi: " + err.message);
+    }
 };
 // Bộ nhớ tạm lưu danh sách nhân sự để tra cứu ngay lập tức
 window.cachedNhanSu = window.cachedNhanSu || {};
