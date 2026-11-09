@@ -640,8 +640,11 @@
                     const soTKBSelect = document.getElementById('selectSoTKBKeHoach');
                     if (soTKBSelect && data) {
                         // Lọc các số TKB duy nhất (distinct)
-                        const uniqueSoTKB = [...new Set(data.map(item => item.so_tkb || item.soTKB))].filter(Boolean);
-                        uniqueSoTKB.sort((a, b) => b - a); // Sắp xếp mới nhất lên đầu nếu cần
+                       const uniqueSoTKB = [...new Set(data.map(item => item.so_tkb || item.soTKB))].filter(Boolean);
+// Sắp xếp chuẩn số tự nhiên (TKB số 1, 2, ..., 9, 10, 11...)
+uniqueSoTKB.sort((a, b) => {
+    return String(a).localeCompare(String(b), 'vi', { numeric: true, sensitivity: 'base' });
+});
                         
                         uniqueSoTKB.forEach(stkb => {
                             let opt = document.createElement('option');
