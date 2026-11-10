@@ -1192,7 +1192,91 @@
 
             </div>
         </section>
-     
+
+      <!--======Cập nhật điểm học sinh==========-->
+        <!-- Modal Cập nhật Điểm & Nề nếp Học Sinh -->
+<!-- Modal Cập nhật Điểm & Nề nếp Học Sinh (Đã tích hợp Môn học) -->
+<div id="studentDetailModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all">
+        <!-- Header Modal -->
+        <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center text-white">
+            <h3 id="modalStudentTitle" class="text-lg font-bold flex items-center gap-2">
+                👤 Hồ Sơ Theo Dõi: <span id="lblTenHocSinh">---</span> 
+                <span id="lblLopHoc" class="text-xs bg-indigo-500 px-2 py-0.5 rounded text-indigo-100"></span>
+            </h3>
+            <button onclick="dongModalHocSinh()" class="text-white hover:text-slate-200 text-xl font-bold">&times;</button>
+        </div>
+
+        <!-- Body Form Cập Nhật -->
+        <div class="p-6 space-y-4">
+            <input type="hidden" id="currentHocSinhId">
+            <input type="hidden" id="currentMaHocSinh">
+            <input type="hidden" id="currentLop">
+            
+            <!-- 🎯 BỔ SUNG: Ô chọn Môn học / Tiết dạy -->
+            <div class="bg-indigo-50/60 p-3 rounded-lg border border-indigo-100">
+                <label class="block text-xs font-semibold text-indigo-900 mb-1">Môn học / Tiết dạy:</label>
+                <select id="txtMonHoc" class="w-full border border-indigo-200 rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 font-medium">
+                    <!-- Danh sách môn học sẽ được tự động điền vào đây tùy theo tài khoản đăng nhập -->
+                </select>
+            </div>
+
+            <!-- Phần Điểm Số -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Loại điểm:</label>
+                    <select id="selLoaiDiem" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="Điểm miệng">Điểm miệng</option>
+                        <option value="15 phút">Kiểm tra 15 phút</option>
+                        <option value="Giữa kỳ">Kiểm tra giữa kỳ</option>
+                        <option value="Cuối kỳ">Kiểm tra cuối kỳ</option>
+                        <option value="Khác">Khác</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Chi tiết điểm số / Đánh giá:</label>
+                    <input type="text" id="txtDiemSo" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Nhập điểm hoặc nhận xét...">
+                </div>
+            </div>
+
+            <!-- Phần Nề Nếp -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Loại nề nếp / Ý thức:</label>
+                    <select id="selLoaiNeNep" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="Biểu dương / Tốt">🌟 Biểu dương / Tốt</option>
+                        <option value="Đi học muộn">⏰ Đi học muộn</option>
+                        <option value="Không thuộc bài">📖 Không thuộc bài</option>
+                        <option value="Đổi chỗ ngồi">⚠️ Đổi chỗ ngồi</option>
+                        <option value="Nghỉ học không lý do">⚠️ Nghỉ học không lý do</option>
+                        <option value="Nói chuyện riêng">⚠️ Nói chuyện riêng</option>
+                        <option value="Vi phạm nội quy">⚠️ Vi phạm nội quy chung</option>
+                        <option value="Khác">Khác</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Ghi chú vi phạm / ưu điểm:</label>
+                    <input type="text" id="txtNeNep" class="w-full border border-slate-300 rounded-lg p-2 text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Chi tiết nề nếp...">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Ghi chú chung của chủ nhiệm / giáo viên bộ môn:</label>
+                <input type="text" id="txtGhiChu" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Hoàn cảnh, sức khỏe, lưu ý đặc biệt...">
+            </div>
+        </div>
+
+        <!-- Footer Buttons -->
+        <div class="bg-slate-50 px-6 py-3 flex justify-end gap-3 border-t border-slate-200">
+            <button onclick="dongModalHocSinh()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg transition">
+                Hủy bỏ
+            </button>
+            <button onclick="luuThongTinHocSinh()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow transition flex items-center gap-1.5">
+                💾 Lưu Thay Đổi
+            </button>
+        </div>
+    </div>
+</div>
     </main>
 
     <!-- Script Xử lý Logic & Supabase -->
@@ -1252,7 +1336,6 @@
         }
     }
 
-    // 2. Truy vấn thông tin bổ sung từ Supabase an toàn (tránh lỗi 400)
     async function taiVaiTro() {
         initSessionData();
 
@@ -1263,10 +1346,10 @@
         }
 
         try {
-            // 1. Lấy thông tin cơ bản từ bảng users như bình thường
+            // 1. Lấy thông tin cơ bản từ bảng users (Sửa 'nhom_mon' thành 'nhom_cm')
             let { data: userData, error: userError } = await db
                 .from('users') 
-                .select('ma_nhan_su, ho_va_ten, quyen, ten_tkb, ma_truong')
+                .select('ma_nhan_su, ho_va_ten, quyen, ten_tkb, ma_truong, nhom_cm')
                 .eq('ma_nhan_su', currentSession.maNhanSu)
                 .limit(1);
 
@@ -1280,22 +1363,25 @@
                 }
                 currentSession.tenTKB = String(userObj.ten_tkb || currentSession.maNhanSu.split('.').pop()).trim();
                 if (userObj.ma_truong) currentSession.maTruong = userObj.ma_truong;
+                
+                // 🎯 Lưu nhóm chuyên môn vào session để quản lý
+                currentSession.nhomCM = String(userObj.nhom_cm || "").trim();
+                
+                // Xử lý xác định môn học mặc định dựa trên nhom_cm
+                xuLyMonHocGiaoVien(currentSession.nhomCM);
             }
 
-            // 🎯 2. ĐÚNG NHƯ THẦY NGHĨ: Truy vấn trực tiếp vào bảng cau_hinh_lop_hoc_ckcl 
-            // để tìm lớp mà mã nhân sự này làm chủ nhiệm
+            // 2. Truy vấn trực tiếp vào bảng cau_hinh_lop_hoc_ckcl để tìm lớp chủ nhiệm
             let { data: lopData, error: lopError } = await db
                 .from('cau_hinh_lop_hoc_ckcl')
-                .select('lop_hoc') // Hoặc 'ma_lop' tùy tên cột trong bảng của thầy
+                .select('lop_hoc') 
                 .eq('ma_nhan_su', currentSession.maNhanSu)
                 .limit(1);
 
             if (lopData && lopData.length > 0 && !lopError) {
-                // Lấy tên lớp chủ nhiệm từ bảng cấu hình
                 currentSession.lopChuNhiem = String(lopData[0].lop_hoc || lopData[0].ma_lop || "").trim();
-                console.log("🏫 Đã tìm thấy lớp chủ nhiệm từ bảng cấu hình:", currentSession.lopChuNhiem);
+                console.log("🏫 Đã tìm thấy lớp chủ nhiệm:", currentSession.lopChuNhiem);
             } else {
-                console.warn("⚠ Không tìm thấy phân công chủ nhiệm trong bảng cau_hinh_lop_hoc_ckcl cho mã:", currentSession.maNhanSu);
                 currentSession.lopChuNhiem = "";
             }
 
@@ -1314,11 +1400,83 @@
             inputGiaoVien.setAttribute('data-tentkb', currentSession.tenTKB);
         }
 
-        // Tải danh sách lớp theo phân quyền
         if (typeof loadDanhSachLopSoDo === 'function') {
             loadDanhSachLopSoDo();
         }
     }
+// 1. Bảng quy đổi từ mã viết tắt (nhom_cm) sang tên môn học đầy đủ hiển thị trên giao diện
+// 1. Bảng quy đổi đầy đủ từ mã viết tắt (nhom_cm) sang tên môn học
+const MAP_TEN_MON = {
+    "Tin": "Tin học",           // 🎯 Đã bổ sung chuẩn xác cho môn Tin của thầy
+    "Văn": "Ngữ Văn",
+    "Sử": "Lịch sử",
+    "Anh": "Tiếng Anh",
+    "Hoá": "Hóa học",
+    "Toán": "Toán học",
+    "Lí_cn": "Vật lý / Công nghệ",
+    "Sinh": "Sinh học",
+    "GDKTPL": "Giáo dục Kinh tế & Pháp luật",
+    "Địa": "Địa lý",
+    "TD": "Thể dục"
+};
+
+// 2. Hàm tự động điền danh sách môn học theo đúng nhom_cm từ tài khoản đăng nhập
+function xuLyMonHocGiaoVien() {
+    const selectEl = document.getElementById('txtMonHoc');
+    if (!selectEl) return;
+
+    selectEl.innerHTML = ""; // Xóa dữ liệu cũ
+
+    // Lấy trực tiếp giá trị nhomCM từ session của giáo viên
+    let nhomCM = (window.currentSession && window.currentSession.nhomCM) ? window.currentSession.nhomCM.trim() : "";
+    let danhSachMonHoc = [];
+
+    // 🎯 KIỂM TRA VÀ ÁNH XÁ CHÍNH XÁC THEO CƠ SỞ DỮ LIỆU
+    if (nhomCM === "Lí_cn" || nhomCM.toLowerCase().includes("lí")) {
+        danhSachMonHoc = ["Vật lý", "Công nghệ", "HĐTN (Hoạt động trải nghiệm)", "GDĐP (Giáo dục địa phương)"];
+    } else if (MAP_TEN_MON[nhomCM]) {
+        let tenChinh = MAP_TEN_MON[nhomCM];
+        danhSachMonHoc = [tenChinh, "HĐTN (Hoạt động trải nghiệm)", "GDĐP (GD địa phương)"];
+    } else if (nhomCM !== "") {
+        // Nếu nhom_cm trong CSDL là một tên bất kỳ khác (ví dụ "Tin học", "Sinh học"...)
+        danhSachMonHoc = [nhomCM, "HĐTN (Hoạt động trải nghiệm)", "GDĐP (GD địa phương)"];
+    } else {
+        danhSachMonHoc = ["Tin học", "HĐTN (Hoạt động trải nghiệm)", "GDĐP (GD địa phương)"];
+    }
+
+    // Đổ danh sách vào thẻ <select>
+    danhSachMonHoc.forEach(mon => {
+        let opt = document.createElement('option');
+        opt.value = mon;
+        opt.textContent = mon;
+        selectEl.appendChild(opt);
+    });
+
+    // Ưu tiên chọn môn đã lưu trong localStorage của giáo viên
+    let maGV = (window.currentSession && window.currentSession.maNhanSu) ? window.currentSession.maNhanSu : "default";
+    let monDaChon = localStorage.getItem(`mon_chon_${maGV}`);
+    
+    if (monDaChon && danhSachMonHoc.includes(monDaChon)) {
+        selectEl.value = monDaChon;
+        window.giaoVienMonHoc = monDaChon;
+    } else {
+        selectEl.value = danhSachMonHoc[0];
+        window.giaoVienMonHoc = danhSachMonHoc[0];
+    }
+
+    // Lắng nghe sự kiện thay đổi lựa chọn
+    selectEl.onchange = function() {
+        window.giaoVienMonHoc = this.value;
+        localStorage.setItem(`mon_chon_${maGV}`, this.value);
+    };
+}
+
+function chuanHoaTenMon(str) {
+    if (!str) return "";
+    let text = str.replace(/_/g, ' ');
+    return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 
     // 3. Hiển thị thông tin lên giao diện
     function hienThiQuyen() {
@@ -2698,7 +2856,7 @@ function doiChoHaiTo(toA, toB) {
     dsTo[4].forEach(hs => hs.to_so = 4);
 
     // 5. Vẽ lại sơ đồ lên giao diện ngay lập tức
-    hienThiSoDoLenGiaoDien(currentClassStudents);
+    (currentClassStudents);
 }
 
 // Biến lưu số lượng ghế động cho từng bàn theo tổ
@@ -3081,26 +3239,37 @@ function taoHtmlDanhSachTheoTo(danhSachTo, tenToMacDinh) {
                 <div class="grid grid-cols-2 md:grid-cols-${Math.min(capacity, 6)} gap-1.5">
         `;
 
-        for (let j = 0; j < capacity; j++) {
-            let hs = banHop[j];
-            if (hs) {
-                let idHS = hs.ma_hoc_sinh || hs.id;
-                let toCuaEm = Number(soToThucTe);
-                hs.to_so = toCuaEm; 
-                let viTriThucTe = studentIndex + j + 1; 
-                hs.vi_tri_ngoi = viTriThucTe; 
+        // ... (đoạn trên giữ nguyên)
+for (let j = 0; j < capacity; j++) {
+    let hs = banHop[j];
+    if (hs) {
+        let idHS = hs.ma_hoc_sinh || hs.id;
+        let toCuaEm = Number(soToThucTe);
+        hs.to_so = toCuaEm; 
+        let viTriThucTe = studentIndex + j + 1; 
+        hs.vi_tri_ngoi = viTriThucTe; 
 
-                html += `
-                    <div draggable="true" 
-                         ondragstart="onDragStart(event, '${idHS}')" 
-                         ondragover="event.preventDefault()" 
-                         ondrop="onDropGhe(event, '${idHS}')"
-                         class="border border-slate-300 rounded p-1.5 text-center bg-white hover:bg-indigo-50 hover:border-indigo-400 transition cursor-grab active:cursor-grabbing shadow-2xs select-none">
-                        <span class="block text-xs font-bold text-slate-800 truncate">${hs.ho_va_ten || hs.ho_ten || hs.ten}</span>
-                        <span class="text-[9px] text-indigo-600 font-medium">${hs.chieu_cao ? hs.chieu_cao + 'cm • ' : ''}Tổ ${toCuaEm} (Ghế ${viTriThucTe})</span>
-                    </div>
-                `;
-            } else {
+        // 🎯 Lấy sẵn các giá trị để gán vào data-attribute
+        let tenHsText = hs.ho_va_ten || hs.ho_ten || hs.ten || '';
+        let maHsText = hs.ma_hoc_sinh || '';
+        let lopText = hs.ma_lop || '';
+
+        html += `
+            <div draggable="true" 
+                 ondragstart="onDragStart(event, '${idHS}')" 
+                 ondragover="event.preventDefault()" 
+                 ondrop="onDropGhe(event, '${idHS}')"
+                 class="student-seat border border-slate-300 rounded p-1.5 text-center bg-white hover:bg-indigo-50 hover:border-indigo-400 transition cursor-grab active:cursor-grabbing shadow-2xs select-none"
+                 data-id="${hs.id}"
+                 data-mahocsinh="${maHsText}"
+                 data-hoten="${tenHsText}"
+                 data-lop="${lopText}">
+                <span class="block text-xs font-bold text-slate-800 truncate">${tenHsText}</span>
+                <span class="text-[9px] text-indigo-600 font-medium">${hs.chieu_cao ? hs.chieu_cao + 'cm • ' : ''}Tổ ${toCuaEm} (Ghế ${viTriThucTe})</span>
+            </div>
+        `;
+    } else {
+    // ... (đoạn ghế trống giữ nguyên)
                 html += `
                     <div ondragover="event.preventDefault()" 
                          ondrop="onDropGheTrong(event, '${tenToMacDinh}', ${rowIndex}, ${j})"
@@ -3315,6 +3484,174 @@ function inSoDoNgang() {
     
     // Gọi lệnh in của trình duyệt
     window.print();
+}
+//Hàm nháy đúp vào học sinh trên sơ đồ để cập  nhật điểm và quản lý lớp
+// 1. Lắng nghe sự kiện nháy đúp toàn cục, tự động gom dữ liệu từ thẻ div truyền vào modal
+document.addEventListener('dblclick', function(e) {
+    const seatEl = e.target.closest('.student-seat'); 
+    if (seatEl) {
+        const id = seatEl.getAttribute('data-id');
+        const maHs = seatEl.getAttribute('data-mahocsinh');
+        const hoTen = seatEl.getAttribute('data-hoten');
+        const lop = seatEl.getAttribute('data-lop');
+        
+        if (id) {
+            moModalHocSinh(id, maHs, hoTen, lop);
+        }
+    }
+});
+
+// 2. Hàm mở Modal và nạp thông tin điểm, nề nếp, loại điểm, loại nề nếp
+async function moModalHocSinh(id, maHsTruyenVao, tenHsTruyenVao, lopTruyenVao) {
+    const client = typeof db !== 'undefined' ? db : window.db;
+    if (!client || typeof client.from !== 'function') {
+        alert("⚠️ Biến kết nối 'db' chưa sẵn sàng!");
+        return;
+    }
+
+    // Hiển thị trạng thái đang tải
+    document.getElementById('lblTenHocSinh').textContent = tenHsTruyenVao || "Đang đồng bộ hồ sơ...";
+    document.getElementById('lblLopHoc').textContent = lopTruyenVao ? `Lớp: ${lopTruyenVao}` : "";
+    document.getElementById('currentHocSinhId').value = id;
+    document.getElementById('currentMaHocSinh').value = maHsTruyenVao || '';
+    document.getElementById('currentLop').value = lopTruyenVao || '';
+    
+    // 🎯 TỰ ĐỘNG LẤY MÔN HỌC CỦA GIÁO VIÊN ĐIỀN VÀO Ô MÔN HỌC
+    // (Thầy thay 'window.giaoVienMonHoc' bằng tên biến thực tế lưu môn dạy của thầy trong code, ví dụ: 'Toán', 'Tin học'...)
+    let monHocMacDinh = window.giaoVienMonHoc || window.monHocDay || "Chưa phân công"; 
+    
+    if (document.getElementById('txtMonHoc')) {
+        document.getElementById('txtMonHoc').value = monHocMacDinh;
+    }
+
+    document.getElementById('txtDiemSo').value = "";
+    document.getElementById('txtNeNep').value = "";
+    document.getElementById('txtGhiChu').value = "";
+    
+    document.getElementById('studentDetailModal').classList.remove('hidden');
+// 🎯 GỌI HÀM NÀY ĐỂ TỰ ĐỘNG ĐIỀN MÔN HỌC
+    xuLyMonHocGiaoVien();
+    try {
+        let { data, error } = await client
+            .from('ho_so_hoc_sinh')
+            .select('*')
+            .eq('id', id)
+            // Nếu thầy muốn phân biệt rõ từng môn học riêng biệt cho mỗi học sinh trong bảng, 
+            // thầy có thể kết hợp thêm điều kiện `.eq('mon_hoc', monHocMacDinh)` ở đây nếu cần.
+            .maybeSingle();
+
+        if (error) throw error;
+
+        // Nếu chưa có hồ sơ, tạo mới với môn học mặc định luôn
+        if (!data) {
+            const insertRes = await client
+                .from('ho_so_hoc_sinh')
+                .insert([
+                    { 
+                        id: id, 
+                        ma_hoc_sinh: maHsTruyenVao || '', 
+                        ho_ten: tenHsTruyenVao || 'Học sinh', 
+                        lop: lopTruyenVao || '',
+                        mon_hoc: monHocMacDinh, // Lưu luôn môn học của giáo viên
+                        diem_so: "", 
+                        loai_diem: "Điểm miệng",
+                        ne_nep: "", 
+                        loai_nep_nep: "Biểu dương / Tốt",
+                        ghi_chu: "" 
+                    }
+                ])
+                .select()
+                .single();
+                
+            if (!insertRes.error) {
+                data = insertRes.data;
+            }
+        }
+
+        // Đổ dữ liệu lên Modal
+        if (data) {
+            document.getElementById('lblTenHocSinh').textContent = data.ho_ten || tenHsTruyenVao || 'Học sinh';
+            document.getElementById('lblLopHoc').textContent = data.lop ? `Lớp: ${data.lop}` : "";
+            document.getElementById('currentMaHocSinh').value = data.ma_hoc_sinh || maHsTruyenVao || '';
+            document.getElementById('currentLop').value = data.lop || lopTruyenVao || '';
+            
+            if (document.getElementById('txtMonHoc')) {
+                // Nếu trong cơ sở dữ liệu đã có môn học rồi thì dùng, chưa có thì lấy mặc định của giáo viên
+                document.getElementById('txtMonHoc').value = data.mon_hoc || monHocMacDinh;
+            }
+            
+            document.getElementById('txtDiemSo').value = data.diem_so || '';
+            if (document.getElementById('selLoaiDiem') && data.loai_diem) {
+                document.getElementById('selLoaiDiem').value = data.loai_diem;
+            }
+            
+            document.getElementById('txtNeNep').value = data.ne_nep || '';
+            if (document.getElementById('selLoaiNeNep') && data.loai_nep_nep) {
+                document.getElementById('selLoaiNeNep').value = data.loai_nep_nep;
+            }
+            
+            document.getElementById('txtGhiChu').value = data.ghi_chu || '';
+        }
+    } catch (err) {
+        console.error("Lỗi tải hồ sơ học sinh:", err);
+    }
+}
+// 3. Hàm đóng modal
+function dongModalHocSinh() {
+    document.getElementById('studentDetailModal').classList.add('hidden');
+}
+
+
+// Hàm lưu thông tin kèm môn học xuống Supabase
+async function luuThongTinHocSinh() {
+    const client = typeof db !== 'undefined' ? db : window.db;
+    const id = document.getElementById('currentHocSinhId').value;
+    const maHs = document.getElementById('currentMaHocSinh').value;
+    const lop = document.getElementById('currentLop').value;
+    const tenHs = document.getElementById('lblTenHocSinh').textContent;
+    
+    // Lấy môn học đang chọn
+    const monHocSelect = document.getElementById('txtMonHoc');
+    const monHoc = monHocSelect ? monHocSelect.value : 'Chưa phân loại';
+    
+    const loaiDiem = document.getElementById('selLoaiDiem') ? document.getElementById('selLoaiDiem').value : '';
+    const diemSo = document.getElementById('txtDiemSo').value;
+    const loaiNeNep = document.getElementById('selLoaiNeNep') ? document.getElementById('selLoaiNeNep').value : '';
+    const neNep = document.getElementById('txtNeNep').value;
+    const ghiChu = document.getElementById('txtGhiChu').value;
+
+    if (!id || !client) return;
+
+    try {
+        // 🎯 Dùng .insert() để MỖI LẦN LƯU LÀ TẠO MỘT DÒNG LỊCH SỬ MỚI 
+        // Giúp lưu lại toàn bộ nhật ký theo ngày/buổi để gửi thông báo cho phụ huynh không bị mất hay ghi đè.
+        const { error } = await client
+            .from('ho_so_hoc_sinh')
+            .insert([
+                { 
+                    // Lưu ý: Nếu bảng của thầy đặt cột id học sinh là tự tăng (serial) thì không truyền id ở đây để nó tự sinh dòng mới. 
+                    // Còn nếu id là mã học sinh, ta có thể bỏ qua hoặc lưu mã học sinh vào ma_hoc_sinh, và để Supabase tự sinh một khóa chính riêng cho bảng lịch sử này.
+                    ma_hoc_sinh: maHs,
+                    ho_ten: tenHs,
+                    lop: lop,
+                    mon_hoc: monHoc,
+                    loai_diem: loaiDiem,
+                    diem_so: diemSo,
+                    loai_nep_nep: loaiNeNep,
+                    ne_nep: neNep,
+                    ghi_chu: ghiChu,
+                    created_at: new Date() // Lưu mốc thời gian chính xác của lần ghi nhận
+                }
+            ]);
+
+        if (error) throw error;
+
+        alert(`✅ Đã ghi nhận và lưu nhật ký thành công cho học sinh [${tenHs}] môn [${monHoc}]!`);
+        dongModalHocSinh();
+    } catch (err) {
+        console.error("Lỗi khi lưu:", err);
+        alert("⚠️ Lỗi cơ sở dữ liệu: " + err.message);
+    }
 }
     </script>
 </body>
