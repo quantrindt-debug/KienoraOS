@@ -632,30 +632,63 @@
             }
 
             // 1. Tải danh sách Số TKB (Lấy từ bảng thời Khoá biểu hoặc cấu hình chung - tùy thuộc vào tên bảng TKB của bạn)
-            // Ví dụ lấy các số TKB độc lập từ bảng thoi_khoa_bieu
-            db.from('thoi_khoa_bieu')
-                .select('so_tkb')
-                .then(({ data, error }) => {
-                    if (error) throw error;
-                    const soTKBSelect = document.getElementById('selectSoTKBKeHoach');
-                    if (soTKBSelect && data) {
-                        // Lọc các số TKB duy nhất (distinct)
-                        const uniqueSoTKB = [...new Set(data.map(item => item.so_tkb || item.soTKB))].filter(Boolean);
-// Sắp xếp chuẩn số tự nhiên (TKB số 1, 2, ..., 9, 10, 11...)
-                        
-uniqueSoTKB.sort((a, b) => {
-    return String(a).localeCompare(String(b), 'vi', { numeric: true, sensitivity: 'base' });
-});
-                        
-                        uniqueSoTKB.forEach(stkb => {
-                            let opt = document.createElement('option');
-                            opt.value = stkb;
-                            opt.textContent = `Số TKB: ${stkb}`;
-                            soTKBSelect.appendChild(opt);
-                        });
-                    }
-                }).catch(err => console.warn("Lỗi tải danh sách số TKB:", err.message));
+           // 1. Tải danh sách Số TKB (Dùng vòng lặp quét sạch toàn bộ dữ liệu không bị giới hạn 1000 dòng)
+        (async function loadAllSoTKBForKeHoach() {
+            try {
+                let allData = [];
+                let from = 0;
+                const pageSize = 1000;
 
+                while (true) {
+                    const { data, error } = await db
+                        .from('thoi_khoa_bieu')
+                        .select('so_tkb')
+                        .range(from, from + pageSize - 1);
+
+                    if (error) throw error;
+                    if (!data || data.length === 0) break;
+
+                    allData = allData.concat(data);
+                    if (data.length < pageSize) break;
+                    from += pageSize;
+                }
+
+                const soTKBSelect = document.getElementById('selectSoTKBKeHoach');
+                if (soTKBSelect && allData.length > 0) {
+                    const uniqueSoTKB = [
+                        ...new Set(
+                            allData
+                                .map(item => String(item.so_tkb || '').trim())
+                                .filter(Boolean)
+                        )
+                    ];
+
+                    // Sắp xếp chuẩn số tự nhiên (TKB số 1, 2, ..., 10, 11, 12...)
+                    uniqueSoTKB.sort((a, b) => {
+                        const numA = parseInt(a.replace(/\D/g, '')) || 0;
+                        const numB = parseInt(b.replace(/\D/g, '')) || 0;
+                        if (numA !== numB) return numA - numB;
+                        return a.localeCompare(b);
+                    });
+
+                    soTKBSelect.innerHTML = '<option value="">-- Chọn số TKB --</option>';
+                    uniqueSoTKB.forEach(stkb => {
+                        let opt = document.createElement('option');
+                        opt.value = stkb;
+                        opt.textContent = `Số TKB: ${stkb}`;
+                        soTKBSelect.appendChild(opt);
+                    });
+
+                    // Tự động chọn mục lớn nhất (ví dụ TKB số 11) nếu chưa chọn gì
+                    if (uniqueSoTKB.length > 0 && !soTKBSelect.value) {
+                        soTKBSelect.value = uniqueSoTKB[uniqueSoTKB.length - 1];
+                        if (typeof loadKeHoachByWeek === 'function') loadKeHoachByWeek();
+                    }
+                }
+            } catch (err) {
+                console.warn("Lỗi tải danh sách số TKB cho kế hoạch:", err.message);
+            }
+        })();
          // 2. Tải thông tin nhân sự / giáo viên từ bảng 'users' chuẩn xác
 // Thay vì dùng .single() dễ gây lỗi 406, ta dùng .limit(1) hoặc lấy mảng
 db.from('users')
@@ -1970,7 +2003,7 @@ function loadPPCTDataToCache() {
         .catch(err => console.error("Lỗi tải cache PPCT:", err));
 }
 
-// 3. Hàm gọi khi thay đổi tuần hoặc số TKB
+// 3. Hàm gọi khi thay đổi tuần hoặc số TKB (Đã chuẩn hóa định dạng soTKB)
 function loadKeHoachByWeek() {
     const selectTuan = document.getElementById('filterKHTuan');
     const selectSoTKB = document.getElementById('selectSoTKBKeHoach');
@@ -1978,9 +2011,9 @@ function loadKeHoachByWeek() {
     
     if (!selectTuan || !selectSoTKB) return;
     
-    const selectedValue = selectTuan.value;
+    const selectedValue = selectTuan.value; // VD: "11"
     const selectedOpt = selectTuan.options[selectTuan.selectedIndex];
-    const soTKB = selectSoTKB.value;
+    let soTKB = selectSoTKB.value; // VD: "11" hoặc "TKB số 11"
     const dateRangeSpan = document.getElementById('khDateRange');
     const tbody = document.getElementById('keHoachTableBody');
     
@@ -1990,21 +2023,19 @@ function loadKeHoachByWeek() {
         return;
     }
 
+    // 🎯 CHUẨN HÓA QUAN TRỌNG: Đảm bảo biến soTKB luôn có dạng "TKB số 11" để khớp với CSDL
+    let soTuyenClean = String(soTKB).replace(/\D/g, ''); // Lấy ra số 11
+    let targetSoTKB = soTuyenClean ? `TKB số ${soTuyenClean}` : soTKB;
+
     const start = selectedOpt ? selectedOpt.getAttribute('data-start') || '--' : '--';
     const end = selectedOpt ? selectedOpt.getAttribute('data-end') || '--' : '--';
     if (dateRangeSpan) dateRangeSpan.textContent = `${start} đến ${end}`;
 
-    if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Đang tải dữ liệu kế hoạch cho tuần ${selectedValue} (${soTKB})...</td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="12" class="text-center py-10 text-slate-400">Đang tải dữ liệu kế hoạch cho tuần ${selectedValue} (${targetSoTKB})...</td></tr>`;
 
-    // Gọi hàm lấy dữ liệu từ Supabase (bạn có thể viết hàm truy vấn bảng ke_hoach_tuan tương ứng ở đây)
-    fetchKeHoachFromSupabase(selectedValue, soTKB);
+    // Truyền biến targetSoTKB đã được làm sạch và chuẩn hóa vào hàm gọi Supabase
+    fetchKeHoachFromSupabase(selectedValue, targetSoTKB);
 }
-
-// 4. Lấy dữ liệu kế hoạch từ Supabase
-
-// 5. Đồng bộ TKB vào bảng Kế hoạch nếu chưa có dữ liệu
-// 1. Tải danh sách cấu hình tuần từ bảng CauHinhTuan vào thẻ <select> tuần
-
 // Hàm tải danh sách tuần từ bảng CauHinhTuan vào ô chọn tuần trong tab Kế hoạch
 function loadCauHinhTuanVaoKeHoach() {
     db.from('CauHinhTuan')
@@ -2079,8 +2110,13 @@ async function fetchKeHoachFromSupabase(tuan, soTKB) {
             window.allKeHoachData = data;
             renderKeHoachTable(data);
         } else {
-            // 🎯 THAY ĐỔI Ở ĐÂY: Gọi hàm quét max PPCT thông minh thay vì gọi thô loadTKBIntoKeHoach()
-            handleNoDataForCurrentWeek(tuan, soTKB);
+            // 🎯 NẾU CHƯA CÓ KẾ HOẠCH, TỰ ĐỘNG GỌI HÀM LẤY TỪ BẢNG thoi_khoa_bieu SANG
+            console.log(`Chưa có dữ liệu ke_hoach_tuan cho tuần ${tuan} (${soTKB}), đang nạp trực tiếp từ TKB...`);
+            if (typeof taiKeHoach === 'function') {
+                taiKeHoach('tkb_hien_tai'); // Gọi hàm lấy trực tiếp từ TKB sang bảng kế hoạch
+            } else {
+                handleNoDataForCurrentWeek(tuan, soTKB);
+            }
         }
     } catch (err) {
         console.error("Lỗi tải kế hoạch từ Supabase:", err);
