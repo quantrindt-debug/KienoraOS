@@ -389,7 +389,7 @@
                     <div class="space-y-4">
                         <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                             <div class="flex flex-wrap items-center gap-3">
-                                <-- Thay thế đoạn chứa các nút bấm trong phần render giao diện admin-tkb của thầy bằng:-->
+                                <!-- Thay thế đoạn chứa các nút bấm trong phần render giao diện admin-tkb của thầy bằng:-->
                                 <div class="flex flex-wrap items-center gap-3">
                                     <div>
                                         <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Chọn hoặc Tạo Số TKB Áp Dụng</label>
@@ -640,8 +640,9 @@
                     const soTKBSelect = document.getElementById('selectSoTKBKeHoach');
                     if (soTKBSelect && data) {
                         // Lọc các số TKB duy nhất (distinct)
-                       const uniqueSoTKB = [...new Set(data.map(item => item.so_tkb || item.soTKB))].filter(Boolean);
+                        const uniqueSoTKB = [...new Set(data.map(item => item.so_tkb || item.soTKB))].filter(Boolean);
 // Sắp xếp chuẩn số tự nhiên (TKB số 1, 2, ..., 9, 10, 11...)
+                        
 uniqueSoTKB.sort((a, b) => {
     return String(a).localeCompare(String(b), 'vi', { numeric: true, sensitivity: 'base' });
 });
@@ -680,32 +681,55 @@ db.from('users')
 
             // 3. Tải danh sách tuần học (Lấy từ bảng cau_hinh_tuan hoặc tuan_hoc trên Supabase)
             // 3. Tải danh sách tuần học (Đã sửa lại đúng tên bảng CauHinhTuan và cột ten_tuan)
-            db.from('CauHinhTuan') 
-                .select('*')
-                .order('id', { ascending: true }) // Sắp xếp theo id chuẩn
-                .then(({ data, error }) => {
-                    if (error) throw error;
-                    const tuanSelect = document.getElementById('filterKHTuan');
-                    if (tuanSelect && data && data.length > 0) {
-                        tuanSelect.innerHTML = '<option value="">-- Chọn tuần học --</option>';
-                        data.forEach(w => {
-                            let tenTuanVal = w.ten_tuan; // Dùng đúng cột ten_tuan
-                            let start = w.ngay_bat_dau || w.ngayBatDau || '';
-                            let end = w.ngay_ket_thuc || w.ngayKetThuc || '';
+            db.from('CauHinhTuan')  
+    .select('*')
+    .order('id', { ascending: true })
+    .then(({ data, error }) => {
+        if (error) throw error;
+        const tuanSelect = document.getElementById('filterKHTuan');
+        if (tuanSelect && data && data.length > 0) {
+            
+            // 🎯 BÓC TÁCH CON SỐ RA KHỎI CHUỖI ĐỂ SẮP XẾP CHUẨN XÁC TUYỆT ĐỐI THEO TOÁN HỌC
+            data.sort((a, b) => {
+                let nameA = String(a.ten_tuan || a.tuan || '');
+                let nameB = String(b.ten_tuan || b.tuan || '');
+                
+                // Lấy ra con số bên trong chuỗi (Ví dụ: "Tuần 10" -> số 10)
+                let numA = parseInt(nameA.replace(/\D/g, '')) || 0;
+                let numB = parseInt(nameB.replace(/\D/g, '')) || 0;
+                
+                return numA - numB; // Sắp xếp tăng dần từ nhỏ đến lớn (1, 2, ..., 9, 10, 11...)
+            });
 
-                            let opt = document.createElement('option');
-                            opt.value = tenTuanVal;
-                            opt.textContent = `${tenTuanVal} (${start} - ${end})`;
-                            opt.setAttribute('data-start', start);
-                            opt.setAttribute('data-end', end);
-                            tuanSelect.appendChild(opt);
-                        });
-                        if (tuanSelect.options.length > 1) {
-                            tuanSelect.selectedIndex = 1;
-                            if (typeof loadKeHoachByWeek === 'function') loadKeHoachByWeek();
-                        }
-                    }
-                }).catch(err => console.warn("Lỗi tải danh sách tuần học:", err.message));
+            tuanSelect.innerHTML = '<option value="">-- Chọn tuần học --</option>';
+            data.forEach(w => {
+                let rawTuan = w.ten_tuan || w.tuan || ''; 
+                // Bóc tách để lấy đúng con số (VD: "Tuần 10" hoặc "10" đều thành "10")
+                let soTuanNum = String(rawTuan).replace(/\D/g, '') || rawTuan; 
+                
+                let start = w.ngay_bat_dau || w.ngayBatDau || '';
+                let end = w.ngay_ket_thuc || w.ngayKetThuc || '';
+
+                let opt = document.createElement('option');
+                
+                // 🎯 QUAN TRỌNG: Value gửi đi là số thuần túy ("10") để khớp với cột `tuan` trong Database
+                opt.value = soTuanNum; 
+                
+                // Giao diện hiển thị trực quan cho giáo viên
+                opt.textContent = `Tuần ${soTuanNum} (${start} - ${end})`; 
+                
+                opt.setAttribute('data-start', start);
+                opt.setAttribute('data-end', end);
+                tuanSelect.appendChild(opt);
+            });
+
+            if (tuanSelect.options.length > 1) {
+                tuanSelect.selectedIndex = 1;
+                if (typeof loadKeHoachByWeek === 'function') loadKeHoachByWeek();
+            }
+        }
+    })
+    .catch(err => console.warn("Lỗi tải danh sách tuần học:", err.message));
 
         } catch (e) {
             console.error("Lỗi khởi tạo tab Kế hoạch:", e);
@@ -1395,7 +1419,9 @@ async function uploadTKBToSupabase(tkbArray, targetSoTKB) {
         }
 
         alert("Đã lưu " + targetSoTKB + " lên hệ thống thành công!");
-        initTKBWeekDropdown(); // Tải lại danh sách dropdown và dữ liệu mới nhất
+
+// Tải lại danh sách và tự động chuyển sang số TKB tiếp theo
+await initTKBWeekDropdown(true);
     } catch (err) {
         alert("Lỗi khi lưu TKB lên Supabase: " + err.message);
         loadTKBData(); // Tải lại dữ liệu nếu lỗi
@@ -1477,68 +1503,124 @@ function renderTKBTable(dataArray) {
 // Tải dữ liệu báo cáo thống kê trên trang báo cáo thống k
 
 // 5. Tải danh sách TKB từ Supabase lên Dropdown
-// 5. Tải danh sách tuần / số TKB trực tiếp từ bảng thoi_khoa_bieu lên Dropdown
-async function initTKBWeekDropdown() {
+
+// ============================================================
+// TẢI DANH SÁCH TKB - PHIÊN BẢN SỬA LỖI SỐ TKB TIẾP THEO
+// ============================================================
+async function initTKBWeekDropdown(forceNew = false) {
     const select = document.getElementById('selectSoTKB');
     if (!select) return;
 
     const currentSelectedValue = select.value;
 
     try {
-        if (!db) throw new Error("Chưa kết nối Supabase");
-
-        // ĐÃ SỬA: Truy vấn lấy danh sách cột 'so_tkb' thay vì 'tuan'
-        let { data, error } = await db
-            .from('thoi_khoa_bieu')
-            .select('so_tkb');
-
-        if (error) throw error;
-
-        // Lọc lấy danh sách các số TKB duy nhất (không trùng lặp)
-        let listSoTKB = [];
-        if (data && data.length > 0) {
-            const uniqueSoTKB = [...new Set(data.map(item => item.so_tkb || item.soTKB).filter(Boolean))];
-            // Sắp xếp danh sách số TKB
-            listSoTKB = uniqueSoTKB.sort((a, b) => {
-                // Sắp xếp theo số nếu có, hoặc chuỗi thông thường
-                return String(a).localeCompare(String(b), undefined, { numeric: true });
-            });
+        if (!db) {
+            throw new Error("Chưa kết nối Supabase");
         }
 
-        let optionsHtml = '';
-        
-        // Đưa các số TKB đã có vào dropdown dưới dạng "Xem / Ghi đè"
+        // 1. Lấy toàn bộ dữ liệu theo từng trang
+        let allData = [];
+        const pageSize = 1000;
+        let from = 0;
+
+        while (true) {
+            const { data, error } = await db
+                .from('thoi_khoa_bieu')
+                .select('so_tkb')
+                .range(from, from + pageSize - 1);
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) break;
+
+            allData = allData.concat(data);
+
+            if (data.length < pageSize) break;
+
+            from += pageSize;
+        }
+
+        // 2. Lấy danh sách TKB duy nhất
+        const listSoTKB = [
+            ...new Set(
+                allData
+                    .map(item => String(item.so_tkb || '').trim())
+                    .filter(Boolean)
+            )
+        ];
+
+        // 3. Tìm số TKB lớn nhất thực tế
+        let maxSoTKB = 0;
+
         listSoTKB.forEach(item => {
-            optionsHtml += `<option value="${item}">📂 Xem / Ghi đè: ${item}</option>`;
+            const match = item.match(/(\d+)\s*$/);
+
+            if (match) {
+                const num = parseInt(match[1], 10);
+
+                if (num > maxSoTKB) {
+                    maxSoTKB = num;
+                }
+            }
         });
 
-        // Gợi ý tạo TKB tiếp theo dựa trên số lượng hiện có
-        let nextNum = listSoTKB.length + 1;
-        let goiYMoi = `TKB số ${nextNum}`;
-        
-        // Đưa tùy chọn "Thêm mới" lên đầu tiên
-        optionsHtml = `<option value="${goiYMoi}">➕ Thêm mới: ${goiYMoi}</option>` + optionsHtml;
+        // 4. Tạo số TKB tiếp theo
+        const nextNum = maxSoTKB + 1;
+        const goiYMoi = `TKB số ${nextNum}`;
+
+        // 5. Sắp xếp danh sách TKB theo số tự nhiên
+        listSoTKB.sort((a, b) => {
+            const numA = parseInt(a.match(/(\d+)\s*$/)?.[1] || 0, 10);
+            const numB = parseInt(b.match(/(\d+)\s*$/)?.[1] || 0, 10);
+
+            return numA - numB;
+        });
+
+        // 6. Tạo danh sách lựa chọn
+        let optionsHtml =
+            `<option value="${goiYMoi}">
+                ➕ Thêm mới: ${goiYMoi}
+            </option>`;
+
+        listSoTKB.forEach(item => {
+            optionsHtml +=
+                `<option value="${item}">
+                    📂 Xem / Ghi đè: ${item}
+                </option>`;
+        });
+
         select.innerHTML = optionsHtml;
 
-        // Khôi phục lại lựa chọn cũ của người dùng nếu vẫn tồn tại
-        if (currentSelectedValue && select.querySelector(`option[value="${CSS.escape(currentSelectedValue)}"]`)) {
+        // 7. Chọn TKB mới sau khi upload thành công
+        if (forceNew) {
+            select.value = goiYMoi;
+        } else if (
+            currentSelectedValue &&
+            [...select.options].some(
+                opt => opt.value === currentSelectedValue
+            )
+        ) {
             select.value = currentSelectedValue;
         } else {
-            select.selectedIndex = 0;
+            select.value = goiYMoi;
         }
 
-        // Tải dữ liệu của mục đang được chọn lên bảng
-        if (typeof loadTKBData === 'function') loadTKBData();
+        console.log("DANH SÁCH TKB:", listSoTKB);
+        console.log("SỐ TKB LỚN NHẤT:", maxSoTKB);
+        console.log("SỐ TKB TIẾP THEO:", goiYMoi);
+
+        // 8. Tải dữ liệu theo lựa chọn hiện tại
+        if (typeof loadTKBData === 'function') {
+            loadTKBData();
+        }
 
     } catch (err) {
-        console.warn("Không tải được danh sách TKB từ cơ sở dữ liệu, dùng mặc định:", err);
-        select.innerHTML = `
-            <option value="TKB số 1">➕ Thêm mới: TKB số 1</option>
-            <option value="TKB số 2">📂 Xem / Ghi đè: TKB số 2</option>
-        `;
-        if (typeof loadTKBData === 'function') loadTKBData();
+        console.error("Lỗi tải danh sách TKB:", err);
+
+        alert("Không thể tải danh sách TKB: " + err.message);
     }
 }
+
 //===================================================================
 //====================== PHÂN PHỐI CHƯƠNG TRÌNH ======================
 //===================================================================
@@ -1997,8 +2079,8 @@ async function fetchKeHoachFromSupabase(tuan, soTKB) {
             window.allKeHoachData = data;
             renderKeHoachTable(data);
         } else {
-            // Nếu chưa có kế hoạch lưu sẵn, tự động chuyển sang nạp từ TKB gốc
-            loadTKBIntoKeHoach();
+            // 🎯 THAY ĐỔI Ở ĐÂY: Gọi hàm quét max PPCT thông minh thay vì gọi thô loadTKBIntoKeHoach()
+            handleNoDataForCurrentWeek(tuan, soTKB);
         }
     } catch (err) {
         console.error("Lỗi tải kế hoạch từ Supabase:", err);
@@ -2088,6 +2170,8 @@ async function loadTKBIntoKeHoach() {
                         }
                     });
                 }
+                // 🎯 THÊM DÒNG NÀY ĐỂ XEM KHÓA VÀ GIÁ TRỊ MỐC MAX CỦA TỪNG LỚP:
+                console.log("🔍 BẢN ĐỒ MỐC MAX TIẾT TỪ CÁC TUẦN TRƯỚC:", maxTietTuanTruocMap);
             }
 
             // 2. Tải thời Khoá biểu gốc từ bảng thoi_khoa_bieu
@@ -2166,10 +2250,17 @@ async function loadTKBIntoKeHoach() {
                     let groupKey = `${normTenLopChinh}_${monTKB}_${normLoaiLopTKB}`;
 
                     if (tietCounterMap[groupKey] === undefined) {
-                        let baseOffset = maxTietTuanTruocMap[groupKey] || 0;
-                        tietCounterMap[groupKey] = baseOffset;
-                    }
-                    
+    // Lấy đúng mốc max riêng của từng nhóm lớp/môn từ bản đồ quét được
+    let baseOffset = maxTietTuanTruocMap[groupKey] || 0;
+    tietCounterMap[groupKey] = baseOffset;
+}
+                    if (tietCounterMap[groupKey] === undefined) {
+    // 🎯 Ưu tiên lấy mốc globalMaxPPCTOffset (đã quét chuẩn xác số 18), nếu không có mới dùng map riêng
+    let baseOffset = (typeof globalMaxPPCTOffset !== 'undefined' && globalMaxPPCTOffset > 0) 
+                    ? globalMaxPPCTOffset 
+                    : (maxTietTuanTruocMap[groupKey] || 0);
+    tietCounterMap[groupKey] = baseOffset;
+}
                     let currentTietIndex = ++tietCounterMap[groupKey];
 
                     // Khớp PPCT chính xác, lấy đúng dòng theo tiến trình
@@ -2243,11 +2334,67 @@ async function loadTKBIntoKeHoach() {
 // Thay vì dùng code cũ bị giới hạn 1000 dòng, bạn gọi hàm phân trang này:
 
    // 🟢 THAY THẾ ĐOẠN CŨ BẰNG ĐOẠN NÀY:
+ // 🟢 SỬA LẠI ĐOẠN GỌI CUỐI HÀM NÀY CHO CHUẨN:
     if (!window.allPPCTCache || window.allPPCTCache.length === 0) {
-    await loadAllPPCT(); 
-} else {
-    processTKBData(window.allPPCTCache); // 🟢 Truyền cache vào đây
+        await loadAllPPCT();  
+        await processTKBData(); // Gọi không cần truyền tham số vì dùng chung scope
+    } else {
+        await processTKBData(); // Gọi không cần truyền tham số
+    }
+
 }
+let globalMaxPPCTOffset = 0;
+
+async function handleNoDataForCurrentWeek(tuanHienTai, soTKB) {
+    const tenTKB = currentSession?.tenTKB || "";
+    const maNhanSu = currentSession?.maNhanSu || currentSession?.username || ""; 
+    
+    try {
+        let tuanNum = parseInt(String(tuanHienTai).replace(/\D/g, '')) || 1;
+
+        // 🎯 CHỈ LỌC THEO GIÁO VIÊN VÀ QUÉT TOÀN BỘ CÁC TUẦN TRƯỚC (Bỏ qua so_tkb để đảm bảo tính liên tục tiến độ)
+        let query = db
+            .from('ke_hoach_tuan')
+            .select('tiet_ppct, tuan');
+
+        // Lọc theo đúng giáo viên đang đăng nhập
+        if (!isAdmin) {
+            if (maNhanSu) {
+                query = query.eq('ma_nhan_su', maNhanSu);
+            } else if (tenTKB) {
+                query = query.eq('ten_tkb', tenTKB);
+            }
+        }
+
+        const { data: pastData, error } = await query;
+        if (error) throw error;
+
+        globalMaxPPCTOffset = 0;
+
+        if (pastData && pastData.length > 0) {
+            // Lọc các tuần thực sự nhỏ hơn tuần hiện tại (tuan < tuanNum)
+            const olderRecords = pastData.filter(item => {
+                let itemTuanNum = parseInt(String(item.tuan).replace(/\D/g, '')) || 0;
+                return itemTuanNum < tuanNum;
+            });
+
+            if (olderRecords.length > 0) {
+                globalMaxPPCTOffset = Math.max(...olderRecords.map(item => parseInt(item.tiet_ppct) || 0));
+            }
+        }
+
+        console.log(`Mốc tiết PPCT lớn nhất tích lũy từ các tuần trước (Xuyên suốt mọi TKB): ${globalMaxPPCTOffset}`);
+
+        // Gọi hàm load TKB gốc
+        if (typeof loadTKBIntoKeHoach === 'function') {
+            loadTKBIntoKeHoach();
+        }
+
+    } catch (err) {
+        console.error("Lỗi khi quét mốc PPCT cũ:", err);
+        globalMaxPPCTOffset = 0;
+        loadTKBIntoKeHoach();
+    }
 }
 // Hàm phụ trợ xử lý TKB nếu chưa có
 function processTKBData(data) {
@@ -3647,180 +3794,664 @@ async function toggleKhoaTheoTuan() {
         alert("❌ Thất bại: " + err.message);
     }
 }
-window.xuatPDFBaoCao = async function() {
-    try {
-        const dataToExport = (typeof currentFilteredData !== 'undefined' && Array.isArray(currentFilteredData) && currentFilteredData.length > 0) 
-                             ? currentFilteredData 
-                             : ((typeof window.globalBaoCaoData !== 'undefined' && Array.isArray(window.globalBaoCaoData)) ? window.globalBaoCaoData : []);
+window.xuatPDFBaoCao = async function () {
+    let printFrame = null;
 
-        if(dataToExport.length === 0) {
+    try {
+        const dataToExport =
+            (typeof currentFilteredData !== 'undefined' &&
+             Array.isArray(currentFilteredData) &&
+             currentFilteredData.length > 0)
+                ? currentFilteredData
+                : (Array.isArray(window.globalBaoCaoData)
+                    ? window.globalBaoCaoData : []);
+
+        if (!dataToExport.length) {
             alert("Không có dữ liệu để xuất PDF!");
             return;
         }
 
         if (typeof showToast === 'function') {
-            showToast("⏳ Đang chuẩn bị tệp báo cáo số...");
+            showToast("⏳ Đang chuẩn bị báo cáo PDF...");
         }
 
-        let firstItem = dataToExport[0] || {};
-        let maGV = firstItem.giao_vien || firstItem.giaoVien || firstItem.ma_nhan_su || 
-                   (typeof currentSession !== 'undefined' && currentSession ? currentSession.maNhanSu : '') || '';
-        
+        // Chống lỗi ký tự HTML trong dữ liệu
+        const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[c]);
+
+        // Lấy thông tin giáo viên
+        const firstItem = dataToExport[0] || {};
+
+        const maGV = firstItem.giao_vien ||
+            firstItem.giaoVien ||
+            firstItem.ma_nhan_su ||
+            (typeof currentSession !== 'undefined' && currentSession
+                ? currentSession.maNhanSu : '') || '';
+
         let tenGVKH = maGV;
+
         if (typeof layTenNhanSu === 'function') {
-            try { tenGVKH = layTenNhanSu(maGV) || maGV; } catch(e) {}
+            try {
+                tenGVKH = layTenNhanSu(maGV) || maGV;
+            } catch (e) {}
         }
 
+        // Lấy thông tin chữ ký từ Supabase
         let imgBase64 = '';
         let timestamp = new Date().toISOString();
         let toChuyenMon = 'Hội đồng chuyên môn';
         let signatureHash = maGV || 'N/A';
+        let signerRole = '';
 
         if (typeof db !== 'undefined' && db && maGV) {
             try {
-                const resp = await db.from('danh_sach_chu_ky').select('*').eq('user_id', maGV).maybeSingle();
+                const resp = await db
+                    .from('danh_sach_chu_ky')
+                    .select('*')
+                    .eq('user_id', maGV)
+                    .maybeSingle();
+
                 if (resp && resp.data) {
-                    let sigData = resp.data;
-                    timestamp = sigData.updated_at || (sigData.signature_data && sigData.signature_data.timestamp) || timestamp;
-                    toChuyenMon = sigData.signer_role || (sigData.signature_data && sigData.signature_data.signer_role) || toChuyenMon;
-                    signatureHash = (sigData.signature_data && sigData.signature_data.signature_hash) || sigData.user_id || signatureHash;
-                    
-                    if (sigData.signature_data && sigData.signature_data.signature_image) {
-                        imgBase64 = sigData.signature_data.signature_image;
-                    } else if (sigData.signature_image) {
-                        imgBase64 = sigData.signature_image;
-                    }
+                    const sig = resp.data;
+                    const sigData = sig.signature_data || {};
+
+                    timestamp = sig.updated_at ||
+                        sigData.timestamp || timestamp;
+
+                    toChuyenMon = sig.signer_role ||
+                        sigData.signer_role || toChuyenMon;
+
+                    signerRole = sigData.signer_role ||
+                        sig.signer_role || '';
+
+                    signatureHash = sigData.signature_hash ||
+                        sig.user_id || signatureHash;
+
+                    imgBase64 = sigData.signature_image ||
+                        sig.signature_image || '';
                 }
             } catch (err) {
                 console.warn("Lỗi lấy chữ ký:", err);
             }
         }
 
-        let teacherSignatureHtml = '<span style="font-weight: bold; margin-top: 45px; display: block; font-size: 12px;">' + tenGVKH + '</span>';
-        if (imgBase64) {
-            teacherSignatureHtml = '<div style="margin-top: 5px; text-align: center;"><img src="' + imgBase64 + '" alt="Chữ ký" style="max-height: 50px; max-width: 130px; object-fit: contain;" /><div style="font-size: 8px; color: #047857; margin-top: 2px;">Chữ ký số SmartCA (Đã xác thực)</div></div><span style="font-weight: bold; display: block; font-size: 11px; margin-top: 2px;">' + tenGVKH + '</span>';
-        }
+        const ngayKy = new Date(timestamp);
 
-        let setLopClean = new Set();
-        let setMon = new Set();
+        const ngayKyText = isNaN(ngayKy.getTime())
+            ? 'Chưa xác định'
+            : ngayKy.toLocaleString('vi-VN');
+
+        // Phần chữ ký có liên kết tới thông tin giáo viên
+        const teacherSignatureHtml = `
+            <a href="#teacher-details" class="signature-link"
+               title="Xem thông tin xác thực giáo viên">
+                ${imgBase64 ? `
+                    <img src="${esc(imgBase64)}"
+                         class="signature-img"
+                         alt="Chữ ký giáo viên">
+                ` : `
+                    <div class="signature-placeholder">
+                        Chưa có hình ảnh chữ ký
+                    </div>
+                `}
+                <div class="signature-name">${esc(tenGVKH)}</div>
+                <div class="signature-hint">
+                    Nhấn để xem thông tin xác thực
+                </div>
+            </a>
+        `;
+
+        // Xử lý lớp và môn học
+        const setLopClean = new Set();
+        const setMon = new Set();
 
         dataToExport.forEach(item => {
-            let rawLop = item.lop || '';
-            let phanMon = item.phan_mon || item.phanMon || '';
-            let monHoc = item.mon_hoc || item.monHoc || '';
+            const rawLop = item.lop || '';
+            const phanMon = item.phan_mon || item.phanMon || '';
+            const monHoc = item.mon_hoc || item.monHoc || '';
 
             let processedLop = rawLop;
-            if (phanMon.toUpperCase().includes('BDHSG') || rawLop.toUpperCase().includes('BDHSG')) {
-                let matchKhoi = rawLop.match(/^(10|11|12)/);
-                processedLop = matchKhoi ? ' ' + matchKhoi[0] + ' ' : 'BDHSG';
-            } else {
-                if (rawLop.includes('-')) {
-                    processedLop = rawLop.split('-')[0].trim();
-                }
+
+            if (
+                phanMon.toUpperCase().includes('BDHSG') ||
+                rawLop.toUpperCase().includes('BDHSG')
+            ) {
+                const matchKhoi = rawLop.match(/^(10|11|12)/);
+                processedLop = matchKhoi
+                    ? ' ' + matchKhoi[0] + ' '
+                    : 'BDHSG';
+            } else if (rawLop.includes('-')) {
+                processedLop = rawLop.split('-')[0].trim();
             }
+
             if (processedLop) setLopClean.add(processedLop);
 
-            let fullMon = monHoc;
-            if (phanMon) fullMon += ' (' + phanMon + ')';
+            const fullMon = monHoc +
+                (phanMon ? ' (' + phanMon + ')' : '');
+
             if (fullMon) setMon.add(fullMon);
         });
 
-        let strLop = setLopClean.size > 0 ? Array.from(setLopClean).join(', ') : 'Toàn trường';
-        let strMon = setMon.size > 0 ? Array.from(setMon).join(', ') : 'Tất cả các môn';
-        let coverSubText = 'Lớp: ' + strLop + ' — Môn: ' + strMon;
+        const strLop = setLopClean.size
+            ? [...setLopClean].join(', ')
+            : 'Toàn trường';
 
-        let rowsHTML = "";
+        const strMon = setMon.size
+            ? [...setMon].join(', ')
+            : 'Tất cả các môn';
+
+        const coverSubText =
+            'Lớp: ' + strLop + ' — Môn: ' + strMon;
+
+        // Tạo bảng báo cáo
+        let rowsHTML = '';
+
         dataToExport.forEach((item, index) => {
-            let rawTrangThai = item.trang_thai_ky !== undefined ? item.trang_thai_ky : item.daKy;
-            let trangThaiStr = rawTrangThai ? "Đã ký" : "Chưa ký";
-            let badgeColor = rawTrangThai ? "color: #047857; font-weight: bold;" : "color: #b45309; font-weight: bold;";
-            
-            let itemMaGV = item.giao_vien || item.giaoVien || item.ma_nhan_su || '';
+            const rawTrangThai =
+                item.trang_thai_ky !== undefined
+                    ? item.trang_thai_ky
+                    : item.daKy;
+
+            const daKy = !!rawTrangThai;
+
+            let itemMaGV = item.giao_vien ||
+                item.giaoVien ||
+                item.ma_nhan_su || '';
+
             let itemTenGV = itemMaGV;
+
             if (typeof layTenNhanSu === 'function') {
-                try { itemTenGV = layTenNhanSu(itemMaGV) || itemMaGV; } catch(e){}
+                try {
+                    itemTenGV = layTenNhanSu(itemMaGV) || itemMaGV;
+                } catch (e) {}
             }
 
-            let monHocFull = (item.mon_hoc || item.monHoc || '') + ((item.phan_mon || item.phanMon) ? ' (' + (item.phan_mon || item.phanMon) + ')' : '');
+            const monHocFull =
+                (item.mon_hoc || item.monHoc || '') +
+                ((item.phan_mon || item.phanMon)
+                    ? ' (' + (item.phan_mon || item.phanMon) + ')'
+                    : '');
 
-            rowsHTML += '<tr>' +
-                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">' + (index + 1) + '</td>' +
-                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">' + (item.tuan || item.tuan_hoc || '-') + '</td>' +
-                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">' + (item.thu || '-') + '</td>' +
-                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">Tiết ' + (item.tiet_ppct || item.tiet || '') + '</td>' +
-                '<td style="border: 1px solid #94a3b8; padding: 5px;">' + monHocFull + '</td>' +
-                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center;">' + (item.lop || '') + '</td>' +
-                '<td style="border: 1px solid #94a3b8; padding: 5px;">' + (item.ten_bai || item.noi_dung || '') + '</td>' +
-                '<td style="border: 1px solid #94a3b8; padding: 5px;">' + itemTenGV + '</td>' +
-                '<td style="border: 1px solid #94a3b8; padding: 5px; text-align: center; ' + badgeColor + '">' + trangThaiStr + '</td>' +
-            '</tr>';
+            rowsHTML += `
+                <tr>
+                    <td class="center">${index + 1}</td>
+                    <td class="center">${esc(item.tuan || item.tuan_hoc || '-')}</td>
+                    <td class="center">${esc(item.thu || '-')}</td>
+                    <td class="center">Tiết ${esc(item.tiet_ppct || item.tiet || '')}</td>
+                    <td>${esc(monHocFull)}</td>
+                    <td class="center">${esc(item.lop || '')}</td>
+                    <td>${esc(item.ten_bai || item.noi_dung || '')}</td>
+                    <td>${esc(itemTenGV)}</td>
+                    <td class="center ${daKy ? 'signed' : 'unsigned'}">
+                        ${daKy ? 'Đã ký' : 'Chưa ký'}
+                    </td>
+                </tr>
+            `;
         });
 
-        let printFrame = document.getElementById('printFrame');
+        // Tạo nội dung tài liệu
+        const printContent = `
+        <!DOCTYPE html>
+        <html lang="vi">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Báo cáo sổ đầu bài</title>
+
+            <style>
+                @page {
+                    size: A4 landscape;
+                    margin: 10mm;
+                }
+
+                * {
+                    box-sizing: border-box;
+                }
+
+                body {
+                    font-family: "Times New Roman", serif;
+                    font-size: 12px;
+                    color: #1e293b;
+                    margin: 0;
+                    background: white;
+                }
+
+                .cover-page {
+                    height: 180mm;
+                    padding: 15mm;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: space-between;
+                    text-align: center;
+                    page-break-after: always;
+                }
+
+                .cover-header {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 13px;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                }
+
+                .cover-title {
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #1e3a8a;
+                    margin: 20px 0;
+                }
+
+                .content-page {
+                    width: 100%;
+                }
+
+                .report-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border-bottom: 2px solid #1e293b;
+                    padding-bottom: 8px;
+                    margin-bottom: 12px;
+                    gap: 10px;
+                }
+
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    table-layout: auto;
+                }
+
+                thead {
+                    display: table-header-group;
+                }
+
+                tr {
+                    page-break-inside: avoid;
+                }
+
+                th {
+                    background: #e2e8f0 !important;
+                    border: 1px solid #64748b;
+                    padding: 7px 4px;
+                    text-align: center;
+                    font-size: 10px;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+
+                td {
+                    border: 1px solid #94a3b8;
+                    padding: 6px 4px;
+                    font-size: 10px;
+                    vertical-align: middle;
+                    overflow-wrap: anywhere;
+                }
+
+                .center {
+                    text-align: center;
+                }
+
+                .signed {
+                    color: #047857;
+                    font-weight: bold;
+                }
+
+                .unsigned {
+                    color: #b45309;
+                    font-weight: bold;
+                }
+
+                .signature-area {
+                    display: flex;
+                    justify-content: space-around;
+                    margin-top: 30px;
+                    text-align: center;
+                    page-break-inside: avoid;
+                }
+
+                .signature-box {
+                    width: 45%;
+                    min-height: 110px;
+                }
+
+                .signature-link {
+                    display: inline-block;
+                    color: inherit;
+                    text-decoration: none;
+                    margin-top: 8px;
+                }
+
+                .signature-img {
+                    display: block;
+                    max-width: 150px;
+                    max-height: 65px;
+                    margin: 0 auto;
+                    object-fit: contain;
+                }
+
+                .signature-name {
+                    font-weight: bold;
+                    font-size: 12px;
+                    margin-top: 5px;
+                }
+
+                .signature-hint {
+                    font-size: 9px;
+                    color: #2563eb;
+                    margin-top: 4px;
+                }
+
+                .signature-placeholder {
+                    padding: 15px;
+                    color: #64748b;
+                    font-style: italic;
+                }
+
+                .appendix-page {
+                    page-break-before: always;
+                    padding: 15mm 10mm;
+                }
+
+                .detail-card {
+                    border: 1px solid #cbd5e1;
+                    background: #f8fafc;
+                    padding: 20px;
+                    line-height: 2;
+                    border-radius: 5px;
+                }
+
+                .detail-row {
+                    border-bottom: 1px dashed #cbd5e1;
+                    padding: 5px 0;
+                    overflow-wrap: anywhere;
+                }
+
+                .detail-row strong {
+                    display: inline-block;
+                    min-width: 200px;
+                }
+
+                .hash {
+                    word-break: break-all;
+                    font-family: monospace;
+                }
+
+                .appendix-title {
+                    text-align: center;
+                    color: #1e3a8a;
+                    font-size: 17px;
+                    margin-bottom: 25px;
+                }
+
+                .back-link {
+                    display: inline-block;
+                    margin-top: 20px;
+                    color: #2563eb;
+                    text-decoration: none;
+                }
+
+                @media screen {
+                    body {
+                        padding: 15px;
+                    }
+
+                    .content-page,
+                    .cover-page,
+                    .appendix-page {
+                        max-width: 1100px;
+                        margin: auto;
+                    }
+                }
+
+                @media print {
+                    .signature-hint {
+                        color: #64748b;
+                    }
+
+                    a {
+                        color: inherit;
+                    }
+                }
+            </style>
+        </head>
+
+        <body>
+
+            <!-- TRANG BÌA -->
+            <div class="cover-page">
+                <div class="cover-header">
+                    <div>
+                        SỞ GIÁO DỤC VÀ ĐÀO TẠO<br>
+                        TRƯỜNG THPT NGUYỄN DUY TRINH
+                    </div>
+
+                    <div>
+                        CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>
+                        Độc lập - Tự do - Hạnh phúc
+                    </div>
+                </div>
+
+                <div>
+                    <div style="font-weight:bold;font-size:16px">
+                        HỘI ĐỒNG CHUYÊN MÔN
+                    </div>
+
+                    <div class="cover-title">
+                        BÁO CÁO CHI TIẾT SỔ ĐẦU BÀI
+                    </div>
+
+                    <div style="font-weight:bold">
+                        ${esc(coverSubText)}
+                    </div>
+                </div>
+
+                <div style="font-weight:bold;font-size:14px">
+                    NĂM HỌC: 2026 - 2027
+                </div>
+            </div>
+
+            <!-- NỘI DUNG BÁO CÁO -->
+            <div class="content-page">
+
+                <div class="report-header">
+                    <div>
+                        <strong>TRƯỜNG THPT NGUYỄN DUY TRINH</strong><br>
+                        Hội đồng Chuyên môn
+                    </div>
+
+                    <div style="text-align:center">
+                        <strong>
+                            BÁO CÁO CHI TIẾT THỰC HIỆN CHƯƠNG TRÌNH SỔ ĐẦU BÀI
+                        </strong><br>
+                        <i>${esc(coverSubText)}</i>
+                    </div>
+
+                    <div>Năm học: 2026 - 2027</div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Tuần</th>
+                            <th>Thứ</th>
+                            <th>Tiết</th>
+                            <th>Môn</th>
+                            <th>Lớp</th>
+                            <th>Nội dung bài dạy</th>
+                            <th>Giáo viên</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        ${rowsHTML}
+                    </tbody>
+                </table>
+
+                <div class="signature-area">
+
+                    <div class="signature-box">
+                        <strong>GIÁO VIÊN BỘ MÔN</strong>
+                        ${teacherSignatureHtml}
+                    </div>
+
+                    <div class="signature-box">
+                        <strong>XÁC NHẬN BGH</strong>
+                        <div style="margin-top:55px;font-weight:bold">
+                            Nguyễn Hồng Hai
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- PHỤ LỤC THÔNG TIN GIÁO VIÊN -->
+            <div class="appendix-page" id="teacher-details">
+
+                <h2 class="appendix-title">
+                    THÔNG TIN CHỮ KÝ VÀ XÁC THỰC GIÁO VIÊN
+                </h2>
+
+                <div class="detail-card">
+
+                    <div class="detail-row">
+                        <strong>Đơn vị phát hành:</strong>
+                        TRƯỜNG THPT NGUYỄN DUY TRINH
+                    </div>
+
+                    <div class="detail-row">
+                        <strong>Tổ chuyên môn:</strong>
+                        ${esc(toChuyenMon)}
+                    </div>
+
+                    <div class="detail-row">
+                        <strong>Giáo viên ký:</strong>
+                        ${esc(tenGVKH)}
+                    </div>
+
+                    <div class="detail-row">
+                        <strong>Mã định danh nhân sự:</strong>
+                        ${esc(maGV)}
+                    </div>
+
+                    <div class="detail-row">
+                        <strong>Chức vụ / vai trò:</strong>
+                        ${esc(signerRole || 'Chưa cập nhật')}
+                    </div>
+
+                    <div class="detail-row">
+                        <strong>Thời gian ký:</strong>
+                        ${esc(ngayKyText)}
+                    </div>
+
+                    <div class="detail-row">
+                        <strong>Mã băm chữ ký:</strong>
+                        <span class="hash">${esc(signatureHash)}</span>
+                    </div>
+
+                    <div class="detail-row">
+                        <strong>Hình ảnh chữ ký:</strong>
+                        ${imgBase64 ? 'Đã có dữ liệu chữ ký' : 'Chưa có dữ liệu chữ ký'}
+                    </div>
+
+                    <div class="detail-row">
+                        <strong>Trạng thái:</strong>
+                        Thông tin được trích xuất từ hệ thống quản lý.
+                    </div>
+
+                </div>
+
+                ${imgBase64 ? `
+                    <div style="text-align:center;margin-top:25px">
+                        <strong>CHỮ KÝ GIÁO VIÊN</strong><br><br>
+                        <img src="${esc(imgBase64)}"
+                             style="max-width:200px;max-height:90px;object-fit:contain">
+                        <div style="font-weight:bold;margin-top:8px">
+                            ${esc(tenGVKH)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <div style="margin-top:35px;text-align:right;font-style:italic">
+                    Ngày xuất báo cáo:
+                    ${new Date().toLocaleDateString('vi-VN')}
+                </div>
+
+                <a class="back-link" href="#top">
+                    Quay lại báo cáo
+                </a>
+            </div>
+
+        </body>
+        </html>
+        `;
+
+        // Tạo iframe in
+        printFrame = document.getElementById('printFrame');
+
         if (!printFrame) {
             printFrame = document.createElement('iframe');
             printFrame.id = 'printFrame';
-            printFrame.style.display = 'none';
             document.body.appendChild(printFrame);
         }
 
-        const printContent = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Báo Cáo Sổ Đầu Bài</title><style>' +
-            '@page { size: A4 landscape; margin: 10mm; }' +
-            'body { font-family: "Times New Roman", Times, serif; font-size: 12px; color: #1e293b; margin: 0; background: #fff; }' +
-            '.cover-page { width: 100%; height: 100vh; box-sizing: border-box; padding: 40mm 20mm; text-align: center; page-break-after: always; display: flex; flex-direction: column; justify-content: space-between; }' +
-            '.content-page { padding: 5mm; page-break-after: always; }' +
-            '.appendix-page { padding: 30mm 20mm; page-break-before: always; }' +
-            'table { width: 100%; border-collapse: collapse; margin-top: 5px; }' +
-            'th { background-color: #f1f5f9; border: 1px solid #94a3b8; padding: 6px; text-align: center; font-size: 11px; font-weight: bold; }' +
-            'td { border: 1px solid #94a3b8; padding: 5px; font-size: 11px; }' +
-            '</style></head><body>' +
-            '<div class="cover-page">' +
-                '<div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; text-transform: uppercase;"><div>SỞ GIÁO DỤC VÀ ĐÀO TẠO<br>TRƯỜNG THPT NGUYỄN DUY TRINH</div><div>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>Độc lập - Tự do - Hạnh phúc</div></div>' +
-                '<div><div style="font-size: 16px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">HỘI ĐỒNG CHUYÊN MÔN</div><div style="font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 20px 0; color: #1e3a8a;">BÁO CÁO CHI TIẾT SỔ ĐẦU BÀI</div><div style="font-size: 13px; font-weight: bold; color: #334155;">' + coverSubText + '</div></div>' +
-                '<div style="font-size: 14px; font-weight: bold;">NĂM HỌC: 2026 - 2027</div>' +
-            '</div>' +
-            '<div class="content-page">' +
-                '<div style="display: flex; justify-content: space-between; border-bottom: 2px solid #1e293b; padding-bottom: 8px; margin-bottom: 12px; font-size: 11px;">' +
-                    '<div><strong>TRƯỜNG THPT NGUYỄN DUY TRINH</strong><br>Hội đồng Chuyên môn</div>' +
-                    '<div style="text-align: center;"><strong>BÁO CÁO CHI TIẾT THỰC HIỆN CHƯƠNG TRÌNH SỔ ĐẦU BÀI</strong><br><span style="font-style: italic;">(' + coverSubText + ')</span></div>' +
-                    '<div>Năm học: 2026 - 2027</div>' +
-                '</div>' +
-                '<table><thead><tr><th>STT</th><th>Tuần</th><th>Thứ</th><th>Tiết</th><th>Môn</th><th>Lớp</th><th>Nội Dung Bài Dạy</th><th>Giáo Viên</th><th>Trạng Thái</th></tr></thead><tbody>' + rowsHTML + '</tbody></table>' +
-                '<div style="display: flex; justify-content: space-between; margin-top: 30px; text-align: center;">' +
-                    '<div style="width: 45%;"><div style="font-weight: bold; font-size: 11px;">GIÁO VIÊN BỘ MÔN</div>' + teacherSignatureHtml + '</div>' +
-                    '<div style="width: 45%;"><div style="font-weight: bold; font-size: 11px;">XÁC NHẬN BGH</div><span style="font-weight: bold; margin-top: 45px; display: block; font-size: 12px;">Nguyễn Hồng Hai</span></div>' +
-                '</div>' +
-            '</div>' +
-            '<div class="appendix-page">' +
-                '<h3 style="text-align: center; color: #1e3a8a; text-transform: uppercase; margin-bottom: 20px;">PHỤ LỤC XÁC THỰC CHỨNG THƯ SỐ ĐIỆN TỬ</h3>' +
-                '<p style="text-align: justify; line-height: 1.6;">Hệ thống Quản lý Hồ sơ chuyên môn (EduDoc Suite) xác nhận tệp báo cáo này đã được đóng dấu định danh điện tử, áp dụng cơ chế khóa toàn vẹn bảo mật chống chỉnh sửa:</p>' +
-                '<div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 22px; border-radius: 6px; margin-top: 15px; line-height: 1.8;">' +
-                    '🏫 <strong>Đơn vị phát hành:</strong> TRƯỜNG THPT NGUYỄN DUY TRINH<br>' +
-                    '📚 <strong>Tổ chuyên môn:</strong> ' + toChuyenMon + '<br>' +
-                    '👨‍🏫 <strong>Giáo viên ký số:</strong> ' + tenGVKH + '<br>' +
-                    '🆔 <strong>Mã định danh nhân sự:</strong> ' + maGV + '<br>' +
-                    '⏰ <strong>Thời gian xác thực ký số:</strong> ' + new Date(timestamp).toLocaleString('vn-VN') + '<br>' +
-                    '🔐 <strong>Mã băm toàn vẹn (SHA-256):</strong> <code>' + signatureHash + '</code><br>' +
-                    '🛡️ <strong>Trạng thái pháp lý:</strong> Đã khóa toàn vẹn (is_locked = true), hợp lệ trong hệ thống quản lý chất lượng nhà trường.' +
-                '</div>' +
-                '<div style="margin-top: 35px; text-align: right; font-style: italic; font-size: 11px; color: #64748b;">Tệp được kết xuất tự động từ hệ thống quản lý trường học — Ngày xuất: ' + new Date().toLocaleDateString('vn-VN') + '</div>' +
-            '</div>' +
-            '</body></html>';
+        // Không dùng display:none vì có thể gây lỗi in
+        Object.assign(printFrame.style, {
+            position: 'fixed',
+            left: '-10000px',
+            top: '0',
+            width: '1200px',
+            height: '900px',
+            border: '0',
+            visibility: 'hidden'
+        });
 
         const frameDoc = printFrame.contentWindow.document;
+
         frameDoc.open();
         frameDoc.write(printContent);
         frameDoc.close();
 
-        setTimeout(() => {
-            printFrame.contentWindow.focus();
-            printFrame.contentWindow.print();
-            if (typeof showToast === 'function') showToast("✅ Đã mở hộp thoại In/Lưu PDF thành công!");
-        }, 500);
+        // Đợi ảnh chữ ký tải xong trước khi in
+        const waitForImages = async () => {
+            const images = [...frameDoc.images];
+
+            await Promise.all(images.map(img => {
+                if (img.complete) {
+                    return Promise.resolve();
+                }
+
+                return new Promise(resolve => {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+
+                    setTimeout(resolve, 5000);
+                });
+            }));
+        };
+
+        await waitForImages();
+
+        // Chờ trình duyệt hoàn tất dựng trang
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        printFrame.contentWindow.focus();
+        printFrame.contentWindow.print();
+
+        if (typeof showToast === 'function') {
+            showToast("✅ Đã mở báo cáo! Chọn Lưu dưới dạng PDF để xuất tệp.");
+        }
 
     } catch (err) {
-        console.error("Lỗi in PDF:", err);
-        alert("❌ Đã xảy ra lỗi: " + err.message);
+        console.error("Lỗi xuất PDF:", err);
+
+        alert("Không thể xuất PDF: " + err.message);
     }
 };
 // Bộ nhớ tạm lưu danh sách nhân sự để tra cứu ngay lập tức
