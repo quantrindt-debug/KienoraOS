@@ -1,0 +1,2794 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Lý Hồ Sơ Giáo Viên & Ký Số - Kienora</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- PDF-Lib & Fontkit & PDF.js -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.min.js"></script>
+    <!-- Worker được PDF.js tự nạp; KHÔNG nhúng pdf.worker.min.js bằng thẻ script riêng. -->
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .tab-active { background-color: #ffffff; color: #1d4ed8; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        canvas { touch-action: none; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col">
+
+    <!-- ================= HEADER ================= -->
+    <header class="bg-indigo-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white p-2 rounded-lg text-indigo-900 font-bold text-xl shadow-xs">
+                    <i class="fa-solid fa-file-signature"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base md:text-lg leading-tight tracking-wide">HỆ THỐNG KÝ SỐ & LƯU TRỮ HỒ SƠ</h1>
+                    <p class="text-[11px] text-indigo-200">Hệ sinh thái Giáo dục Số - Kienora</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2 md:space-x-3">
+                <button onclick="openRegisterSigModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5 border border-blue-400/30">
+                    <i class="fa-solid fa-pen-nib"></i>
+                    <span>Đăng Ký Mẫu Chữ Ký</span>
+                </button>
+
+                <button onclick="openAdminModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition shadow flex items-center gap-1.5 border border-amber-400/30">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>Quản Lý Mẫu Chữ Ký</span>
+                </button>
+
+                <div class="text-right bg-indigo-950/70 px-3 py-1.5 rounded-lg border border-indigo-700/50 hidden sm:block">
+                    <div id="userFullName" class="font-semibold text-xs text-indigo-100">Đang tải...</div>
+                    <div class="text-[10px] text-indigo-300 flex items-center justify-end space-x-1.5">
+                        <span id="userSchoolCode" class="font-mono">MÃ: --</span>
+                        <span>•</span>
+                        <span id="userRole" class="bg-indigo-800 px-1.5 py-0.5 rounded">Giáo viên</span>
+                    </div>
+                </div>
+
+                <button onclick="openConfigModal()" class="bg-indigo-800 hover:bg-indigo-700 p-2 rounded-lg text-indigo-100 transition shadow" title="Cấu hình Google Drive API">
+                    <i class="fa-solid fa-gear text-base"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ================= MAIN WORKSPACE ================= -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full space-y-6">
+
+        <!-- 2. KHU VỰC LƯU TRỮ HỒ SƠ -->
+        <section class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+            <div class="bg-slate-100/80 p-2 border-b border-slate-200 flex flex-wrap gap-2 justify-between items-center">
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="switchStorageTab('ca_nhan')" id="tab-btn-ca_nhan" class="storage-tab-btn tab-active px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                        <i class="fa-solid fa-folder-user text-blue-600"></i>
+                        <span>1. Hồ Sơ Cá Nhân (Thư mục riêng)</span>
+                    </button>
+                    <button onclick="switchStorageTab('to_chuyen_mon')" id="tab-btn-to_chuyen_mon" class="storage-tab-btn text-slate-600 hover:bg-white/60 px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                        <i class="fa-solid fa-users-rectangle text-emerald-600"></i>
+                        <span>2. Tổ Chuyên Môn</span>
+                    </button>
+                    <button onclick="switchStorageTab('bgh')" id="tab-btn-bgh" class="storage-tab-btn text-slate-600 hover:bg-white/60 px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                        <i class="fa-solid fa-building-columns text-amber-600"></i>
+                        <span>3. Ban Giám Hiệu (BGH)</span>
+                    </button>
+                    <!-- Thêm nút này vào thanh điều hướng tab hiện có của thầy -->
+                <button onclick="switchStorageTab('4')" id="tab-btn-4" class="storage-tab-btn px-4 py-2 text-sm font-medium rounded-lg text-slate-600 hover:bg-white/60 transition">
+        👥 4. Nhóm riêng & Phân quyền
+    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: CÁ NHÂN -->
+            <div id="tab-panel-ca_nhan" class="storage-tab-panel p-5 space-y-4">
+                <div class="flex flex-wrap justify-between items-center gap-3 bg-slate-50 p-4 rounded-xl border">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-bold text-slate-700"><i class="fa-solid fa-folder-plus mr-1 text-indigo-600"></i> Chọn nhóm khi tải lên:</span>
+                        <select id="direct-upload-subcat" class="text-xs border border-slate-300 rounded-lg p-2 bg-white text-slate-700 focus:outline-none focus:border-indigo-500 font-medium">
+                            <option value="">Đang tải danh mục...</option>
+                        </select>
+                        <button onclick="openAddCategoryModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-2 rounded-lg shadow transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-plus"></i> Thêm nhóm hồ sơ
+                        </button>
+                        <span id="sig-status-badge" class="text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">Đang kiểm tra chữ ký...</span>
+                        <button onclick="triggerDirectUploadWithSubCat('ca_nhan')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-2xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Tải hồ sơ lên Thư mục cá nhân
+                        </button>
+                    </div>
+
+                    <!-- Thanh lọc động theo nhóm hồ sơ từ Supabase -->
+                    <div id="filter-buttons-container" class="flex items-center gap-1.5 flex-wrap border-t sm:border-t-0 pt-2 sm:pt-0">
+                        <span class="text-xs font-bold text-slate-700"><i class="fa-solid fa-filter mr-1 text-indigo-600"></i> Lọc xem:</span>
+                        <button onclick="filterSubCategory('all')" id="filter-btn-all" class="filter-sub-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-indigo-600 text-white transition">Tất cả</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">STT</th>
+                                <th class="p-3">Tên Hồ Sơ / Tài Liệu</th>
+                                <th class="p-3">Nhóm Hồ Sơ</th>
+                                <th class="p-3">Ngày Tải Lên</th>
+                                <th class="p-3">Trạng Thái Drive</th>
+                                <th class="p-3 text-right">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-ca_nhan" class="divide-y divide-slate-100">
+                            <tr><td colspan="6" class="p-6 text-center text-slate-400">Đang tải dữ liệu từ đám mây...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: TỔ CHUYÊN MÔN -->
+            <div id="tab-panel-to_chuyen_mon" class="storage-tab-panel p-5 space-y-4 hidden">
+                <div class="flex flex-wrap justify-between items-center gap-3 bg-emerald-50/60 p-4 rounded-xl border border-emerald-200">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-users-rectangle text-emerald-600"></i>
+                            Kho Lưu Trữ & Ký Duyệt Tổ Chuyên Môn (<span id="label-dept-name" class="text-emerald-700">Toán-Tin</span>)
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Giáo viên nộp kế hoạch/chuyên đề về tổ; Tổ trưởng kiểm tra, ký duyệt trực tiếp trên PDF và chuyển trình BGH.</p>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <select id="tcm-subcat-select" class="text-xs border border-slate-300 rounded-lg p-2 bg-white text-slate-700 focus:outline-none focus:border-emerald-500 font-medium">
+                            <option value="ke_hoach_day_hoc">📘 Kế hoạch dạy học</option>
+                            <option value="chuyen_de_to">📑 Chuyên đề tổ CM</option>
+                            <option value="bien_ban_hop">📝 Biên bản sinh hoạt tổ</option>
+                            <option value="ho_so_giao_vien">📂 Hồ sơ GV nộp tổ</option>
+                        </select>
+                        <button onclick="triggerDirectUpload('to_chuyen_mon')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-2xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Nộp hồ sơ Tổ
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Thanh lọc trạng thái & tìm kiếm Tổ Chuyên Môn -->
+                <div class="flex flex-wrap justify-between items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-xs font-bold text-slate-700"><i class="fa-solid fa-filter mr-1 text-emerald-600"></i> Trạng thái:</span>
+                        <button onclick="filterTcmStatus('all')" id="tcm-filter-all" class="tcm-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-600 text-white transition">Tất cả</button>
+                        <button onclick="filterTcmStatus('cho_duyet')" id="tcm-filter-cho_duyet" class="tcm-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-slate-600 border hover:bg-slate-100 transition">⏳ Chờ Tổ trưởng duyệt</button>
+                        <button onclick="filterTcmStatus('da_duyet')" id="tcm-filter-da_duyet" class="tcm-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-slate-600 border hover:bg-slate-100 transition">✅ Tổ đã duyệt / Đã ký</button>
+                        <button onclick="filterTcmStatus('yeu_cau_sua')" id="tcm-filter-yeu_cau_sua" class="tcm-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-slate-600 border hover:bg-slate-100 transition">🔄 Yêu cầu chỉnh sửa</button>
+                    </div>
+                    <div class="relative w-full sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="tcm-search-input" oninput="renderTableForCategory('to_chuyen_mon', 'tbody-to_chuyen_mon')" placeholder="Tìm tên tài liệu, giáo viên..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">STT</th>
+                                <th class="p-3">Tên Tài Liệu</th>
+                                <th class="p-3">Người Nộp / Tổ</th>
+                                <th class="p-3">Ngày Cập Nhật</th>
+                                <th class="p-3">Trạng Thái Duyệt</th>
+                                <th class="p-3 text-right">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-to_chuyen_mon" class="divide-y divide-slate-100">
+                            <tr><td colspan="6" class="p-6 text-center text-slate-400">Chưa có tài liệu.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 3: BGH -->
+            <div id="tab-panel-bgh" class="storage-tab-panel p-5 space-y-4 hidden">
+                <div class="flex flex-wrap justify-between items-center gap-3 bg-amber-50/70 p-4 rounded-xl border border-amber-200">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-building-columns text-amber-600"></i>
+                            Hồ Sơ, Phê Duyệt & Văn Bản Ban Giám Hiệu (BGH)
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Quyết định, kế hoạch năm học, văn bản chỉ đạo ban hành toàn trường và hồ sơ các tổ trình BGH ký duyệt.</p>
+                    </div>
+                    <div id="bgh-upload-controls" class="flex items-center gap-2 flex-wrap">
+                        <select id="bgh-subcat-select" class="text-xs border border-slate-300 rounded-lg p-2 bg-white text-slate-700 focus:outline-none focus:border-amber-500 font-medium">
+                            <option value="quyet_dinh">📜 Quyết định / Thông báo</option>
+                            <option value="ke_hoach_nam_hoc">📅 Kế hoạch năm học / Tuần</option>
+                            <option value="van_ban_chi_dao">📌 Văn bản chỉ đạo</option>
+                            <option value="ho_so_trinh_ky">✍️ Hồ sơ trình BGH ký duyệt</option>
+                        </select>
+                        <button onclick="triggerDirectUpload('bgh')" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-2xs transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Đăng văn bản BGH
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Thanh lọc loại văn bản & tìm kiếm BGH -->
+                <div class="flex flex-wrap justify-between items-center gap-2 bg-slate-50 px-4 py-2.5 rounded-xl border">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-xs font-bold text-slate-700"><i class="fa-solid fa-filter mr-1 text-amber-600"></i> Phân loại:</span>
+                        <button onclick="filterBghSubCat('all')" id="bgh-filter-all" class="bgh-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-600 text-white transition">Tất cả</button>
+                        <button onclick="filterBghSubCat('quyet_dinh')" id="bgh-filter-quyet_dinh" class="bgh-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-slate-600 border hover:bg-slate-100 transition">📜 Quyết định</button>
+                        <button onclick="filterBghSubCat('ke_hoach_nam_hoc')" id="bgh-filter-ke_hoach_nam_hoc" class="bgh-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-slate-600 border hover:bg-slate-100 transition">📅 Kế hoạch</button>
+                        <button onclick="filterBghSubCat('ho_so_trinh_ky')" id="bgh-filter-ho_so_trinh_ky" class="bgh-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-slate-600 border hover:bg-slate-100 transition">✍️ Trình BGH ký</button>
+                    </div>
+                    <div class="relative w-full sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+                        <input type="text" id="bgh-search-input" oninput="renderTableForCategory('bgh', 'tbody-bgh')" placeholder="Tìm số hiệu, tên văn bản..." class="w-full pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+                            <tr>
+                                <th class="p-3">STT</th>
+                                <th class="p-3">Tên Văn Bản / Hồ Sơ</th>
+                                <th class="p-3">Người Ban Hành / Trình</th>
+                                <th class="p-3">Ngày Ban Hành</th>
+                                <th class="p-3">Xác Thực / Trạng Thái</th>
+                                <th class="p-3 text-right">Thao Tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-bgh" class="divide-y divide-slate-100">
+                            <tr><td colspan="6" class="p-6 text-center text-slate-400">Chưa có văn bản.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!------------- TAB 4 ---------------------><!-- Giao diện Tab 4: Quản lý nhóm riêng & Phân quyền -->
+    <!-- Nội dung giao diện Tab 4 -->
+<div id="tab-panel-4" class="storage-tab-panel hidden p-6 bg-white rounded-lg shadow-sm mt-4">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-xl font-bold text-slate-800">👥 Quản lý Nhóm riêng & Phân quyền (Tab 4)</h2>
+            <p class="text-sm text-slate-500">Tự tạo các nhóm chuyên môn, tiểu ban riêng và chỉ định người duyệt hồ sơ.</p>
+        </div>
+        <button onclick="openCreateGroupModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow transition">
+            + Tạo nhóm mới
+        </button>
+    </div>
+
+    <!-- Bảng danh sách các nhóm -->
+    <div class="overflow-x-auto border rounded-lg">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-100 text-slate-700 text-sm border-b">
+                    <th class="p-3">STT</th>
+                    <th class="p-3">Tên Nhóm / Tiểu ban</th>
+                    <th class="p-3">Trưởng nhóm / Người duyệt</th>
+                    <th class="p-3">Thành viên</th>
+                    <th class="p-3 text-center">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody id="custom-groups-table-body">
+                <tr><td colspan="5" class="p-4 text-center text-slate-400">Chưa có dữ liệu nhóm.</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+    
+        </section>
+
+        <input type="file" id="direct-upload-input" accept=".pdf,.doc,.docx,.xlsx" class="hidden" onchange="handleDirectFileUploaded(event)">
+    </main>
+<!-- Modal Tạo / Sửa Nhóm Riêng (Tab 4) -->
+<div id="modal-create-group" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl">
+        <h3 id="modal-group-title" class="text-lg font-bold text-slate-800 mb-4">👥 Tạo Nhóm Chuyên Môn / Tiểu Ban Mới</h3>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Tên Nhóm / Tiểu ban:</label>
+                <input type="text" id="input-group-name" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="VD: Nhóm biên soạn đề thi Toán 12">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Mã Trưởng nhóm / Người duyệt chính:</label>
+                <input type="text" id="input-group-leader" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="VD: c3ndtnl.nan.hait hoặc mã nhân sự">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Chọn thành viên tham gia nhóm:</label>
+                <!-- Khung chứa danh sách giáo viên có thanh cuộn (Scrollable container) -->
+                <div id="container-checkbox-thanh-vien" class="border rounded-lg p-3 max-h-48 overflow-y-auto space-y-2 bg-slate-50">
+                    <span class="text-xs text-slate-400 italic">Đang tải danh sách giáo viên...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+            <button onclick="closeCreateGroupModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium transition">
+                Hủy bỏ
+            </button>
+            <button onclick="saveCustomGroupToDB()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition">
+                Lưu nhóm
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Modal Gửi Duyệt Hồ Sơ -->
+<div id="modal-gui-duyet" class="fixed inset-0 bg-black/50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">🚀 Gửi duyệt hồ sơ</h3>
+        <input type="hidden" id="gui-duyet-doc-id">
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Chọn đích đến gửi duyệt:</label>
+                <select id="modal-destination-type" class="w-full border rounded-lg p-2 text-sm" onchange="onModalDestinationChange(this.value)">
+                    <option value="to_chuyen_mon">🏢 Gửi Tổ chuyên môn</option>
+                    <option value="bgh">🏛️ Gửi trực tiếp Ban Giám Hiệu (BGH)</option>
+                    <option value="nhom_rieng">👥 Gửi Nhóm riêng (Tab 4)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Chọn người nhận / Nhóm cụ thể:</label>
+                <select id="modal-receiver-id" class="w-full border rounded-lg p-2 text-sm">
+                    <!-- Đổ dữ liệu động bằng JS -->
+                </select>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-3 mt-6">
+            <button onclick="closeGuiDuyetModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-sm font-medium">
+                Hủy
+            </button>
+            <button onclick="submitGuiDuyetHoSo()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium">
+                Xác nhận gửi đi
+            </button>
+        </div>
+    </div>
+</div>
+<!-- Khu vực hiển thị hồ sơ gửi đến Nhóm riêng -->
+<div class="mt-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold text-slate-800">📥 Hồ sơ gửi đến các Nhóm riêng của tôi (Chờ duyệt)</h3>
+        <button onclick="loadHoSoGuiVaoNhomRieng()" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-medium hover:bg-indigo-100 transition">
+            🔄 Làm mới
+        </button>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider border-b">
+                    <th class="p-3">STT</th>
+                    <th class="p-3">Tên Hồ Sơ / Tài Liệu</th>
+                    <th class="p-3">Người Gửi</th>
+                    <th class="p-3">Thuộc Nhóm</th>
+                    <th class="p-3">Ngày Gửi</th>
+                    <th class="p-3">Trạng Thái</th>
+                    <th class="p-3 text-center">Thao Tác</th>
+                </tr>
+            </thead>
+            <tbody id="table-body-hoso-nhom-rieng" class="divide-y divide-slate-100 text-sm">
+                <tr>
+                    <td colspan="7" class="p-4 text-center text-slate-400">Đang tải dữ liệu hồ sơ...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+    <!-- Modal Đăng Ký Mẫu Chữ Ký -->
+    <div id="register-sig-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[92vh] flex flex-col overflow-hidden">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+                <div class="flex items-center space-x-2"><i class="fa-solid fa-pen-nib text-lg"></i><h3 class="font-bold text-base">Đăng Ký Mẫu Chữ Ký Cá Nhân</h3></div>
+                <button onclick="closeRegisterSigModal()" class="text-indigo-200 hover:text-white text-xl font-bold p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-slate-50">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-xl shadow-2xs border border-slate-200 space-y-4">
+                        <h4 class="text-sm font-bold text-slate-800 border-b pb-2 flex items-center"><i class="fa-solid fa-id-card text-blue-600 mr-2"></i> Thông Tin Định Danh</h4>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Mã Nhân Sự (MAGV)*</label><input type="text" id="teacher-id" value="GV001" readonly class="w-full px-3 py-2 border rounded-lg text-xs font-mono bg-slate-100 text-slate-600"></div>
+                        <div><label class="block text-xs font-semibold text-slate-600 mb-1">Họ và Tên*</label><input type="text" id="teacher-name" value="Nguyễn Văn A" class="w-full px-3 py-2 border rounded-lg text-xs"></div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Tổ Chuyên Môn*</label>
+                            <select id="teacher-dept" class="w-full px-3 py-2 border rounded-lg text-xs">
+                                <option value="Toán-Tin">Tổ Toán - Tin</option>
+                                <option value="Ngữ-Văn">Tổ Ngữ Văn</option>
+                                <option value="Ngoại-Ngữ">Tổ Ngoại Ngữ</option>
+                                <option value="Lý-Hóa-Sinh">Tổ Lý - Hóa - Sinh</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-2 bg-white p-5 rounded-xl shadow-2xs border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-center border-b pb-2 mb-3">
+                                <h4 class="text-sm font-bold text-slate-800"><i class="fa-solid fa-signature text-blue-600 mr-2"></i> Bảng Vẽ Chữ Ký</h4>
+                                <button onclick="clearCanvas()" class="text-xs text-rose-600 font-semibold px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 transition"><i class="fa-solid fa-rotate-left mr-1"></i> Xóa vẽ lại</button>
+                            </div>
+                            <div class="border-2 border-dashed border-slate-300 rounded-lg bg-slate-50 flex justify-center items-center relative overflow-hidden mb-4">
+                                <canvas id="signature-pad" width="550" height="190" class="cursor-crosshair bg-white w-full rounded-lg shadow-inner"></canvas>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <label class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-xs font-semibold border transition">
+                                <i class="fa-solid fa-upload mr-1"></i> Tải ảnh (PNG)
+                                <input type="file" id="sig-file-input" accept="image/*" class="hidden" onchange="uploadSignatureImage(event)">
+                            </label>
+                            <button id="saveSignatureBtn" onclick="saveSignature()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold text-xs shadow transition"><i class="fa-solid fa-floppy-disk mr-1.5"></i> Lưu Chữ Ký</button>
+                        </div>
+                        <div id="saved-signature-preview" class="mt-4 p-3 border border-emerald-200 rounded-lg bg-emerald-50 hidden">
+                            <p class="text-xs font-semibold text-emerald-800 mb-2">✓ Chữ ký mẫu:</p>
+                            <img id="sig-preview-img" src="" alt="Chữ ký" class="h-16 object-contain border bg-white p-1 rounded mx-auto">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Quản Lý Chữ Ký -->
+    <div id="admin-sig-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="bg-indigo-900 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base"><i class="fa-solid fa-user-shield mr-2"></i>Quản Lý Mẫu Chữ Ký Toàn Trường</h3>
+                <button onclick="closeAdminModal()" class="text-indigo-200 hover:text-white text-xl font-bold"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-slate-50">
+                <table class="w-full text-left border-collapse text-xs bg-white rounded-xl shadow-2xs border">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 font-bold border-b">
+                            <th class="p-3">STT</th><th class="p-3">Mã NV</th><th class="p-3">Họ và Tên</th><th class="p-3">Tổ CM</th><th class="p-3 text-center">Mẫu Chữ Ký</th><th class="p-3 text-center">Trạng Thái</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-signature-table-body">
+                        <tr><td colspan="6" class="p-4 text-center text-slate-400">Đang tải...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cấu Hình Drive API -->
+    <div id="config-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+            <div class="bg-slate-800 text-white px-5 py-3.5 flex justify-between items-center">
+                <h3 class="font-bold text-sm"><i class="fa-solid fa-gear mr-2"></i>Cấu Hình Google Drive API</h3>
+                <button onclick="closeConfigModal()" class="text-slate-300 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="p-5 space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Google Apps Script Web App URL:</label>
+                    <input type="text" id="api-drive-url" placeholder="https://script.google.com/macros/s/..." class="w-full p-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Google Drive Folder ID:</label>
+                    <input type="text" id="api-drive-folder" placeholder="1A2B3C..." class="w-full p-2 border rounded-lg">
+                </div>
+                <div class="pt-2 flex justify-end gap-2">
+                    <button onclick="closeConfigModal()" class="px-3 py-1.5 bg-slate-200 rounded-lg font-semibold">Hủy</button>
+                    <button onclick="saveDriveConfig()" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Lưu Cấu Hình</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ================= MODAL THÊM NHÓM HỒ SƠ MỚI ================= -->
+<div id="add-category-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+        <div class="bg-indigo-900 text-white px-5 py-3.5 flex justify-between items-center">
+            <h3 class="font-bold text-sm"><i class="fa-solid fa-folder-plus mr-2"></i>Thêm Nhóm Hồ Sơ Mới</h3>
+            <button onclick="closeAddCategoryModal()" class="text-indigo-200 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-5 space-y-3 text-xs">
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Mã nhóm không dấu (Ví dụ: <i>chuyen_de, sang_kien_2026</i>):</label>
+                <input type="text" id="new-cat-code" placeholder="vd: chuyen_de" class="w-full p-2 border rounded-lg font-mono">
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Tên nhóm hiển thị (Ví dụ: <i>📁 Chuyên đề dạy học</i>):</label>
+                <input type="text" id="new-cat-name" placeholder="vd: 📁 Chuyên đề dạy học" class="w-full p-2 border rounded-lg">
+            </div>
+            <div class="pt-2 flex justify-end gap-2">
+                <button onclick="closeAddCategoryModal()" class="px-3 py-1.5 bg-slate-200 rounded-lg font-semibold">Hủy</button>
+                <button onclick="saveNewCategoryToDB()" class="px-4 py-1.5 bg-indigo-600 text-white rounded-lg font-semibold">Thêm Danh Mục</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+    <div id="toast-box" class="fixed bottom-5 right-5 z-50 hidden bg-slate-800 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-lg transition-opacity duration-300"></div>
+
+    <!-- JAVASCRIPT XỬ LÝ -->
+    <!-- Modal xem PDF và đặt chữ ký -->
+    <div id="sign-pdf-modal" class="hidden fixed inset-0 z-[100] bg-slate-950/80 p-2 md:p-5">
+        <div class="bg-white rounded-2xl shadow-2xl w-full h-full max-w-6xl mx-auto flex flex-col overflow-hidden">
+            <div class="p-3 md:p-4 border-b flex flex-wrap items-center justify-between gap-2">
+                <div class="min-w-0"><h3 class="font-bold text-slate-800">Đặt chữ ký trên PDF</h3><p id="sign-doc-title" class="text-xs text-slate-500 truncate"></p></div>
+                <div class="flex items-center gap-2">
+                    <button onclick="changeSignPage(-1)" class="px-3 py-2 rounded-lg bg-slate-100 text-xs font-semibold"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span id="sign-page-counter" class="text-xs font-semibold text-slate-600">Trang 1/1</span>
+                    <button onclick="changeSignPage(1)" class="px-3 py-2 rounded-lg bg-slate-100 text-xs font-semibold"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button onclick="closeSignPdfModal()" class="ml-2 text-slate-500 hover:text-rose-600 text-xl" title="Đóng"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div class="px-3 py-2 bg-indigo-50 border-b text-xs text-indigo-800">Nháy đúp vào vị trí muốn ký để đặt chữ ký. Sau đó kéo chữ ký để điều chỉnh vị trí.</div>
+            <div id="sign-page-viewport" class="flex-1 overflow-auto bg-slate-200 p-4 flex justify-center items-start">
+                <div id="sign-pdf-canvas-wrap" class="relative shadow-xl bg-white shrink-0">
+                    <canvas id="sign-pdf-canvas" class="block" ondblclick="placeSignatureAt(event)"></canvas>
+
+                    <div id="sign-signature-box"
+                         style="display:none; position:absolute; left:60px; top:60px; width:160px; height:70px; z-index:5; border:1.5px dashed #4f46e5; background:rgba(255,255,255,0.08); cursor:move; user-select:none; touch-action:none;"
+                         onpointerdown="startSignatureDrag(event)"
+                         onpointermove="moveSignatureDrag(event)"
+                         onpointerup="stopSignatureDrag()"
+                         onpointercancel="stopSignatureDrag()">
+                        <img id="sign-preview-image"
+                             alt="Chữ ký xem trước"
+                             draggable="false"
+                             style="width:100%; height:100%; object-fit:contain; pointer-events:none; display:block; filter:drop-shadow(0 1px 1px rgba(0,0,0,.25));" />
+                        <div id="sign-resize-handle"
+                             title="Kéo để phóng to / thu nhỏ chữ ký"
+                             onpointerdown="startSignatureResize(event)"
+                             onpointermove="moveSignatureResize(event)"
+                             onpointerup="stopSignatureResize()"
+                             onpointercancel="stopSignatureResize()"
+                             style="position:absolute; right:-7px; bottom:-7px; width:15px; height:15px; background:#4f46e5; border:2px solid #ffffff; border-radius:4px; cursor:nwse-resize; touch-action:none; box-shadow:0 1px 3px rgba(0,0,0,.3);">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="p-3 border-t flex flex-wrap justify-between items-center gap-2">
+                <span class="text-[11px] text-amber-700">Lưu ý: Đây là ảnh chữ ký hiển thị, không phải chữ ký số PAdES. Bản gốc trên Drive được giữ nguyên.</span>
+                <div class="flex gap-2"><button onclick="closeSignPdfModal()" class="px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">Hủy</button><button id="save-signed-drive-btn" onclick="saveSignedDriveDocument()" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold"><i class="fa-solid fa-cloud-arrow-up mr-1"></i>Chèn chữ ký và lưu Drive</button></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://ywccbfpyilwdpokgllus.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_YShqjad87nsgJJTlTX5rbw_K5zO48Jr';
+        let db = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.4.120/build/pdf.worker.min.js';
+        }
+         // 1. Hàm khởi tạo thông tin phiên làm việc từ localStorage chuẩn của KienoraOS
+        function initSessionData() {
+            try {
+                // Đọc từ key chuẩn mới nhất của hệ điều hành cha
+                const rawSession = localStorage.getItem('kienora_user') || localStorage.getItem('kienora_session');
+                if (rawSession) {
+                    const uData = JSON.parse(rawSession);
+                    currentSession.maNhanSu = uData.username || uData.maNhanSu || '';
+                    currentSession.hoVaTen = uData.fullName || uData.hoVaTen || 'Cán bộ quản lý';
+                    currentSession.vaiTro = uData.roleName || uData.vaiTro || uData.quyen || 'Giáo viên';
+                    currentSession.maTruong = uData.schoolCode || uData.maTruong || localStorage.getItem('current_school_code') || 'THPT_NGUYEN_DUY_TRINH';
+                    currentSession.tenTKB = currentSession.maNhanSu ? currentSession.maNhanSu.split('.').pop() : '';
+                } else {
+                    // Dự phòng đọc các biến lẻ cũ
+                    currentSession.maNhanSu = localStorage.getItem('maNhanSu') || localStorage.getItem('taiKhoan') || '';
+                    currentSession.maTruong = localStorage.getItem('current_school_code') || 'THPT_NGUYEN_DUY_TRINH';
+                }
+                currentRole = currentSession.vaiTro;
+                const roleLower = currentRole.toLowerCase();
+                isAdmin = roleLower.includes("admin") || roleLower.includes("quản trị");
+            } catch (e) {
+                console.error("Lỗi đọc session:", e);
+            }
+        }
+
+
+        let currentSession = { maNhanSu: "GV001", hoVaTen: "Nguyễn Văn A", vaiTro: "Giáo viên", nhomCmDb: "Toán-Tin" };
+        let currentUser = { id: 'GV001', name: 'Nguyễn Văn A', dept: 'Toán-Tin', signature: null };
+        let selectedPdfFile = null;
+        let currentUploadCategory = 'ca_nhan';
+        let currentSubFilter = 'all'; 
+        let documentsStore = [];
+        let danhMucHoSoMap = {}; // Lưu danh mục động từ Supabase
+        let canvas, ctx, isDrawing = false;
+
+        // Các hàm dùng chung: escape dữ liệu trước khi đưa vào HTML và kiểm tra URL Drive.
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+        }
+        function safeDriveUrl(value) {
+            try {
+                const u = new URL(String(value || ''), window.location.href);
+                return ['https:', 'http:'].includes(u.protocol) ? u.href : '#';
+            } catch (_) { return '#'; }
+        }
+        // Chuẩn hóa tên tệp: bỏ dấu tiếng Việt trước khi gửi lên Google Drive.
+        // Hàm này phải được khai báo trước makeSafeFileName().
+        function removeAccents(value) {
+            return String(value ?? '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[đĐ]/g, ch => ch === 'đ' ? 'd' : 'D');
+        }
+
+        function makeSafeFileName(value) {
+            return removeAccents(String(value || 'tai_lieu'))
+                .replace(/[^a-zA-Z0-9._-]/g, '_').replace(/_+/g, '_').slice(0, 160) || 'tai_lieu.pdf';
+        }
+
+        let driveConfig = {
+            apiUrl: localStorage.getItem('drive_api_url') || '',
+            folderId: localStorage.getItem('drive_folder_id') || ''
+        };
+
+window.onload = async function() {
+    initCanvas();
+    await taiVaiTro();
+    await loadDanhMucHoSo(); // Tải danh mục động từ Supabase trước
+    await loadSavedSignatureFromDB();
+    await fetchDocumentsFromDB();
+    
+    // Tải luôn danh sách nhóm riêng của Tab 4 để sẵn sàng cho việc chọn gửi
+    if (typeof loadCustomGroupsFromDB === 'function') {
+        await loadCustomGroupsFromDB();
+    }
+
+    // Gọi luôn hàm tải hồ sơ chờ duyệt cho Trưởng nhóm / Thành viên
+    if (typeof loadHoSoChoDuyetChoThanhVien === 'function') {
+        await loadHoSoChoDuyetChoThanhVien();
+    }
+
+    // Gọi tải hồ sơ gửi vào nhóm riêng ở Tab 4
+    if (typeof loadHoSoGuiVaoNhomRieng === 'function') {
+        await loadHoSoGuiVaoNhomRieng();
+    }
+
+    // Gán giá trị cấu hình Drive
+    const inputApiUrl = document.getElementById('api-drive-url');
+    if (inputApiUrl) inputApiUrl.value = driveConfig.apiUrl;
+    
+    const inputFolder = document.getElementById('api-drive-folder');
+    if (inputFolder) inputFolder.value = driveConfig.folderId;
+};
+        // Hàm tải danh mục nhóm hồ sơ động từ Supabase
+        async function loadDanhMucHoSo() {
+            if (!db) return;
+            try {
+                let { data, error } = await db.from('danh_muc_ho_so').select('*').order('thu_tu', { ascending: true });
+                if (data && !error && data.length > 0) {
+                    danhMucHoSoMap = {};
+                    let selectOptionsHtml = '';
+                    let filterButtonsHtml = `<span class="text-xs font-bold text-slate-700"><i class="fa-solid fa-filter mr-1 text-indigo-600"></i> Lọc xem:</span>
+                                             <button onclick="filterSubCategory('all')" id="filter-btn-all" class="filter-sub-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-indigo-600 text-white transition">Tất cả</button>`;
+                    
+                    data.forEach(item => {
+                        danhMucHoSoMap[item.ma_danh_muc] = item.ten_danh_muc;
+                        selectOptionsHtml += `<option value="${item.ma_danh_muc}">${item.ten_danh_muc}</option>`;
+                        filterButtonsHtml += `<button onclick="filterSubCategory('${item.ma_danh_muc}')" id="filter-btn-${item.ma_danh_muc}" class="filter-sub-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-slate-600 border hover:bg-slate-100 transition">${item.ten_danh_muc.replace('📁 ', '')}</button>`;
+                    });
+
+                    // Đổ dữ liệu vào các thẻ select và bộ lọc trên giao diện
+                    document.getElementById('direct-upload-subcat').innerHTML = selectOptionsHtml;
+                    document.getElementById('filter-buttons-container').innerHTML = filterButtonsHtml;
+                }
+            } catch (err) {
+                console.error("Lỗi tải danh mục hồ sơ:", err);
+            }
+        }
+
+       async function taiVaiTro() {
+    try {
+        let maNhanSu = '';
+        let maTruong = '';
+
+        // 1. Ưu tiên 1: Lấy trực tiếp từ trang cha (nếu trang web này được nhúng trong Iframe)
+        try {
+            if (window.parent && window.parent !== window) {
+                maNhanSu = window.parent.maNhanSu || window.parent.currentSession?.maNhanSu || '';
+                // Lấy thêm mã trường từ trang cha nếu có
+                maTruong = window.parent.maTruong || window.parent.currentSession?.maTruong || window.parent.schoolCode || '';
+            }
+        } catch (e) {
+            console.warn("Không thể truy cập window do chính sách CORS của iframe:", e);
+        }
+
+        // 2. Ưu tiên 2: Lấy từ URL Query String hoặc localStorage nếu trang cha không truyền xuống
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!maNhanSu) {
+            maNhanSu = urlParams.get('maNhanSu') || localStorage.getItem('maNhanSu');
+        }
+        if (!maTruong) {
+            maTruong = urlParams.get('maTruong') || urlParams.get('ma_truong') || localStorage.getItem('maTruong') || localStorage.getItem('ma_truong_hoc');
+        }
+
+        // 3. Giá trị mặc định cuối cùng nếu vẫn trống
+        if (!maNhanSu) {
+            maNhanSu = 'GV001';
+        }
+        if (!maTruong) {
+            maTruong = 'C3NDTNL.NAN'; // Mã trường mặc định của trường mình
+        }
+
+        // Chuẩn hóa mã trường thành chữ hoa
+        maTruong = maTruong.trim().toUpperCase();
+
+        // Gán vào biến toàn cục và localStorage để các hàm khác tiện sử dụng
+        currentUser.id = maNhanSu;
+        currentSession.maNhanSu = maNhanSu;
+        currentSession.maTruong = maTruong;
+
+        localStorage.setItem('maNhanSu', maNhanSu);
+        localStorage.setItem('maTruong', maTruong);
+
+        // 4. Truy vấn thông tin user từ Supabase
+        if (db) {
+            let { data } = await db.from('users').select('*').eq('ma_nhan_su', maNhanSu).limit(1);
+            if (data && data.length > 0) {
+                const u = data[0];
+                currentSession.hoVaTen = u.ho_va_ten || u.ten_nhan_su || u.full_name || 'Giáo viên';
+                currentSession.vaiTro = u.quyen || u.role || 'Giáo viên';
+                currentSession.nhomCmDb = u.to_chuyen_mon || u.to_cm || 'Chưa phân công';
+                
+                // Nếu trong bảng users có lưu kèm mã trường của giáo viên đó thì lấy luôn
+                if (u.ma_truong || u.school_code) {
+                    currentSession.maTruong = (u.ma_truong || u.school_code).trim().toUpperCase();
+                    localStorage.setItem('maTruong', currentSession.maTruong);
+                }
+
+                currentUser.name = currentSession.hoVaTen;
+                currentUser.dept = currentSession.nhomCmDb;
+            }
+        }
+        
+        // Gán hiển thị lên giao diện...
+        if(document.getElementById('userFullName')) document.getElementById('userFullName').innerText = currentSession.hoVaTen;
+        if(document.getElementById('userSchoolCode')) document.getElementById('userSchoolCode').innerText = "MÃ: " + currentSession.maNhanSu;
+        if(document.getElementById('userRole')) document.getElementById('userRole').innerText = currentSession.vaiTro;
+        if(document.getElementById('label-dept-name')) document.getElementById('label-dept-name').innerText = currentSession.nhomCmDb;
+        if(document.getElementById('teacher-id')) document.getElementById('teacher-id').value = currentSession.maNhanSu;
+        if(document.getElementById('teacher-name')) document.getElementById('teacher-name').value = currentSession.hoVaTen;
+
+    } catch (err) { 
+        console.error("Lỗi tại taiVaiTro:", err); 
+    }
+}
+      async function fetchDocumentsFromDB() {
+    if (!db) return;
+
+    let maNS = currentSession.maNhanSu || localStorage.getItem('maNhanSu') || 'GV001';
+    let vaiTroHienTai = currentSession.vaiTro || '';
+
+    let query = db.from('quan_ly_ho_so').select('*');
+
+    // SỬA ĐOẠN PHÂN QUYỀN TẢI DỮ LIỆU TẠI ĐÂY:
+    if (vaiTroHienTai === 'Admin' || vaiTroHienTai === 'Ban Giám Hiệu' || vaiTroHienTai === 'BGH' || vaiTroHienTai === 'kỹ thuật tối cao') {
+        // Nếu là BGH hoặc Admin: Cho phép tải toàn bộ hồ sơ thuộc danh mục BGH 
+        // HOẶC các hồ sơ gửi đến họ để họ quản lý chung toàn trường
+        // (Không dùng lệnh .or khắt khe nữa để tránh bị sót hồ sơ)
+    } else {
+        // Nếu là giáo viên thường: Chỉ lấy hồ sơ do mình tạo HOẶC gửi đến mình duyệt
+        query = query.or(`user_id.eq.${maNS},nguoi_nhan_duyet.eq.${maNS}`);
+    }
+
+    let { data, error } = await query.order('id', { ascending: false });
+    
+    if (error) { 
+        console.error('Lỗi tải hồ sơ:', error); 
+        showToast('❌ Không tải được danh sách hồ sơ.'); 
+        return; 
+    }
+
+    if (data) {
+        documentsStore = data.map(d => ({
+            id: d.id, 
+            name: d.name, 
+            originalName: d.original_name, 
+            date: d.date,
+            status: d.status, 
+            category: d.category, // Đảm bảo khi gửi lên BGH, cột category trong DB phải là 'bgh'
+            subCategory: d.sub_category || Object.keys(danhMucHoSoMap)[0] || 'giao_an',
+            uploader: d.uploader, 
+            driveUrl: d.drive_url,
+            nguoiNhanDuyet: d.nguoi_nhan_duyet,
+            ghiChuTraLai: d.ghi_chu_tra_lai
+        }));
+        renderAllStorageTables();
+    }
+}
+        async function saveDocumentToDB(doc) {
+            if (!db) throw new Error('Chưa kết nối Supabase, không thể lưu thông tin hồ sơ.');
+            const { error } = await db.from('quan_ly_ho_so').insert([{
+                id: doc.id, user_id: currentUser.id, name: doc.name, original_name: doc.originalName,
+                date: doc.date, status: doc.status, category: doc.category, sub_category: doc.subCategory,
+                uploader: doc.uploader, drive_url: doc.driveUrl
+            }]);
+            if (error) throw new Error('Không lưu được hồ sơ vào Supabase: ' + error.message);
+            return true;
+        }
+
+        async function updateDocumentInDB(doc) {
+            if (!db) throw new Error('Chưa kết nối Supabase.');
+            const { error } = await db.from('quan_ly_ho_so').update({
+                name: doc.name, original_name: doc.originalName, date: doc.date,
+                status: doc.status, drive_url: doc.driveUrl
+            }).eq('id', doc.id);
+            if (error) throw new Error('Đã tải bản PDF lên Drive nhưng không cập nhật được hồ sơ Supabase: ' + error.message);
+        }
+async function layMaTruongHienTai() {
+    if (typeof currentSession !== 'undefined' && currentSession && currentSession.maTruong) {
+        return String(currentSession.maTruong).trim().toUpperCase();
+    }
+
+    if (typeof initSessionData === 'function') {
+        try { await initSessionData(); } catch (e) {}
+        if (typeof currentSession !== 'undefined' && currentSession && currentSession.maTruong) {
+            return String(currentSession.maTruong).trim().toUpperCase();
+        }
+    }
+
+    try {
+        if (window.parent && window.parent !== window) {
+            const parentSchool = window.parent.maTruong || window.parent.currentSession?.maTruong || window.parent.schoolCode || '';
+            if (parentSchool) return String(parentSchool).trim().toUpperCase();
+        }
+    } catch (_) {}
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const maTruong = urlParams.get('maTruong') ||
+        urlParams.get('ma_truong') ||
+        localStorage.getItem('current_school_code') ||
+        localStorage.getItem('maTruong') ||
+        localStorage.getItem('ma_truong_hoc') ||
+        'C3NDTNL.NAN';
+
+    return String(maTruong).trim().toUpperCase();
+}
+
+async function callDriveApi(payload) {
+    const maTruong = await layMaTruongHienTai();
+
+    let apiUrl = '';
+    let folderId = '';
+
+    if (typeof db !== 'undefined' && db) {
+        try {
+            const { data: configData, error: configErr } = await db
+                .from('schools_config')
+                .select('api_google, folder_google')
+                .eq('school_code', maTruong)
+                .maybeSingle();
+
+            if (!configErr && configData) {
+                apiUrl = (configData.api_google || '').trim();
+                folderId = (configData.folder_google || '').trim();
+            }
+        } catch (err) {
+            console.warn("Lỗi truy vấn schools_config:", err);
+        }
+    }
+
+    if (!apiUrl && typeof driveConfig !== 'undefined' && driveConfig?.apiUrl) {
+        apiUrl = String(driveConfig.apiUrl).trim();
+    }
+    if (!folderId && typeof driveConfig !== 'undefined' && driveConfig?.folderId) {
+        folderId = String(driveConfig.folderId).trim();
+    }
+
+    if (!apiUrl) {
+        if (typeof openConfigModal === 'function') openConfigModal();
+        throw new Error(`Không tìm thấy cấu hình api_google trong schools_config cho mã trường: ${maTruong}`);
+    }
+
+    const requestPayload = { ...(payload || {}) };
+    if (folderId && !requestPayload.folderId) {
+        requestPayload.folderId = folderId;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    let response;
+    try {
+        response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(requestPayload),
+            signal: controller.signal
+        });
+    } catch (fetchErr) {
+        if (fetchErr.name === 'AbortError') {
+            throw new Error('Quá thời gian kết nối tới Google Apps Script (Timeout 30s).');
+        }
+        throw fetchErr;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+
+    const raw = await response.text();
+    let result;
+    try {
+        result = JSON.parse(raw);
+    } catch (_) {
+        throw new Error('Apps Script trả về dữ liệu không phải JSON. Hãy kiểm tra URL triển khai Web App.');
+    }
+
+    if (!response.ok || !result.success) {
+        throw new Error(result.message || `Lỗi máy chủ HTTP ${response.status}`);
+    }
+
+    return result;
+}
+
+async function uploadFileToGoogleDrive(fileBlob, fileName, categoryType, subCategoryType) {
+    if (!(fileBlob instanceof Blob) || fileBlob.size === 0) {
+        showToast("❌ Tệp tải lên không hợp lệ hoặc rỗng.");
+        return null;
+    }
+
+    showToast("☁️ Đang đồng bộ tệp lên Google Drive...");
+    try {
+        const base64data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error('Không đọc được tệp cần tải lên.'));
+            reader.onload = () => {
+                const res = String(reader.result || '');
+                resolve(res.includes(',') ? res.split(',')[1] : res);
+            };
+            reader.readAsDataURL(fileBlob);
+        });
+
+        if (!base64data) throw new Error('Không tạo được dữ liệu tệp.');
+
+        const result = await callDriveApi({
+            filename: typeof makeSafeFileName === 'function' ? makeSafeFileName(fileName) : fileName,
+            mimeType: fileBlob.type || 'application/pdf',
+            fileData: base64data,
+            uploader: `${currentUser?.id || currentSession?.maNhanSu || ''} - ${currentUser?.name || currentSession?.hoVaTen || 'Giáo viên'}`,
+            category: categoryType || 'ca_nhan',
+            subCategory: subCategoryType || 'giao_an'
+        });
+
+        const url = result.fileUrl ||
+            result.url ||
+            (result.fileId ? `https://drive.google.com/file/d/${encodeURIComponent(result.fileId)}/view` : null);
+
+        if (!url) throw new Error('Drive báo thành công nhưng không trả về liên kết tệp.');
+
+        showToast("✅ Đã tải tệp lên Google Drive.");
+        return url;
+    } catch (err) {
+        console.error('Lỗi tải Google Drive:', err);
+        showToast('❌ Không tải được lên Drive: ' + err.message);
+        throw err;
+    }
+}
+        async function downloadPdfFromDrive(fileId) {
+            const result = await callDriveApi({ action: 'download', fileId, requesterId: currentUser.id });
+            if (!result.fileData) throw new Error('Máy chủ không trả dữ liệu PDF.');
+            const binary = atob(result.fileData);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return bytes;
+        }
+
+        function extractDriveFileId(url) {
+            const m = String(url || '').match(/(?:\/d\/|[?&]id=)([a-zA-Z0-9_-]+)/);
+            return m ? m[1] : null;
+        }
+
+        
+        // Ký trực tiếp hồ sơ PDF đã lưu trên Google Drive.
+        let signTargetDoc = null;
+        let signPdfDoc = null;
+        let signPdfBytes = null;
+        let signPdfPage = 0;
+        let signPdfPageObject = null;
+        let signOverlayPlaced = false;
+        let signDragState = null;
+
+        function showKienoraSignerInfo(rawInfo) {
+            const lines = String(rawInfo || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            let modal = document.getElementById('kienora-signer-info-modal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'kienora-signer-info-modal';
+                modal.className = 'fixed inset-0 z-[150] bg-slate-950/60 flex items-center justify-center p-4';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+                        <div class="bg-indigo-900 text-white px-5 py-4 flex items-center justify-between">
+                            <div class="font-bold"><i class="fa-solid fa-circle-check mr-2"></i>Thông tin người ký</div>
+                            <button type="button" id="kienora-signer-info-close" class="text-white/80 hover:text-white text-xl" aria-label="Đóng">&times;</button>
+                        </div>
+                        <div id="kienora-signer-info-content" class="p-5 text-sm text-slate-700 space-y-2"></div>
+                        <div class="px-5 pb-5 text-[11px] text-amber-700">Thông tin này mô tả ảnh chữ ký được chèn vào PDF, không thay thế xác minh chữ ký số mật mã PAdES.</div>
+                    </div>`;
+                document.body.appendChild(modal);
+                modal.querySelector('#kienora-signer-info-close').addEventListener('click', () => modal.remove());
+                modal.addEventListener('click', event => { if (event.target === modal) modal.remove(); });
+            }
+            const content = modal.querySelector('#kienora-signer-info-content');
+            content.replaceChildren();
+            lines.forEach((line, index) => {
+                if (index === 0) return;
+                const row = document.createElement('div');
+                row.className = 'rounded-lg bg-slate-50 px-3 py-2 break-words';
+                row.textContent = line;
+                content.appendChild(row);
+            });
+            modal.classList.remove('hidden');
+        }
+
+        async function openSignDocument(docId) {
+            const doc = documentsStore.find(d => Number(d.id) === Number(docId));
+            if (!doc) return alert('Không tìm thấy hồ sơ cần ký.');
+            if (!/\.pdf$/i.test(doc.originalName || doc.name || '')) return alert('Chức năng ký hiện chỉ hỗ trợ PDF.');
+            if (!currentUser.signature) { alert('Bạn chưa đăng ký mẫu chữ ký. Vui lòng đăng ký trước.'); openRegisterSigModal(); return; }
+            const fileId = extractDriveFileId(doc.driveUrl);
+            if (!fileId) return alert('Không trích xuất được fileId từ đường dẫn Google Drive của hồ sơ.');
+            try {
+                signTargetDoc = doc;
+                showToast('⏳ Đang tải PDF từ Google Drive...');
+                signPdfBytes = await downloadPdfFromDrive(fileId);
+                signPdfDoc = await PDFLib.PDFDocument.load(signPdfBytes, { updateMetadata: true });
+                if (!signPdfDoc.getPageCount()) throw new Error('PDF không có trang hợp lệ.');
+                signPdfPage = 0;
+                document.getElementById('sign-doc-title').textContent = doc.originalName || doc.name;
+                document.getElementById('sign-preview-image').src = currentUser.signature;
+                document.getElementById('sign-pdf-modal').classList.remove('hidden');
+                await renderSignPdfPage();
+                showToast('Đã mở PDF. Nháy đúp vào trang để đặt chữ ký.');
+            } catch (err) {
+                console.error(err);
+                alert('Không mở được PDF từ Drive: ' + err.message + '\n\nNếu tệp lớn, hãy thử lại hoặc kiểm tra quyền truy cập của Apps Script.');
+                closeSignPdfModal();
+            }
+        }
+
+        async function renderSignPdfPage() {
+            const total = signPdfDoc.getPageCount();
+            signPdfPage = Math.max(0, Math.min(signPdfPage, total - 1));
+            const page = signPdfDoc.getPage(signPdfPage);
+            signPdfPageObject = page;
+            const sourceDoc = await pdfjsLib.getDocument({ data: signPdfBytes.slice() }).promise;
+            const pdfPage = await sourceDoc.getPage(signPdfPage + 1);
+            const baseViewport = pdfPage.getViewport({ scale: 1 });
+            const maxWidth = Math.min(900, document.getElementById('sign-page-viewport').clientWidth - 24 || 800);
+            const scale = Math.min(1.5, maxWidth / baseViewport.width);
+            const viewport = pdfPage.getViewport({ scale });
+            const canvasEl = document.getElementById('sign-pdf-canvas');
+            const context = canvasEl.getContext('2d');
+            canvasEl.width = Math.floor(viewport.width);
+            canvasEl.height = Math.floor(viewport.height);
+            canvasEl.style.width = canvasEl.width + 'px';
+            canvasEl.style.height = canvasEl.height + 'px';
+            await pdfPage.render({ canvasContext: context, viewport }).promise;
+
+            // Tạo vùng bấm trong suốt ngay trên annotation chữ ký Kienora.
+            // Không phụ thuộc JavaScript Action của trình đọc PDF (Chrome thường chặn app.alert).
+            const wrap = document.getElementById('sign-pdf-canvas-wrap');
+            wrap.querySelectorAll('.kienora-signer-hotspot').forEach(el => el.remove());
+            try {
+                const annotations = await pdfPage.getAnnotations({ intent: 'display' });
+                annotations.forEach(annotation => {
+                    const contents = String(annotation.contents || '');
+                    if (annotation.subtype !== 'Link' || !contents.includes('THONG TIN CHU KY KIENORA') || !Array.isArray(annotation.rect)) return;
+                    const rect = viewport.convertToViewportRectangle(annotation.rect);
+                    const left = Math.min(rect[0], rect[2]);
+                    const top = Math.min(rect[1], rect[3]);
+                    const width = Math.abs(rect[2] - rect[0]);
+                    const height = Math.abs(rect[3] - rect[1]);
+                    const hotspot = document.createElement('button');
+                    hotspot.type = 'button';
+                    hotspot.className = 'kienora-signer-hotspot';
+                    hotspot.setAttribute('aria-label', 'Xem thông tin người ký');
+                    hotspot.title = 'Nháy để xem thông tin người ký';
+                    hotspot.style.cssText = `position:absolute;left:${left}px;top:${top}px;width:${Math.max(width, 12)}px;height:${Math.max(height, 12)}px;z-index:8;padding:0;margin:0;border:0;background:rgba(37,99,235,0.001);cursor:pointer;`;
+                    hotspot.addEventListener('pointerdown', event => event.stopPropagation());
+                    hotspot.addEventListener('dblclick', event => event.stopPropagation());
+                    hotspot.addEventListener('click', event => {
+                        event.preventDefault(); event.stopPropagation();
+                        showKienoraSignerInfo(contents);
+                    });
+                    wrap.appendChild(hotspot);
+                });
+            } catch (annotationError) {
+                console.warn('Không đọc được vùng thông tin chữ ký PDF:', annotationError);
+            }
+            await sourceDoc.destroy();
+            document.getElementById('sign-page-counter').textContent = `Trang ${signPdfPage + 1}/${total}`;
+            const overlay = document.getElementById('sign-preview-image');
+            overlay.style.display = signOverlayPlaced ? 'block' : 'none';
+            if (signOverlayPlaced) {
+                const box = document.getElementById('sign-pdf-canvas-wrap');
+                overlay.style.left = Math.min(parseFloat(overlay.style.left) || 30, canvasEl.width - 80) + 'px';
+                overlay.style.top = Math.min(parseFloat(overlay.style.top) || 30, canvasEl.height - 40) + 'px';
+            }
+            document.getElementById('sign-pdf-canvas-wrap').style.width = canvasEl.width + 'px';
+            document.getElementById('sign-pdf-canvas-wrap').style.height = canvasEl.height + 'px';
+        }
+
+        function placeSignatureAt(event) {
+            const canvasEl = document.getElementById('sign-pdf-canvas');
+            const rect = canvasEl.getBoundingClientRect();
+            const overlay = document.getElementById('sign-preview-image');
+            const w = Math.min(170, canvasEl.width * 0.28);
+            overlay.style.width = w + 'px';
+            overlay.style.height = 'auto';
+            overlay.style.left = Math.max(0, Math.min(event.clientX - rect.left - w / 2, canvasEl.width - w)) + 'px';
+            overlay.style.top = Math.max(0, Math.min(event.clientY - rect.top - 22, canvasEl.height - 50)) + 'px';
+            overlay.style.display = 'block';
+            signOverlayPlaced = true;
+        }
+
+        function startSignatureDrag(event) {
+            if (!signOverlayPlaced) return;
+            event.preventDefault();
+            const overlay = document.getElementById('sign-preview-image');
+            const wrapRect = document.getElementById('sign-pdf-canvas-wrap').getBoundingClientRect();
+            signDragState = { dx: event.clientX - wrapRect.left - parseFloat(overlay.style.left), dy: event.clientY - wrapRect.top - parseFloat(overlay.style.top) };
+            overlay.setPointerCapture?.(evcent.pointerId);
+        }
+
+        function moveSignatureDrag(event) {
+            if (!signDragState) return;
+            const overlay = document.getElementById('sign-preview-image');
+            const canvasEl = document.getElementById('sign-pdf-canvas');
+            const rect = document.getElementById('sign-pdf-canvas-wrap').getBoundingClientRect();
+            const w = overlay.offsetWidth, h = overlay.offsetHeight;
+            overlay.style.left = Math.max(0, Math.min(event.clientX - rect.left - signDragState.dx, canvasEl.width - w)) + 'px';
+            overlay.style.top = Math.max(0, Math.min(event.clientY - rect.top - signDragState.dy, canvasEl.height - h)) + 'px';
+        }
+
+        function stopSignatureDrag() { signDragState = null; }
+
+        async function changeSignPage(delta) {
+            if (!signPdfDoc) return;
+            signPdfPage = Math.max(0, Math.min(signPdfPage + delta, signPdfDoc.getPageCount() - 1));
+            signOverlayPlaced = false;
+            await renderSignPdfPage();
+        }
+
+        function closeSignPdfModal() {
+            document.getElementById('sign-pdf-modal')?.classList.add('hidden');
+            signTargetDoc = null; signPdfDoc = null; signPdfBytes = null; signPdfPageObject = null;
+            signOverlayPlaced = false; signDragState = null;
+        }
+
+async function saveSignedDriveDocument() {
+    if (!signTargetDoc || !signPdfDoc || !signOverlayPlaced) {
+        return alert('Bạn hãy nháy đúp vào trang PDF để đặt chữ ký trước.');
+    }
+
+    const saveBtn = document.getElementById('save-signed-drive-btn');
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+        const canvasEl = document.getElementById('sign-pdf-canvas');
+        const boxEl = document.getElementById('sign-signature-box') || document.getElementById('sign-preview-image');
+        if (!canvasEl || !boxEl) {
+            throw new Error('Không tìm thấy vùng trang PDF hoặc khung chữ ký.');
+        }
+
+        const pdfPage = signPdfDoc.getPage(signPdfPage);
+        const pageSize = pdfPage.getSize();
+
+        const canvasRect = canvasEl.getBoundingClientRect();
+        const boxRect = boxEl.getBoundingClientRect();
+
+        const relLeftPx = boxRect.left - canvasRect.left;
+        const relTopPx = boxRect.top - canvasRect.top;
+        const relWidthPx = boxRect.width;
+        const relHeightPx = boxRect.height;
+
+        const scaleX = pageSize.width / Math.max(canvasRect.width, 1);
+        const scaleY = pageSize.height / Math.max(canvasRect.height, 1);
+
+        const imgWidth = relWidthPx * scaleX;
+        const imgHeight = relHeightPx * scaleY;
+        const x = relLeftPx * scaleX;
+        const y = pageSize.height - (relTopPx + relHeightPx) * scaleY;
+
+        const png = await signPdfDoc.embedPng(currentUser.signature);
+        pdfPage.drawImage(png, { x, y, width: imgWidth, height: imgHeight });
+
+        const signedAt = new Date();
+        const cleanSigner = removeAccents(currentUser.name || 'Nguoi ky');
+        const cleanDept = removeAccents(currentUser.dept || '');
+        const signedTime = signedAt.toLocaleString('vi-VN');
+        const infoLines = [
+            'THONG TIN CHU KY KIENORA',
+            'Ho va ten: ' + cleanSigner,
+            'Ma nhan su: ' + (currentUser.id || ''),
+            'To chuyen mon: ' + cleanDept,
+            'Thoi gian chen anh: ' + signedTime,
+            'Luu y: Day la anh chu ky hien thi, khong phai chu ky so PAdES.'
+        ];
+        const jsEscape = value => String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/[\r\n]/g, ' ');
+        const dialogScript = 'app.alert({cTitle:"Thong tin chu ky Kienora",cMsg:"' + jsEscape(infoLines.join('\n')) + '",nIcon:3,nType:0});';
+        const context = signPdfDoc.context;
+        const clickAnnotation = context.obj({
+            Type: PDFLib.PDFName.of('Annot'),
+            Subtype: PDFLib.PDFName.of('Link'),
+            Rect: [x, y, x + imgWidth, y + imgHeight],
+            Border: [0, 0, 0],
+            F: 644,
+            Contents: PDFLib.PDFString.of(infoLines.join('\n')),
+            A: context.obj({
+                S: PDFLib.PDFName.of('JavaScript'),
+                JS: PDFLib.PDFString.of(dialogScript)
+            })
+        });
+        const clickAnnotationRef = context.register(clickAnnotation);
+        let pageAnnots = pdfPage.node.get(PDFLib.PDFName.of('Annots'));
+        if (!pageAnnots) {
+            pageAnnots = context.obj([]);
+            pdfPage.node.set(PDFLib.PDFName.of('Annots'), pageAnnots);
+        }
+        pageAnnots.push(clickAnnotationRef);
+
+        signPdfDoc.setSubject(`Ảnh chữ ký hiển thị của ${currentUser.name} - chưa phải chữ ký số mật mã`);
+        signPdfDoc.setCreator('Kienora - Hệ thống quản lý hồ sơ');
+        signPdfDoc.setKeywords(['Kienora', 'ảnh chữ ký', 'thông tin người ký', 'chưa ký số mật mã']);
+
+        const bytes = await signPdfDoc.save();
+        const blob = new Blob([bytes], { type: 'application/pdf' });
+        const old = signTargetDoc;
+        const original = old.originalName || old.name || 'hoso.pdf';
+        const signedName = makeSafeFileName(original.replace(/\.pdf$/i, '') + '_DaKy.pdf');
+
+        const driveUrl = await uploadFileToGoogleDrive(blob, signedName, old.category, old.subCategory);
+        if (!driveUrl) {
+            throw new Error('Không tải được bản PDF đã ký lên Drive.');
+        }
+
+        const updated = {
+            ...old,
+            name: signedName,
+            originalName: original,
+            date: signedAt.toLocaleDateString('vi-VN'),
+            status: 'Đã chèn ảnh chữ ký (chưa ký số mật mã)',
+            driveUrl
+        };
+
+        await updateDocumentInDB(updated);
+        const idx = documentsStore.findIndex(d => Number(d.id) === Number(old.id));
+        if (idx >= 0) documentsStore[idx] = updated;
+
+        // Từ đây trở đi là đã lưu xong Drive & DB -> cập nhật giao diện an toàn
+        try {
+            if (typeof currentTcmStatusFilter === 'undefined') window.currentTcmStatusFilter = 'all';
+            if (typeof currentBghSubFilter === 'undefined') window.currentBghSubFilter = 'all';
+            if (typeof renderAllStorageTables === 'function') renderAllStorageTables();
+            if (typeof closeSignPdfModal === 'function') closeSignPdfModal();
+            if (boxEl && boxEl.id === 'sign-signature-box') boxEl.style.display = 'none';
+            signOverlayPlaced = false;
+        } catch (uiErr) {
+            console.warn('Đã lưu thành công nhưng lỗi cập nhật giao diện:', uiErr);
+        }
+
+        if (typeof showToast === 'function') {
+            showToast('✅ Đã lưu bản PDF có chữ ký lên Drive và cập nhật hồ sơ. Bản gốc vẫn được giữ lại.');
+            notifySignSuccess('✅ Đã lưu bản PDF có chữ ký lên Drive và cập nhật hồ sơ. Bản gốc vẫn được giữ lại.');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Không thể lưu PDF đã ký: ' + err.message);
+    } finally {
+        if (saveBtn) saveBtn.disabled = false;
+    }
+}
+function notifySignSuccess(message) {
+    try {
+        if (typeof showToast === 'function') {
+            showToast(message);
+            return;
+        }
+        if (window.parent && window.parent !== window && typeof window.parent.showToast === 'function') {
+            window.parent.showToast(message);
+            return;
+        }
+    } catch (_) {}
+
+    const oldBanner = document.getElementById('kienora-sign-success-toast');
+    if (oldBanner) oldBanner.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'kienora-sign-success-toast';
+    toast.textContent = message;
+    toast.style.cssText = [
+        'position:fixed',
+        'top:20px',
+        'right:20px',
+        'z-index:200',
+        'background:#059669',
+        'color:#ffffff',
+        'padding:12px 18px',
+        'border-radius:10px',
+        'font-size:13px',
+        'font-weight:600',
+        'box-shadow:0 10px 25px rgba(0,0,0,0.25)',
+        'max-width:420px'
+    ].join(';');
+
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        if (toast && toast.parentNode) toast.remove();
+    }, 4000);
+}
+        function getUserRoleFlags() {
+            const roleNorm = removeAccents(currentSession.vaiTro || '').toLowerCase();
+            const isBGH = roleNorm.includes('bgh') || roleNorm.includes('hieu truong') || roleNorm.includes('hieu pho') || roleNorm.includes('admin') || roleNorm.includes('quan tri');
+            const isToTruong = isBGH || roleNorm.includes('to truong') || roleNorm.includes('to pho') || roleNorm.includes('nhom truong');
+            return { isBGH, isToTruong };
+        }
+
+        function triggerDirectUpload(category) {
+            triggerDirectUploadWithSubCat(category);
+        }
+
+        function triggerDirectUploadWithSubCat(category) { 
+            if (category === 'bgh') {
+                const { isBGH } = getUserRoleFlags();
+                if (!isBGH) {
+                    alert('Chỉ tài khoản Ban Giám Hiệu (BGH) hoặc Quản trị viên mới có quyền đăng văn bản chính thức vào mục BGH.');
+                    return;
+                }
+            }
+            currentUploadCategory = category; 
+            document.getElementById('direct-upload-input').click(); 
+        }
+
+        async function handleDirectFileUploaded(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            try {
+                if (!db) throw new Error('Chưa kết nối Supabase.');
+                let subCat = 'giao_an';
+                let initialStatus = 'Đã lưu Drive - tải trực tiếp (không có chữ ký)';
+                let uploaderLabel = currentUser.name;
+
+                if (currentUploadCategory === 'ca_nhan') {
+                    subCat = document.getElementById('direct-upload-subcat').value;
+                } else if (currentUploadCategory === 'to_chuyen_mon') {
+                    subCat = document.getElementById('tcm-subcat-select')?.value || 'ho_so_giao_vien';
+                    initialStatus = '⏳ Chờ Tổ trưởng duyệt';
+                    uploaderLabel = `${currentUser.name} (${currentUser.dept})`;
+                } else if (currentUploadCategory === 'bgh') {
+                    subCat = document.getElementById('bgh-subcat-select')?.value || 'quyet_dinh';
+                    initialStatus = '📢 Đã ban hành chính thức (BGH)';
+                    uploaderLabel = `${currentUser.name} - BGH`;
+                }
+
+                const fileName = makeSafeFileName(`${currentUser.id}_${currentUser.dept}_${file.name}`);
+                const driveUrl = await uploadFileToGoogleDrive(file, fileName, currentUploadCategory, subCat);
+                if (!driveUrl) throw new Error('Tệp chưa được tải lên Drive nên chưa tạo bản ghi.');
+                const newDoc = {
+                    id: Date.now(), name: fileName, originalName: file.name,
+                    date: new Date().toLocaleDateString('vi-VN'), status: initialStatus,
+                    category: currentUploadCategory, subCategory: subCat, uploader: uploaderLabel, driveUrl
+                };
+                await saveDocumentToDB(newDoc);
+                documentsStore.unshift(newDoc);
+                renderAllStorageTables();
+                switchStorageTab(currentUploadCategory);
+                showToast('✅ Đã tải và lưu hồ sơ thành công.');
+            } catch (err) {
+                console.error('Lỗi tải hồ sơ:', err);
+                alert('Không thể tải hồ sơ: ' + err.message);
+            } finally { event.target.value = ''; }
+        }
+
+        // Gửi bản sao hồ sơ từ Cá nhân -> Tổ chuyên môn hoặc từ Tổ chuyên môn -> Trình BGH ký duyệt
+        async function forwardDocumentToTarget(docId, targetCategory) {
+            const srcDoc = documentsStore.find(d => Number(d.id) === Number(docId));
+            if (!srcDoc) return alert('Không tìm thấy hồ sơ nguồn.');
+            const targetName = targetCategory === 'to_chuyen_mon' ? `Tổ Chuyên Môn (${currentUser.dept})` : 'Ban Giám Hiệu (BGH)';
+            if (!confirm(`Bạn muốn gửi hồ sơ "${srcDoc.name}" sang mục ${targetName}?`)) return;
+
+            try {
+                showToast(`⏳ Đang chuyển hồ sơ sang ${targetName}...`);
+                const forwardedDoc = {
+                    id: Date.now(),
+                    name: srcDoc.name,
+                    originalName: srcDoc.originalName || srcDoc.name,
+                    date: new Date().toLocaleDateString('vi-VN'),
+                    status: targetCategory === 'to_chuyen_mon'
+                        ? '⏳ Chờ Tổ trưởng duyệt'
+                        : '✍️ Trình BGH ký duyệt',
+                    category: targetCategory,
+                    subCategory: targetCategory === 'to_chuyen_mon' ? 'ho_so_giao_vien' : 'ho_so_trinh_ky',
+                    uploader: `${currentUser.name} (${currentUser.dept})`,
+                    driveUrl: srcDoc.driveUrl
+                };
+                await saveDocumentToDB(forwardedDoc);
+                documentsStore.unshift(forwardedDoc);
+                renderAllStorageTables();
+                switchStorageTab(targetCategory);
+                showToast(`✅ Đã chuyển hồ sơ sang ${targetName} thành công!`);
+            } catch (err) {
+                console.error('Lỗi chuyển hồ sơ:', err);
+                alert('Không thể chuyển hồ sơ: ' + err.message);
+            }
+        }
+
+        // Cập nhật trạng thái phê duyệt (Tổ trưởng duyệt / Yêu cầu sửa / BGH ban hành)
+        async function updateApprovalStatus(docId, newStatus) {
+            const doc = documentsStore.find(d => Number(d.id) === Number(docId));
+            if (!doc) return;
+            try {
+                const updated = { ...doc, status: newStatus, date: new Date().toLocaleDateString('vi-VN') };
+                await updateDocumentInDB(updated);
+                const idx = documentsStore.findIndex(d => Number(d.id) === Number(docId));
+                if (idx >= 0) documentsStore[idx] = updated;
+                renderAllStorageTables();
+                showToast(`✅ Đã cập nhật trạng thái: ${newStatus}`);
+            } catch (err) {
+                console.error(err);
+                alert('Không thể cập nhật trạng thái: ' + err.message);
+            }
+        }
+
+        function switchStorageTab(tabKey) {
+            document.querySelectorAll('.storage-tab-panel').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.storage-tab-btn').forEach(el => { el.classList.remove('tab-active'); el.classList.add('text-slate-600', 'hover:bg-white/60'); });
+            document.getElementById(`tab-panel-${tabKey}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tabKey}`);
+            activeBtn.classList.add('tab-active'); activeBtn.classList.remove('text-slate-600', 'hover:bg-white/60');
+        }
+
+        function filterSubCategory(subCat) {
+            currentSubFilter = subCat;
+            document.querySelectorAll('.filter-sub-btn').forEach(btn => {
+                btn.className = "filter-sub-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-slate-600 border hover:bg-slate-100 transition";
+            });
+            const activeBtn = document.getElementById(`filter-btn-${subCat}`);
+            if (activeBtn) activeBtn.className = "filter-sub-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-indigo-600 text-white transition";
+            renderTableForCategory('ca_nhan', 'tbody-ca_nhan');
+        }
+
+        function filterTcmStatus(statusKey) {
+            currentTcmStatusFilter = statusKey;
+            document.querySelectorAll('.tcm-filter-btn').forEach(btn => {
+                btn.className = "tcm-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-slate-600 border hover:bg-slate-100 transition";
+            });
+            const activeBtn = document.getElementById(`tcm-filter-${statusKey}`);
+            if (activeBtn) activeBtn.className = "tcm-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-emerald-600 text-white transition";
+            renderTableForCategory('to_chuyen_mon', 'tbody-to_chuyen_mon');
+        }
+
+        function filterBghSubCat(subKey) {
+            currentBghSubFilter = subKey;
+            document.querySelectorAll('.bgh-filter-btn').forEach(btn => {
+                btn.className = "bgh-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-white text-slate-600 border hover:bg-slate-100 transition";
+            });
+            const activeBtn = document.getElementById(`bgh-filter-${subKey}`);
+            if (activeBtn) activeBtn.className = "bgh-filter-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-amber-600 text-white transition";
+            renderTableForCategory('bgh', 'tbody-bgh');
+        }
+
+        function renderAllStorageTables() {
+            const { isBGH } = getUserRoleFlags();
+            const bghControls = document.getElementById('bgh-upload-controls');
+            if (bghControls) {
+                bghControls.style.display = isBGH ? 'flex' : 'none';
+            }
+            renderTableForCategory('ca_nhan', 'tbody-ca_nhan');
+            renderTableForCategory('to_chuyen_mon', 'tbody-to_chuyen_mon');
+            renderTableForCategory('bgh', 'tbody-bgh');
+        }
+
+        function getStatusBadgeHtml(statusText) {
+            const norm = removeAccents(statusText || '').toLowerCase();
+            if (norm.includes('yeu cau') || norm.includes('sua')) {
+                return `<span class="bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full font-medium">${escapeHtml(statusText)}</span>`;
+            }
+            if (norm.includes('cho') || norm.includes('trinh')) {
+                return `<span class="bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-medium">${escapeHtml(statusText)}</span>`;
+            }
+            return `<span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-medium">${escapeHtml(statusText)}</span>`;
+        }
+
+        function renderTableForCategory(catKey, tbodyId) {
+            const tbody = document.getElementById(tbodyId);
+            const { isBGH, isToTruong } = getUserRoleFlags();
+            let filtered = documentsStore.filter(d => d.category === catKey);
+
+            if (catKey === 'ca_nhan') {
+                if (currentSubFilter !== 'all') filtered = filtered.filter(d => d.subCategory === currentSubFilter);
+            } else if (catKey === 'to_chuyen_mon') {
+                // Lọc theo tổ chuyên môn nếu không phải BGH
+                if (!isBGH && currentUser.dept) {
+                    const userDeptNorm = removeAccents(currentUser.dept).toLowerCase();
+                    filtered = filtered.filter(d => {
+                        const upNorm = removeAccents(d.uploader || '').toLowerCase();
+                        const nameNorm = removeAccents(d.name || '').toLowerCase();
+                        return upNorm.includes(userDeptNorm) || nameNorm.includes(userDeptNorm) || !upNorm.includes('(');
+                    });
+                }
+                if (currentTcmStatusFilter !== 'all') {
+                    filtered = filtered.filter(d => {
+                        const st = removeAccents(d.status || '').toLowerCase();
+                        if (currentTcmStatusFilter === 'cho_duyet') return st.includes('cho');
+                        if (currentTcmStatusFilter === 'da_duyet') return st.includes('da duyet') || st.includes('da chen anh chu ky') || st.includes('da ky');
+                        if (currentTcmStatusFilter === 'yeu_cau_sua') return st.includes('yeu cau') || st.includes('sua');
+                        return true;
+                    });
+                }
+                const kw = removeAccents(document.getElementById('tcm-search-input')?.value || '').toLowerCase().trim();
+                if (kw) {
+                    filtered = filtered.filter(d => removeAccents(`${d.name} ${d.uploader}`).toLowerCase().includes(kw));
+                }
+            } else if (catKey === 'bgh') {
+                if (currentBghSubFilter !== 'all') {
+                    filtered = filtered.filter(d => d.subCategory === currentBghSubFilter);
+                }
+                const kw = removeAccents(document.getElementById('bgh-search-input')?.value || '').toLowerCase().trim();
+                if (kw) {
+                    filtered = filtered.filter(d => removeAccents(`${d.name} ${d.uploader}`).toLowerCase().includes(kw));
+                }
+            }
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Không có tài liệu nào trong nhóm này.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map((d, index) => {
+                const url = safeDriveUrl(d.driveUrl);
+                const isPdf = /\.pdf$/i.test(d.originalName || d.name || '');
+                const openLink = url !== '#' ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 font-semibold"><i class="fa-solid fa-cloud-arrow-down mr-1"></i>Mở Drive</a>` : `<span class="text-slate-400">Chưa có liên kết</span>`;
+                const signBtn = isPdf ? `<button onclick="openSignDocument(${Number(d.id)})" class="text-indigo-600 hover:text-indigo-800 font-semibold ml-2" title="Ký trực tiếp PDF"><i class="fa-solid fa-signature mr-1"></i>Ký</button>` : '';
+
+                // Cột 3 khác nhau theo từng Tab: Cá nhân hiện Nhóm hồ sơ; Tổ CM & BGH hiện Người nộp/Ban hành + Nhãn loại
+                let col3Html = '';
+                if (catKey === 'ca_nhan') {
+                    col3Html = `<span class="bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded text-[11px] font-medium">${escapeHtml(danhMucHoSoMap[d.subCategory] || '📁 Tài liệu')}</span>`;
+                } else {
+                    const tagLabel = subCatLabelMap[d.subCategory] || danhMucHoSoMap[d.subCategory] || '';
+                    col3Html = `<div class="font-semibold text-slate-700">${escapeHtml(d.uploader || '--')}</div>` +
+                               (tagLabel ? `<span class="inline-block mt-0.5 bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded text-[10px]">${escapeHtml(tagLabel)}</span>` : '');
+                }
+
+                // Các nút thao tác đặc thù theo từng Tab và Vai trò
+                let extraActions = '';
+                if (catKey === 'ca_nhan') {
+        extraActions = `<button onclick="openGuiDuyetModal(${Number(d.id)})" class="text-emerald-600 hover:text-emerald-800 font-semibold ml-2" title="Gửi duyệt hồ sơ đến Tổ, BGH hoặc Nhóm riêng"><i class="fa-solid fa-paper-plane mr-0.5"></i>Gửi duyệt</button>`;
+    }
+                 else if (catKey === 'to_chuyen_mon') {
+    if (isToTruong) {
+        extraActions = `
+            <div class="inline-flex space-x-1 ml-2">
+                <button onclick="updateApprovalStatus(${Number(d.id)}, '✅ Đã duyệt')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded text-xs font-medium transition shadow-sm" title="Duyệt hồ sơ">
+                    ✔️ Duyệt
+                </button>
+                <button onclick="updateApprovalStatus(${Number(d.id)}, '✍️ Đã ký')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-xs font-medium transition shadow-sm" title="Ký duyệt chuyên môn">
+                    ✍️ Ký
+                </button>
+                <button onclick="updateApprovalStatus(${Number(d.id)}, '⚠️ Chưa ký')" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded text-xs font-medium transition shadow-sm" title="Báo chưa ký / Yêu cầu sửa">
+                    ⚠️ Chưa ký
+                </button>
+
+            </div>`;
+    }
+} else if (catKey === 'BGH') {
+                    if (isBGH) {
+                        extraActions = `<button onclick="updateApprovalStatus(${Number(d.id)}, '📢 Đã ban hành chính thức (BGH)')" class="text-emerald-600 hover:text-emerald-800 font-semibold ml-2" title="Xác nhận ban hành chính thức"><i class="fa-solid fa-stamp mr-0.5"></i>Ban hành</button>`;
+                    }
+                }
+
+                const canDelete = (catKey === 'ca_nhan') || (catKey === 'to_chuyen_mon' && (isToTruong || (d.uploader || '').includes(currentUser.name))) || (catKey === 'bgh' && isBGH);
+                const deleteBtn = canDelete ? `<button onclick="deleteDoc(${Number(d.id)})" class="text-rose-500 hover:text-rose-700 ml-2" title="Xóa hồ sơ"><i class="fa-solid fa-trash-can"></i></button>` : '';
+
+                return `<tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-mono text-slate-500">${index + 1}</td>
+                    <td class="p-3 font-semibold text-indigo-700 font-mono">${escapeHtml(d.name)}</td>
+                    <td class="p-3">${col3Html}</td>
+                    <td class="p-3 text-slate-500">${escapeHtml(d.date)}</td>
+                    <td class="p-3">${getStatusBadgeHtml(d.status)}</td>
+                    <td class="p-3 text-right whitespace-nowrap">${openLink}${signBtn}${extraActions}${deleteBtn}</td>
+                </tr>`;
+            }).join('');
+        }
+// Tùy chọn: thêm mã nhân sự kỹ thuật tối cao nếu muốn cấp theo mã cố định (VD: ['NV001', 'ADMIN'])
+const SUPREME_TECH_IDS = [];
+
+function resolveAppsScriptUrl() {
+    if (typeof driveConfig !== 'undefined' && driveConfig && driveConfig.apiUrl) {
+        return String(driveConfig.apiUrl).trim();
+    }
+    if (window.driveConfig && window.driveConfig.apiUrl) {
+        return String(window.driveConfig.apiUrl).trim();
+    }
+    try {
+        const lsUrl =
+            localStorage.getItem('kienora_gas_url') ||
+            localStorage.getItem('gas_api_url') ||
+            localStorage.getItem('drive_api_url') ||
+            '';
+        if (lsUrl) return String(lsUrl).trim();
+    } catch (_) {}
+
+    try {
+        if (window.parent && window.parent !== window && window.parent.driveConfig && window.parent.driveConfig.apiUrl) {
+            return String(window.parent.driveConfig.apiUrl).trim();
+        }
+    } catch (_) {}
+
+    return '';
+}
+
+function getSafeCurrentUserId() {
+    if (typeof currentUser !== 'undefined' && currentUser && currentUser.id) {
+        return String(currentUser.id).trim();
+    }
+    if (typeof currentSession !== 'undefined' && currentSession && currentSession.maNhanSu) {
+        return String(currentSession.maNhanSu).trim();
+    }
+    try {
+        const fromLs = localStorage.getItem('maNhanSu') || '';
+        if (fromLs) return String(fromLs).trim();
+    } catch (_) {}
+
+    try {
+        if (window.parent && window.parent !== window && window.parent.currentSession && window.parent.currentSession.maNhanSu) {
+            return String(window.parent.currentSession.maNhanSu).trim();
+        }
+    } catch (_) {}
+
+    return '';
+}
+
+function isSupremeTechUser(currentUserId) {
+    const roleRaw = String(
+        (typeof currentSession !== 'undefined' && (currentSession.vaiTro || currentSession.role || currentSession.quyen)) ||
+        (typeof currentUser !== 'undefined' && (currentUser.role || currentUser.vaiTro || currentUser.quyen)) ||
+        ''
+    ).trim().toLowerCase();
+
+    const upperId = String(currentUserId || '').trim().toUpperCase();
+    const byId = Array.isArray(SUPREME_TECH_IDS) && SUPREME_TECH_IDS.map(x => String(x).trim().toUpperCase()).includes(upperId);
+
+    const byRole = [
+        'kỹ thuật tối cao',
+        'ky thuat toi cao',
+        'ky_thuat_toi_cao',
+        'supreme_tech',
+        'supremetech',
+        'super_admin',
+        'superadmin'
+    ].some(key => roleRaw.includes(key));
+
+    return Boolean(byId || byRole);
+}
+async function getDeleteApiUrl() {
+    // 1. Cấu hình trực tiếp trên trang / biến toàn cục
+    if (typeof driveConfig !== 'undefined' && driveConfig && driveConfig.apiUrl) {
+        return String(driveConfig.apiUrl).trim();
+    }
+    if (window.driveConfig && window.driveConfig.apiUrl) {
+        return String(window.driveConfig.apiUrl).trim();
+    }
+
+    // 2. Kiểm tra trong localStorage nếu có lưu sẵn URL Apps Script
+    try {
+        for (const key of ['kienora_gas_url', 'gas_api_url', 'drive_api_url', 'api_google']) {
+            const val = String(localStorage.getItem(key) || '').trim();
+            if (val.startsWith('http')) return val;
+        }
+    } catch (_) {}
+
+    const rawSchoolCode = String(
+        (typeof layMaTruongHienTai === 'function' ? await layMaTruongHienTai() : '') ||
+        localStorage.getItem('current_school_code') ||
+        localStorage.getItem('school_code') ||
+        localStorage.getItem('maTruong') ||
+        'C3NDTNL.NAN'
+    ).trim();
+
+    // 3. Thử truy vấn qua client db (không phân biệt hoa/thường school_code)
+    try {
+        if (typeof db !== 'undefined' && db) {
+            const { data, error } = await db
+                .from('schools_config')
+                .select('school_code, api_google, folder_google')
+                .ilike('school_code', rawSchoolCode)
+                .limit(1);
+
+            if (!error && Array.isArray(data) && data[0] && data[0].api_google) {
+                const url = String(data[0].api_google).trim();
+                if (url.startsWith('http')) return url;
+            }
+        }
+    } catch (_) {}
+
+    // 4. Dự phòng gọi trực tiếp Supabase REST bằng sb_url & sb_key trong localStorage
+    try {
+        const sbUrl = String(localStorage.getItem('sb_url') || '').trim().replace(/\/+$/, '');
+        const sbKey = String(localStorage.getItem('sb_key') || '').trim();
+        if (sbUrl && sbKey) {
+            const endpoint = `${sbUrl}/rest/v1/schools_config?select=api_google,folder_google&school_code=ilike.${encodeURIComponent(rawSchoolCode)}&limit=1`;
+            const res = await fetch(endpoint, {
+                headers: {
+                    'apikey': sbKey,
+                    'Authorization': `Bearer ${sbKey}`
+                }
+            });
+            if (res.ok) {
+                const rows = await res.json();
+                const url = rows && rows[0] && String(rows[0].api_google || '').trim();
+                if (url && url.startsWith('http')) return url;
+            }
+        }
+    } catch (_) {}
+
+    return '';
+}
+
+async function deleteDoc(id) {
+    const targetDoc = documentsStore.find(d => Number(d.id) === Number(id));
+    if (!targetDoc) {
+        if (typeof showToast === 'function') showToast('Không tìm thấy hồ sơ.');
+        return;
+    }
+
+    const currentUserId = getSafeCurrentUserId();
+    const supremeTech = isSupremeTechUser(currentUserId);
+
+    const docOwnerId = String(
+        targetDoc.user_id ||
+        targetDoc.userId ||
+        targetDoc.ma_nhan_su ||
+        targetDoc.maNhanSu ||
+        ''
+    ).trim().toUpperCase();
+
+    const statusText = String(targetDoc.status || targetDoc.trang_thai || '').trim().toLowerCase();
+    const isApproved =
+        statusText.includes('đã duyệt') ||
+        statusText.includes('da duyet') ||
+        statusText.includes('da_duyet') ||
+        statusText.includes('đã phê duyệt') ||
+        statusText.includes('approved');
+
+    if (!supremeTech) {
+        if (isApproved) {
+            alert('Hồ sơ đã được duyệt nên không thể xóa.');
+            return;
+        }
+        if (!currentUserId.toUpperCase() || (docOwnerId && docOwnerId !== currentUserId.toUpperCase())) {
+            alert('Bạn chỉ có quyền xóa hồ sơ do chính cá nhân mình tạo khi chưa được duyệt.');
+            return;
+        }
+    }
+
+    const confirmMsg = supremeTech
+        ? "Bạn đang thao tác với quyền KỸ THUẬT TỐI CAO. Chắc chắn muốn xóa tài liệu này trên Drive và CSDL?"
+        : "Bạn có chắc chắn muốn xóa tài liệu này? Thao tác xóa trên Drive và CSDL phụ thuộc quyền được cấp ở máy chủ.";
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        if (typeof showToast === 'function') {
+            showToast("⏳ Đang xử lý yêu cầu xóa...");
+        }
+
+        const driveLink = targetDoc.driveUrl || targetDoc.drive_url || '';
+        if (driveLink && driveLink !== '#') {
+            const apiUrl = await getDeleteApiUrl();
+            if (!apiUrl) {
+                throw new Error('Chưa cấu hình Google Apps Script URL.');
+            }
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({
+                    action: 'delete',
+                    fileUrl: driveLink,
+                    requesterId: currentUserId,
+                    isSupremeTech: supremeTech
+                })
+            });
+            const raw = await response.text();
+            let result;
+            try {
+                result = JSON.parse(raw);
+            } catch (_) {
+                throw new Error('Apps Script trả về dữ liệu không hợp lệ.');
+            }
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Máy chủ không xác nhận xóa tệp Drive.');
+            }
+        }
+
+        if (!db) throw new Error('Chưa kết nối Supabase.');
+        const { error } = await db.from('quan_ly_ho_so').delete().eq('id', id);
+        if (error) throw new Error('Không xóa được bản ghi Supabase: ' + error.message);
+
+        // Chỉ cập nhật lại danh sách và giao diện sau khi Drive + Supabase đã xóa thành công
+        documentsStore = documentsStore.filter(d => Number(d.id) !== Number(id));
+        if (typeof window.currentTcmStatusFilter === 'undefined') window.currentTcmStatusFilter = 'all';
+        if (typeof window.currentBghSubFilter === 'undefined') window.currentBghSubFilter = 'all';
+
+        try {
+            if (typeof renderAllStorageTables === 'function') {
+                renderAllStorageTables();
+            }
+        } catch (renderErr) {
+            console.warn('Lỗi khi vẽ lại bảng sau xóa:', renderErr);
+        }
+
+        if (typeof showToast === 'function') {
+            showToast("🗑️ Đã xóa hồ sơ theo phản hồi máy chủ.");
+        }
+    } catch (err) {
+        console.error("Lỗi khi xóa:", err);
+        alert("Không thể xóa hồ sơ: " + err.message);
+    }
+}
+        // Canvas chữ ký
+        function initCanvas() {
+            canvas = document.getElementById('signature-pad');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d'); ctx.strokeStyle = "#000080"; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+            canvas.addEventListener('mousedown', (e) => { isDrawing = true; const r = canvas.getBoundingClientRect(); ctx.beginPath(); ctx.moveTo(e.clientX - r.left, e.clientY - r.top); });
+            canvas.addEventListener('mousemove', (e) => { if (!isDrawing) return; const r = canvas.getBoundingClientRect(); ctx.lineTo(e.clientX - r.left, e.clientY - r.top); ctx.stroke(); });
+            canvas.addEventListener('mouseup', () => isDrawing = false);
+            canvas.addEventListener('mouseleave', () => isDrawing = false);
+        }
+
+        function clearCanvas() { if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height); }
+
+        function uploadSignatureImage(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() { clearCanvas(); ctx.drawImage(img, 0, 0, canvas.width, canvas.height); };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function saveSignature() {
+            if (!canvas || !ctx) { alert('Không tìm thấy vùng vẽ chữ ký.'); return; }
+            const magv = document.getElementById('teacher-id').value.trim();
+            const hoTen = document.getElementById('teacher-name').value.trim();
+            const toChuyenMon = document.getElementById('teacher-dept').value;
+            if (!magv || !hoTen) { alert('Thiếu mã nhân sự hoặc họ tên.'); return; }
+            const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            if (!pixels.some((value, index) => index % 4 === 3 && value > 0)) { alert('Bạn chưa vẽ hoặc tải ảnh chữ ký.'); return; }
+            if (!db) { alert('Chưa kết nối Supabase.'); return; }
+            const signatureImageBase64 = canvas.toDataURL('image/png');
+            try {
+                const { error } = await db.from('danh_sach_chu_ky').upsert({
+                    user_id: magv, signer_name: hoTen, signer_role: toChuyenMon,
+                    signature_data: { signature_image: signatureImageBase64 }, trang_thai: 'cho_xac_nhan'
+                }, { onConflict: 'user_id' });
+                if (error) throw error;
+                currentUser.signature = signatureImageBase64;
+                document.getElementById('sig-preview-img').src = signatureImageBase64;
+                document.getElementById('saved-signature-preview').classList.remove('hidden');
+                showToast('✅ Đã lưu mẫu chữ ký. Trạng thái chờ xác nhận theo quy trình quản trị.');
+                await loadSavedSignatureFromDB();
+                closeRegisterSigModal();
+            } catch (err) {
+                console.error('Lỗi lưu chữ ký:', err);
+                alert('Không lưu được mẫu chữ ký: ' + (err.message || err));
+            }
+        }
+
+       // Hàm tải và kiểm tra quyền quản lý chữ ký
+async function loadSavedSignatureFromDB() {
+    if (!db) return;
+    try {
+        let maNS = currentSession.maNhanSu || localStorage.getItem('maNhanSu') || 'GV001';
+        let vaiTroHienTai = currentSession.vaiTro || 'Giáo viên';
+
+        // 1. Truy vấn chuẩn vào bảng danh_sach_chu_ky theo user_id
+        let { data, error } = await db
+            .from('danh_sach_chu_ky')
+            .select('*')
+            .eq('user_id', maNS)
+            .limit(1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            const item = data[0];
+            // Lấy chuỗi base64 của ảnh chữ ký nằm bên trong trường JSON signature_data
+            const sigImage = item.signature_data?.signature_image || '';
+            if (sigImage) {
+                currentUser.signature = sigImage;
+                // Hiển thị lên giao diện nếu có ô preview chữ ký cá nhân
+                const sigPreview = document.getElementById('signature-preview-img'); 
+                if (sigPreview) sigPreview.src = currentUser.signature;
+            }
+        }
+
+        // 2. Phân quyền hiển thị khu vực quản lý chữ ký (Chỉ Admin / BGH mới thấy)
+        const adminSigSection = document.getElementById('admin-signature-management-section'); 
+        if (adminSigSection) {
+            if (vaiTroHienTai === 'Admin' || vaiTroHienTai === 'Ban Giám Hiệu' || vaiTroHienTai === 'kỹ thuật tối cao') {
+                adminSigSection.style.display = 'block';
+                if (typeof loadAdminSignatures === 'function') {
+                    loadAdminSignatures(); // Gọi hàm tải danh sách toàn trường dành cho quản lý
+                }
+            } else {
+                adminSigSection.style.display = 'none'; // Ẩn hoàn toàn với giáo viên thường
+            }
+        }
+
+    } catch (err) {
+        console.error("Lỗi tải chữ ký từ danh_sach_chu_ky:", err);
+    }
+}
+        function openRegisterSigModal() { document.getElementById('register-sig-modal').classList.remove('hidden'); }
+        function closeRegisterSigModal() { document.getElementById('register-sig-modal').classList.add('hidden'); }
+        function openAdminModal() { document.getElementById('admin-sig-modal').classList.remove('hidden'); loadAdminSignatures(); }
+        function closeAdminModal() { document.getElementById('admin-sig-modal').classList.add('hidden'); }
+        function openConfigModal() { document.getElementById('config-modal').classList.remove('hidden'); }
+        function closeConfigModal() { document.getElementById('config-modal').classList.add('hidden'); }
+
+        function saveDriveConfig() {
+            driveConfig.apiUrl = document.getElementById('api-drive-url').value.trim();
+            driveConfig.folderId = document.getElementById('api-drive-folder').value.trim();
+            localStorage.setItem('drive_api_url', driveConfig.apiUrl);
+            localStorage.setItem('drive_folder_id', driveConfig.folderId);
+            closeConfigModal();
+            showToast("✅ Đã lưu cấu hình Drive!");
+        }
+
+        async function loadAdminSignatures() {
+    const tbody = document.getElementById('admin-signature-table-body');
+    if (!db) { 
+        if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center">Chưa kết nối CSDL</td></tr>`; 
+        return; 
+    }
+
+    // Lấy vai trò hiện tại và chuẩn hóa về dạng chữ thường hoặc kiểm tra linh hoạt
+    let vaiTroHienTai = String(currentSession.vaiTro || '').trim();
+    let maNS = currentSession.maNhanSu || '';
+
+    // 🛡️ MỞ RỘNG ĐIỀU KIỆN QUYỀN: Cho phép Admin, Ban Giám Hiệu, hoặc Kỹ thuật tối cao được xem
+    const danhSachDuocPhep = ['Admin', 'Ban Giám Hiệu', 'BGH', 'Kỹ thuật', 'Ky thuat', 'Kỹ thuật tối cao', 'SuperAdmin'];
+    
+    // Kiểm tra xem vai trò hiện tại có nằm trong danh sách được phép không (hoặc kiểm tra theo mã nhân sự đặc biệt nếu có)
+    const laQuanTri = danhSachDuocPhep.some(v => vaiTroHienTai.toLowerCase().includes(v.toLowerCase()));
+
+    if (!laQuanTri) {
+        if(tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-600 font-semibold">❌ Bạn không có quyền xem danh sách chữ ký toàn trường. (Vai trò hiện tại: ${vaiTroHienTai})</td></tr>`;
+        }
+        return;
+    }
+
+    try {
+        // Cho phép tải toàn bộ danh sách từ bảng danh_sach_chu_ky
+        const { data, error } = await db.from('danh_sach_chu_ky').select('*').order('user_id');
+        
+        if (error) { 
+            console.error(error); 
+            if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-rose-600">Lỗi truy vấn CSDL: ${error.message}</td></tr>`; 
+            return; 
+        }
+        
+        if (!data || data.length === 0) { 
+            if(tbody) tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center">Chưa có dữ liệu chữ ký nào trong hệ thống.</td></tr>`; 
+            return; 
+        }
+
+        if(tbody) {
+            tbody.innerHTML = data.map((item, idx) => {
+                const image = typeof item.signature_data?.signature_image === 'string' ? item.signature_data.signature_image : '';
+                const status = item.trang_thai || 'chua_xac_dinh';
+                const statusText = status === 'da_duyet' ? 'Đã duyệt' : status === 'cho_xac_nhan' ? 'Chờ xác nhận' : status;
+                return `<tr class="border-b hover:bg-slate-50">
+                    <td class="p-3">${idx + 1}</td>
+                    <td class="p-3 font-mono">${escapeHtml(item.user_id)}</td>
+                    <td class="p-3 font-semibold">${escapeHtml(item.signer_name || '--')}</td>
+                    <td class="p-3">${escapeHtml(item.signer_role || '--')}</td>
+                    <td class="p-3 text-center">${image.startsWith('data:image/png;base64,') ? `<img src="${image}" alt="Mẫu chữ ký" class="h-10 mx-auto border bg-white p-0.5 rounded">` : '--'}</td>
+                    <td class="p-3 text-center">${escapeHtml(statusText)}</td>
+                </tr>`;
+            }).join('');
+        }
+    } catch (err) {
+        console.error("Lỗi tải admin signatures:", err);
+    }
+}
+        function showToast(msg) {
+            const box = document.getElementById('toast-box');
+            box.innerText = msg; box.classList.remove('hidden');
+            setTimeout(() => box.classList.add('hidden'), 3500);
+        }
+        //=============================THÊM NHÓM HỒ SƠ ===========================
+        // Mở/Đóng Modal thêm danh mục
+function openAddCategoryModal() {
+    document.getElementById('new-cat-code').value = '';
+    document.getElementById('new-cat-name').value = '📁 ';
+    document.getElementById('add-category-modal').classList.remove('hidden');
+}
+
+function closeAddCategoryModal() {
+    document.getElementById('add-category-modal').classList.add('hidden');
+}
+
+// Lưu danh mục mới trực tiếp vào bảng danh_muc_ho_so trên Supabase
+async function saveNewCategoryToDB() {
+    const maCode = document.getElementById('new-cat-code').value.trim().toLowerCase().replace(/\s+/g, '_');
+    const tenName = document.getElementById('new-cat-name').value.trim();
+
+    if (!maCode || !tenName) {
+        alert("Vui lòng nhập đầy đủ mã và tên nhóm hồ sơ!");
+        return;
+    }
+
+    if (!db) {
+        alert("Chưa kết nối CSDL Supabase!");
+        return;
+    }
+
+    try {
+        showToast("⏳ Đang thêm nhóm hồ sơ mới vào CSDL...");
+        
+        let { error } = await db.from('danh_muc_ho_so').insert([{
+            ma_danh_muc: maCode,
+            ten_danh_muc: tenName,
+            thu_tu: 99
+        }]);
+
+        if (error) {
+            alert("Lỗi khi thêm danh mục (Có thể mã danh mục bị trùng): " + error.message);
+            return;
+        }
+
+        showToast("✅ Đã thêm nhóm hồ sơ mới thành công!");
+        closeAddCategoryModal();
+        
+        // Tải lại danh mục động để cập nhật ngay lập tức lên giao diện
+        await loadDanhMucHoSo();
+
+    } catch (err) {
+        console.error("Lỗi:", err);
+        alert("Có lỗi xảy ra khi thêm danh mục.");
+    }
+}
+//TAB 4
+// Biến trạng thái để biết đang tạo mới hay chỉnh sửa nhóm
+let editingGroupId = null;
+
+// Mở modal tạo nhóm
+function openCreateGroupModal() {
+    editingGroupId = null;
+    const modal = document.getElementById('modal-create-group');
+    const title = document.getElementById('modal-group-title');
+    
+    if (title) title.innerText = "👥 Tạo Nhóm Chuyên Môn / Tiểu Ban Mới";
+    
+    // Kiểm tra an toàn trước khi gán giá trị để không bị lỗi null
+    const inputName = document.getElementById('input-group-name');
+    if (inputName) inputName.value = '';
+
+    const inputLeader = document.getElementById('input-group-leader');
+    if (inputLeader) inputLeader.value = '';
+    
+    // Load danh sách checkbox (chưa tích chọn ai)
+    loadTeachersForGroupModal('');
+    
+    if (modal) modal.classList.remove('hidden');
+}
+
+// Đóng modal
+function closeCreateGroupModal() {
+    const modal = document.getElementById('modal-create-group');
+    if (modal) modal.classList.add('hidden');
+}
+
+async function saveCustomGroupToDB() {
+    if (!db) {
+        alert("Chưa kết nối CSDL!");
+        return;
+    }
+
+    const tenNhom = document.getElementById('input-group-name').value.trim();
+    const truongNhomId = document.getElementById('input-group-leader').value.trim();
+    
+    // Thu thập danh sách các checkbox đang được tích chọn
+    const checkboxes = document.querySelectorAll('input[name="member-checkbox"]:checked');
+    let danhSachThanhVienArray = Array.from(checkboxes).map(cb => cb.value);
+    const danhSachThanhVien = danhSachThanhVienArray.join(', '); // Gom lại thành chuỗi, VD: "gv01, gv02, gv03"
+
+    const maNS = currentSession.maNhanSu || 'GV001';
+
+    if (!tenNhom || !truongNhomId) {
+        alert("⚠️ Vui lòng nhập đầy đủ Tên nhóm và Mã Trưởng nhóm!");
+        return;
+    }
+
+    try {
+        if (editingGroupId) {
+            let { error } = await db
+                .from('danh_sach_nhom_rieng')
+                .update({
+                    ten_nhom: tenNhom,
+                    truong_nhom_id: truongNhomId,
+                    danh_sach_thanh_vien: danhSachThanhVien
+                })
+                .eq('id', editingGroupId);
+
+            if (error) throw error;
+            alert("✅ Cập nhật nhóm thành công!");
+        } else {
+            let { error } = await db
+                .from('danh_sach_nhom_rieng')
+                .insert([{
+                    ten_nhom: tenNhom,
+                    nguoi_tao_id: maNS,
+                    truong_nhom_id: truongNhomId,
+                    danh_sach_thanh_vien: danhSachThanhVien
+                }]);
+
+            if (error) throw error;
+            alert("✅ Tạo nhóm riêng thành công!");
+        }
+
+        closeCreateGroupModal();
+        loadCustomGroupsFromDB(); 
+    } catch (err) {
+        console.error("Lỗi lưu nhóm:", err);
+        alert("❌ Lỗi: " + err.message);
+    }
+}
+// Mở modal chỉnh sửa nhóm (nếu thầy bấm nút Sửa trong bảng)
+// Mở modal chỉnh sửa nhóm và nạp dữ liệu cũ lên form
+function editGroup(groupId) {
+    // 1. Tìm thông tin nhóm từ mảng store hoặc dữ liệu hiện có
+    const group = window.customGroupsStore ? window.customGroupsStore.find(g => String(g.id) === String(groupId)) : null;
+    if (!group) {
+        alert("Không tìm thấy thông tin nhóm!");
+        return;
+    }
+
+    // 2. Gán ID vào biến toàn cục để hàm save nhận diện đây là lệnh UPDATE
+    editingGroupId = groupId; 
+
+    // 3. Đổi tiêu đề modal thành chế độ chỉnh sửa
+    const title = document.getElementById('modal-group-title');
+    if (title) title.innerText = "✏️ Chỉnh Sửa Thông Tin Nhóm";
+
+    // 4. Điền dữ liệu cơ bản vào input
+    const nameInput = document.getElementById('input-group-name');
+    const leaderInput = document.getElementById('input-group-leader');
+    if (nameInput) nameInput.value = group.ten_nhom || '';
+    if (leaderInput) leaderInput.value = group.truong_nhom_id || '';
+
+    // 5. Xử lý tích chọn lại các checkbox thành viên đã lưu trong chuỗi (VD: "gv01, gv02")
+    let memberList = group.danh_sach_thanh_vien 
+        ? group.danh_sach_thanh_vien.split(',').map(m => m.trim()) 
+        : [];
+
+    document.querySelectorAll('input[name="member-checkbox"]').forEach(cb => {
+        cb.checked = memberList.includes(cb.value);
+    });
+
+    // 6. Hiển thị Modal lên giao diện
+    const modal = document.getElementById('modal-create-group');
+    if (modal) modal.classList.remove('hidden');
+}
+
+// Xóa nhóm
+async function deleteGroup(groupId) {
+    if (!confirm("Bạn có chắc chắn muốn xóa nhóm này không?")) return;
+    if (!db) return;
+
+    try {
+        let { error } = await db
+            .from('danh_sach_nhom_rieng')
+            .delete()
+            .eq('id', groupId);
+
+        if (error) throw error;
+        alert("🗑️ Đã xóa nhóm thành công!");
+        loadCustomGroupsFromDB();
+    } catch (err) {
+        console.error("Lỗi xóa nhóm:", err);
+        alert("❌ Không thể xóa nhóm: " + err.message);
+    }
+}
+// Biến lưu trữ danh sách nhóm riêng của người dùng
+window.customGroupsStore = [];
+
+async function loadCustomGroupsFromDB() {
+    const tbody = document.getElementById('custom-groups-table-body');
+    if (!tbody || !db) return;
+
+    try {
+        let maNS = currentSession.maNhanSu || 'GV001';
+
+        // Lấy các nhóm mà người dùng hiện tại làm chủ hoặc tham gia
+        let { data, error } = await db
+            .from('danh_sach_nhom_rieng')
+            .select('*');
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            window.customGroupsStore = data;
+            tbody.innerHTML = data.map((group, idx) => `
+                <tr class="border-b hover:bg-slate-50 text-sm">
+                    <td class="p-3">${idx + 1}</td>
+                    <td class="p-3 font-semibold text-indigo-700">${escapeHtml(group.ten_nhom)}</td>
+                    <td class="p-3">${escapeHtml(group.truong_nhom_name || group.truong_nhom_id)}</td>
+                    <td class="p-3 text-slate-600">${escapeHtml(group.danh_sach_thanh_vien || 'Chưa cập nhật')}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="editGroup('${group.id}')" class="text-blue-600 hover:underline mr-2">Sửa</button>
+                        <button onclick="deleteGroup('${group.id}')" class="text-rose-600 hover:underline">Xóa</button>
+                    </td>
+                </tr>
+            `).join('');
+        } else {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">Chưa có nhóm riêng nào được tạo. Hãy bấm "Tạo nhóm mới".</td></tr>`;
+        }
+    } catch (err) {
+        console.error("Lỗi tải danh sách nhóm riêng:", err);
+        tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-rose-500">Lỗi tải dữ liệu nhóm.</td></tr>`;
+    }
+}
+
+async function createCustomGroup(tenNhom, truongNhomId, danhSachThanhVien) {
+    if (!db) return;
+    try {
+        let maNS = currentSession.maNhanSu || 'GV001';
+        let { error } = await db.from('danh_sach_nhom_rieng').insert([{
+            ten_nhom: tenNhom,
+            nguoi_tao_id: maNS,
+            truong_nhom_id: truongNhomId,
+            danh_sach_thanh_vien: danhSachThanhVien
+        }]);
+
+        if (error) throw error;
+        alert("✅ Tạo nhóm riêng thành công!");
+        loadCustomGroupsFromDB(); // Tải lại bảng nhóm
+    } catch (err) {
+        console.error("Lỗi tạo nhóm:", err);
+        alert("❌ Lỗi: " + err.message);
+    }
+}
+//Hàm xử lý thay đổi người nhận
+function onDestinationChange(type) {
+    const receiverSelect = document.getElementById('receiver-id');
+    receiverSelect.innerHTML = '';
+
+    if (type === 'to_chuyen_mon') {
+        // Đổ danh sách Tổ trưởng / Giáo viên trong tổ
+        receiverSelect.innerHTML = `<option value="to_truong_toan_tin">Tổ trưởng Toán - Tin</option>`;
+    } else if (type === 'bgh') {
+        // Đổ danh sách BGH phụ trách
+        receiverSelect.innerHTML = `<option value="hieu_truong">Hiệu trưởng - Nguyễn Văn A</option><option value="phu_trach_cm">Phó Hiệu trưởng CM</option>`;
+    } else if (type === 'nhom_rieng') {
+        // Đổ danh sách các nhóm từ Tab 4 (window.customGroupsStore)
+        if (window.customGroupsStore && window.customGroupsStore.length > 0) {
+            window.customGroupsStore.forEach(group => {
+                receiverSelect.innerHTML += `<option value="${group.id}">Nhóm: ${escapeHtml(group.ten_nhom)} (Trưởng nhóm: ${escapeHtml(group.truong_nhom_id)})</option>`;
+            });
+        } else {
+            receiverSelect.innerHTML = `<option value="">Chưa có nhóm riêng nào (Vào Tab 4 tạo trước)</option>`;
+        }
+    }
+}
+let currentDocIdToSend = null;
+
+async function openGuiDuyetModal(docId) {
+    currentDocIdToSend = docId;
+    document.getElementById('gui-duyet-doc-id').value = docId;
+    
+    // Tải trước danh sách nhóm mới nhất từ CSDL vào biến toàn cục
+    if (typeof loadCustomGroupsFromDB === 'function') {
+        await loadCustomGroupsFromDB(); 
+    }
+
+    // Mở modal
+    const modal = document.getElementById('modal-gui-duyet');
+    if (modal) modal.classList.remove('hidden');
+    
+    // Load mặc định danh sách ban đầu
+    onModalDestinationChange('to_chuyen_mon');
+}
+
+function closeGuiDuyetModal() {
+    const modal = document.getElementById('modal-gui-duyet');
+    if (modal) modal.classList.add('hidden');
+}
+
+// Thay đổi danh sách người nhận dựa trên loại đích đến trong modal
+function onModalDestinationChange(type) {
+    const select = document.getElementById('modal-receiver-id');
+    select.innerHTML = '';
+
+    if (type === 'to_chuyen_mon') {
+        select.innerHTML = `<option value="to_truong">Tổ trưởng chuyên môn</option>`;
+    } else if (type === 'bgh') {
+        select.innerHTML = `<option value="hieu_truong">Hiệu trưởng / BGH phụ trách</option>`;
+    } else if (type === 'nhom_rieng') {
+        if (window.customGroupsStore && window.customGroupsStore.length > 0) {
+            window.customGroupsStore.forEach(g => {
+                select.innerHTML += `<option value="${g.id}">Nhóm: ${escapeHtml(g.ten_nhom)} (Trưởng nhóm: ${escapeHtml(g.truong_nhom_id)})</option>`;
+            });
+        } else {
+            select.innerHTML = `<option value="">Chưa có nhóm riêng nào ở Tab 4</option>`;
+        }
+    }
+}
+
+// Thực hiện cập nhật trạng thái hồ sơ thành 'cho_duyet' và lưu đích đến
+async function submitGuiDuyetHoSo() {
+    if (!db || !currentDocIdToSend) return;
+
+    const hinhThucGui = document.getElementById('modal-destination-type').value;
+    const nguoiNhanDuyet = document.getElementById('modal-receiver-id').value;
+
+    if (!nguoiNhanDuyet) {
+        alert("⚠️ Vui lòng chọn người nhận hoặc nhóm nhận cụ thể!");
+        return;
+    }
+
+    try {
+        let { error } = await db
+            .from('quan_ly_ho_so')
+            .update({
+                status: 'cho_duyet',
+                hinh_thuc_gui: hinhThucGui,
+                nguoi_nhan_duyet: nguoiNhanDuyet
+            })
+            .eq('id', currentDocIdToSend);
+
+        if (error) throw error;
+
+        alert("✅ Đã gửi hồ sơ thành công đến người nhận!");
+        closeGuiDuyetModal();
+        fetchDocumentsFromDB(); // Tải lại bảng hồ sơ
+    } catch (err) {
+        console.error("Lỗi gửi hồ sơ:", err);
+        alert("❌ Không thể gửi hồ sơ: " + err.message);
+    }
+}
+async function loadHoSoChoDuyetChoThanhVien() {
+    if (!db) return;
+    let maNS = currentSession.maNhanSu || ''; // Mã nhân sự của người đang đăng nhập
+
+    try {
+        // 1. Lấy tất cả các nhóm mà giáo viên này làm trưởng nhóm hoặc là thành viên
+        let { data: groups, error: groupErr } = await db
+            .from('danh_sach_nhom_rieng')
+            .select('*');
+
+        if (groupErr) throw groupErr;
+
+        // Lọc ra các nhóm mà user hiện tại thuộc về (làm trưởng nhóm hoặc có tên trong danh_sach_thanh_vien)
+        let myGroupIds = [];
+        if (groups && groups.length > 0) {
+            groups.forEach(g => {
+                let isLeader = (g.truong_nhom_id === maNS);
+                let members = g.danh_sach_thanh_vien ? g.danh_sach_thanh_vien.split(',').map(m => m.trim()) : [];
+                let isMember = members.includes(maNS);
+
+                if (isLeader || isMember) {
+                    myGroupIds.push(g.id); // Lưu lại ID nhóm được quyền xem
+                }
+            });
+        }
+
+        // 2. Lấy các hồ sơ được gửi đến các nhóm này (hoặc gửi riêng cho user)
+        // Nếu user có nhóm thuộc quyền, ta dùng .in('nguoi_nhan_duyet', myGroupIds)
+        let query = db.from('quan_ly_ho_so').select('*').eq('status', 'cho_duyet');
+
+        if (myGroupIds.length > 0) {
+            // Lấy hồ sơ gửi trực tiếp cho user HOẶC gửi vào các nhóm mà user tham gia
+            query = query.or(`nguoi_nhan_duyet.eq.${maNS},nguoi_nhan_duyet.in.(${myGroupIds.join(',')})`);
+        } else {
+            // Nếu không thuộc nhóm nào, chỉ lấy hồ sơ gửi riêng cho mã nhân sự này
+            query = query.eq('nguoi_nhan_duyet', maNS);
+        }
+
+        let { data: docs, error: docErr } = await query;
+        if (docErr) throw docErr;
+
+        // Render dữ liệu ra bảng chờ duyệt của người nhận...
+        renderHoSoChoDuyet(docs);
+
+    } catch (err) {
+        console.error("Lỗi tải hồ sơ chờ duyệt cho nhóm:", err);
+    }
+}
+function renderHoSoChoDuyet(docs) {
+    const tbody = document.getElementById('cho-duyet-table-body'); // Thay ID này bằng id tbody của bảng chờ duyệt bên phía người nhận
+    if (!tbody) return;
+
+    if (!docs || docs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Không có hồ sơ nào đang chờ duyệt.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = docs.map((doc, idx) => `
+        <tr class="border-b hover:bg-slate-50 text-sm">
+            <td class="p-3">${idx + 1}</td>
+            <td class="p-3 font-semibold text-slate-800">${escapeHtml(doc.ten_ho_so || 'Hồ sơ tài liệu')}</td>
+            <td class="p-3 text-slate-600">${escapeHtml(doc.nguoi_gui_id || 'Giáo viên')}</td>
+            <td class="p-3 text-slate-500">${new Date(doc.created_at).toLocaleDateString('vi-VN')}</td>
+            <td class="p-3">
+                <a href="${doc.drive_link || '#'}" target="_blank" class="text-indigo-600 hover:underline flex items-center gap-1">
+                    <i class="fa-solid fa-cloud"></i> Mở Drive
+                </a>
+
+            </td>
+            <td class="p-3 text-center space-x-2">
+                <button onclick="duyetHoSo('${doc.id}', 'da_duyet')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-xs font-medium transition">
+                    ✅ Duyệt
+                </button>
+                <button onclick="duyetHoSo('${doc.id}', 'tra_lai')" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1 rounded text-xs font-medium transition">
+                    ↩️ Trả lại
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+async function duyetHoSo(docId, trangThaiMoi) {
+    if (!db) return;
+    
+    let ghiChu = '';
+    if (trangThaiMoi === 'tra_lai') {
+        ghiChu = prompt("Nhập lý do trả lại hồ sơ cho giáo viên:") || "Cần chỉnh sửa lại.";
+    }
+
+    try {
+        let { error } = await db
+            .from('quan_ly_ho_so')
+            .update({
+                status: trangThaiMoi, // 'da_duyet' hoặc 'tra_lai'
+                ghi_chu_duyet: ghiChu
+            })
+            .eq('id', docId);
+
+        if (error) throw error;
+
+        alert(trangThaiMoi === 'da_duyet' ? "✅ Đã duyệt hồ sơ thành công!" : "↩️ Đã trả lại hồ sơ cho giáo viên.");
+        
+        // Tải lại danh sách chờ duyệt sau khi xử lý xong
+        loadHoSoChoDuyetChoThanhVien();
+    } catch (err) {
+        console.error("Lỗi cập nhật trạng thái hồ sơ:", err);
+        alert("❌ Lỗi: " + err.message);
+    }
+}
+//load thành viên nhóm 4
+// Biến lưu trữ danh sách giáo viên toàn trường để phục vụ việc tích chọn
+window.allTeachersStore = [];
+
+async function loadTeachersForGroupModal(selectedMembersStr = '') {
+    const container = document.getElementById('container-checkbox-thanh-vien');
+    if (!container || !db) return;
+
+    try {
+        // Nếu chưa có danh sách giáo viên trong bộ nhớ tạm, tiến hành tải từ CSDL
+        if (window.allTeachersStore.length === 0) {
+            let { data, error } = await db
+                .from('users') // Hoặc tên bảng chứa danh sách nhân sự/giáo viên của trường thầy
+                .select('ma_nhan_su, ten_nhan_su'); // Lấy mã nhân sự và họ tên
+
+            if (error) {
+                // Nếu bảng tên khác, thầy đổi lại tên bảng cho khớp (ví dụ: 'danh_sach_nhan_su' hoặc 'giao_vien')
+                throw error;
+            }
+            window.allTeachersStore = data || [];
+        }
+
+        // Tách chuỗi thành viên đã lưu trước đó (nếu đang ở chế độ Sửa nhóm) thành mảng để check sẵn
+        let selectedArray = selectedMembersStr ? selectedMembersStr.split(',').map(m => m.trim()) : [];
+
+        if (window.allTeachersStore.length === 0) {
+            container.innerHTML = `<span class="text-xs text-rose-500">Không tìm thấy dữ liệu nhân sự trong hệ thống.</span>`;
+            return;
+        }
+
+        // Render ra các checkbox cho từng giáo viên
+        container.innerHTML = window.allTeachersStore.map(t => {
+            let isChecked = selectedArray.includes(t.ma_nhan_su) ? 'checked' : '';
+            return `
+                <label class="flex items-center space-x-2 text-sm text-slate-700 hover:bg-slate-100 p-1 rounded cursor-pointer">
+                    <input type="checkbox" name="member-checkbox" value="${t.ma_nhan_su}" ${isChecked} class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                    <span>${escapeHtml(t.ho_ten)} <span class="text-xs text-slate-400">(${t.ma_nhan_su})</span></span>
+                </label>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("Lỗi tải danh sách giáo viên:", err);
+        container.innerHTML = `<span class="text-xs text-rose-500">Lỗi tải danh sách giáo viên: ${err.message}</span>`;
+    }
+}
+
+async function loadHoSoGuiVaoNhomRieng() {
+    const tbody = document.getElementById('table-body-hoso-nhom-rieng');
+    if (!tbody || !db) return;
+
+    let maNS = (typeof currentSession !== 'undefined' && currentSession.maNhanSu) ? currentSession.maNhanSu : '';
+    if (!maNS) {
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-500">Chưa xác định được tài khoản đăng nhập.</td></tr>`;
+        return;
+    }
+
+    try {
+        // 🔄 Tự động tải danh sách giáo viên về kho tạm nếu chưa có để tra cứu tên
+        if (typeof window.allTeachersStore === 'undefined' || window.allTeachersStore.length === 0) {
+            let { data: usersData, error: userErr } = await db
+                .from('users')
+                .select('ma_nhan_su, ten_nhan_su');
+            
+            if (!userErr && usersData) {
+                window.allTeachersStore = usersData;
+            } else {
+                window.allTeachersStore = [];
+            }
+        }
+
+        // 1. Lấy danh sách nhóm từ bảng danh_sach_nhom_rieng
+        let { data: groups, error: groupErr } = await db
+            .from('danh_sach_nhom_rieng')
+            .select('*');
+
+        if (groupErr) throw groupErr;
+
+        // Lọc ra các ID nhóm mà user hiện tại tham gia (Làm trưởng nhóm hoặc có tên trong danh sách thành viên)
+        let myGroupMap = {}; // Lưu dạng { groupId: tenNhom }
+        let myGroupIds = [];
+
+        if (groups && groups.length > 0) {
+            groups.forEach(g => {
+                let isLeader = (g.truong_nhom_id === maNS);
+                let members = g.danh_sach_thanh_vien ? g.danh_sach_thanh_vien.split(',').map(m => m.trim()) : [];
+                let isMember = members.includes(maNS);
+
+                if (isLeader || isMember) {
+                    myGroupIds.push(g.id);
+                    myGroupMap[g.id] = g.ten_nhom;
+                }
+            });
+        }
+
+        if (myGroupIds.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Bạn hiện không là Trưởng nhóm hoặc Thành viên của nhóm riêng nào có hồ sơ.</td></tr>`;
+            return;
+        }
+
+        // 2. Truy vấn các hồ sơ gửi đến các nhóm này
+        let { data: docs, error: docErr } = await db
+            .from('quan_ly_ho_so')
+            .select('*')
+            .eq('hinh_thuc_gui', 'nhom_rieng')
+            .in('nguoi_nhan_duyet', myGroupIds)
+            .order('created_at', { ascending: false });
+
+        if (docErr) throw docErr;
+
+        if (!docs || docs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Chưa có hồ sơ nào được gửi đến các nhóm của bạn.</td></tr>`;
+            return;
+        }
+
+        // 3. Render ra bảng và xử lý tên hiển thị chuẩn xác cho từng dòng hồ sơ
+        tbody.innerHTML = docs.map((doc, idx) => {
+            let tenNhomNhan = myGroupMap[doc.nguoi_nhan_duyet] || 'Nhóm riêng';
+            const tenHienThi = doc.ten_file || doc.file_name || doc.tieu_de || doc.ten_ho_so || doc.name || 'Hồ sơ tài liệu';
+            
+            // Tra cứu tên người gửi từ mã nhân sự
+            let tenNguoiGui = doc.nguoi_gui_id || ''; 
+            if (typeof window.allTeachersStore !== 'undefined' && window.allTeachersStore.length > 0) {
+                let teacher = window.allTeachersStore.find(t => t.ma_nhan_su === doc.nguoi_gui_id);
+                if (teacher) {
+                    tenNguoiGui = teacher.ten_nhan_su || teacher.ho_ten || teacher.name || doc.nguoi_gui_id;
+                }
+            }
+
+            let badgeStatus = doc.status === 'cho_duyet' 
+                ? '<span class="px-2 py-1 bg-amber-50 text-amber-600 rounded text-xs font-semibold">Chờ duyệt</span>'
+                : `<span class="px-2 py-1 bg-emerald-50 text-emerald-600 rounded text-xs font-semibold">${doc.status}</span>`;
+
+            return `
+                <tr class="border-b hover:bg-slate-50 transition">
+                    <td class="p-3">${idx + 1}</td>
+                    <td class="p-3 font-semibold text-slate-800">
+                        <a href="${doc.drive_url || '#'}" target="_blank" class="text-indigo-600 hover:underline flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-lines"></i> ${escapeHtml(tenHienThi)}
+                        </a>
+
+                    </td>
+                    <td class="p-3 text-slate-600 font-medium">${escapeHtml(tenNguoiGui)}</td>
+                    <td class="p-3 text-slate-600">${escapeHtml(tenNhomNhan)}</td>
+                    <td class="p-3 text-slate-500 text-xs">${new Date(doc.created_at).toLocaleString('vi-VN')}</td>
+                    <td class="p-3">${badgeStatus}</td>
+                    <td class="p-3 text-center space-x-2">
+                        <button onclick="duyetHoSoNhomRieng('${doc.id}', 'da_duyet')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-xs font-medium transition shadow-sm">
+                            ✅ Duyệt
+                        </button>
+                        <button onclick="duyetHoSoNhomRieng('${doc.id}', 'tra_lai')" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-1 rounded text-xs font-medium transition shadow-sm">
+                            ↩️ Trả lại
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (err) {
+        console.error("Lỗi tải hồ sơ nhóm riêng:", err);
+        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-rose-500">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
+    }
+}
+// Hàm xử lý duyệt / trả lại hồ sơ của nhóm
+async function duyetHoSoNhomRieng(docId, trangThaiMoi) {
+    if (!db) return;
+    
+    let ghiChu = '';
+    if (trangThaiMoi === 'tra_lai') {
+        ghiChu = prompt("Nhập lý do trả lại hồ sơ cho giáo viên:") || "Cần chỉnh sửa lại.";
+    }
+
+    try {
+        let { error } = await db
+            .from('quan_ly_ho_so')
+            .update({
+                status: trangThaiMoi,
+                ghi_chu_duyet: ghiChu
+            })
+            .eq('id', docId);
+
+        if (error) throw error;
+
+        alert(trangThaiMoi === 'da_duyet' ? "✅ Đã duyệt hồ sơ thành công!" : "↩️ Đã trả lại hồ sơ.");
+        loadHoSoGuiVaoNhomRieng(); // Làm mới lại bảng
+    } catch (err) {
+        console.error("Lỗi cập nhật trạng thái:", err);
+        alert("❌ Lỗi: " + err.message);
+    }
+}
+//Thay đổi kích thước chữ ký let signResizeState = null;
+
+let signResizeState = null;
+
+function getSignatureBoxEl() {
+    return document.getElementById('sign-signature-box') || document.getElementById('sign-preview-image');
+}
+
+function placeSignatureAt(event) {
+    const canvasEl = document.getElementById('sign-pdf-canvas');
+    const box = document.getElementById('sign-signature-box');
+    const img = document.getElementById('sign-preview-image');
+    if (!canvasEl || !box) return;
+
+    const rect = canvasEl.getBoundingClientRect();
+    const w = Math.round(Math.min(170, Math.max(80, canvasEl.width * 0.28)));
+    const h = Math.round(Math.max(36, w * 0.42));
+
+    const left = Math.max(0, Math.min(event.clientX - rect.left - w / 2, canvasEl.width - w));
+    const top = Math.max(0, Math.min(event.clientY - rect.top - h / 2, canvasEl.height - h));
+
+    box.style.width = w + 'px';
+    box.style.height = h + 'px';
+    box.style.left = Math.round(left) + 'px';
+    box.style.top = Math.round(top) + 'px';
+    box.style.display = 'block';
+
+    if (img) {
+        img.style.display = 'block';
+        img.style.width = '100%';
+        img.style.height = '100%';
+    }
+
+    signOverlayPlaced = true;
+}
+
+function startSignatureDrag(event) {
+    if (signResizeState) return;
+    if (event.target && event.target.id === 'sign-resize-handle') return;
+
+    const box = document.getElementById('sign-signature-box');
+    const wrap = document.getElementById('sign-pdf-canvas-wrap');
+    if (!box || !wrap || box.style.display === 'none') return;
+
+    event.preventDefault();
+    const boxRect = box.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+
+    signDragState = {
+        offsetX: event.clientX - boxRect.left,
+        offsetY: event.clientY - boxRect.top,
+        wrapLeft: wrapRect.left,
+        wrapTop: wrapRect.top,
+        boxWidth: boxRect.width,
+        boxHeight: boxRect.height
+    };
+
+    if (event.currentTarget && event.currentTarget.setPointerCapture) {
+        try { event.currentTarget.setPointerCapture(event.pointerId); } catch (_) {}
+    }
+}
+
+function moveSignatureDrag(event) {
+    if (!signDragState || signResizeState) return;
+    event.preventDefault();
+
+    const box = document.getElementById('sign-signature-box');
+    const canvasEl = document.getElementById('sign-pdf-canvas');
+    if (!box || !canvasEl) return;
+
+    const maxLeft = Math.max(0, canvasEl.width - signDragState.boxWidth);
+    const maxTop = Math.max(0, canvasEl.height - signDragState.boxHeight);
+
+    const nextLeft = Math.max(0, Math.min(event.clientX - signDragState.wrapLeft - signDragState.offsetX, maxLeft));
+    const nextTop = Math.max(0, Math.min(event.clientY - signDragState.wrapTop - signDragState.offsetY, maxTop));
+
+    box.style.left = Math.round(nextLeft) + 'px';
+    box.style.top = Math.round(nextTop) + 'px';
+}
+
+function stopSignatureDrag() {
+    signDragState = null;
+}
+
+function startSignatureResize(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const box = document.getElementById('sign-signature-box');
+    const canvasEl = document.getElementById('sign-pdf-canvas');
+    if (!box || !canvasEl) return;
+
+    const left = parseFloat(box.style.left) || 0;
+    const top = parseFloat(box.style.top) || 0;
+    const width = box.offsetWidth || 160;
+    const height = box.offsetHeight || 70;
+
+    signResizeState = {
+        startX: event.clientX,
+        startY: event.clientY,
+        startWidth: width,
+        startHeight: height,
+        maxWidth: Math.max(40, canvasEl.width - left),
+        maxHeight: Math.max(20, canvasEl.height - top),
+        ratio: width / Math.max(height, 1)
+    };
+
+    window.addEventListener('pointermove', moveSignatureResize);
+    window.addEventListener('pointerup', stopSignatureResize);
+    window.addEventListener('pointercancel', stopSignatureResize);
+}
+
+function moveSignatureResize(event) {
+    if (!signResizeState) return;
+    event.preventDefault();
+
+    const box = document.getElementById('sign-signature-box');
+    if (!box) return;
+
+    const dx = event.clientX - signResizeState.startX;
+    const dy = event.clientY - signResizeState.startY;
+
+    let nextWidth = Math.max(36, Math.min(signResizeState.maxWidth, signResizeState.startWidth + dx));
+    let nextHeight = Math.max(18, Math.min(signResizeState.maxHeight, signResizeState.startHeight + dy));
+
+    // Giữ phím Shift nếu muốn ép đúng tỉ lệ gốc
+    if (event.shiftKey) {
+        nextHeight = Math.max(18, Math.min(signResizeState.maxHeight, nextWidth / signResizeState.ratio));
+    }
+
+    box.style.width = Math.round(nextWidth) + 'px';
+    box.style.height = Math.round(nextHeight) + 'px';
+}
+
+function stopSignatureResize() {
+    if (!signResizeState) return;
+    signResizeState = null;
+    window.removeEventListener('pointermove', moveSignatureResize);
+    window.removeEventListener('pointerup', stopSignatureResize);
+    window.removeEventListener('pointercancel', stopSignatureResize);
+}
+    </script>
+</body>
+</html>
