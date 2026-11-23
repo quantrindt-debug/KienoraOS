@@ -5140,12 +5140,15 @@ function inSoDauBaiTheoTuan() {
         }
     }
     //Gửi báo cáo đến giáo viên
- // Chuẩn hóa tên thư mục: "Mã nhân sự - Tên nhân sự" (đồng nhất với dự án ký hồ sơ)
-function chuanHoaTenThuMucKySo(maNhanSu, tenNhanSu) {
+ function chuanHoaTenThuMucKySo(maNhanSu, tenNhanSu) {
     const ma = String(maNhanSu || '').trim();
-    const ten = String(tenNhanSu || '').trim();
+    let ten = String(tenNhanSu || '').trim();
+
+    if (ma && ten.toLowerCase().startsWith(`${ma.toLowerCase()} -`)) {
+        ten = ten.slice(ma.length + 2).trim();
+    }
+
     const ghep = (ma && ten) ? `${ma} - ${ten}` : (ten || ma || 'Nguoi_Gui');
-    // Loại bỏ ký tự cấm đặt tên thư mục Drive/OS nhưng giữ dấu gạch ngang và tiếng Việt
     return ghep.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
@@ -5518,16 +5521,26 @@ async function createRealPdfBase64FromHtml(htmlString) {
     const cssText = styleMatch ? styleMatch[1] : '';
     const bodyHtml = bodyMatch ? bodyMatch[1] : htmlString;
 
+    const renderWidthPx = 960;
+
     const host = document.createElement('div');
-    host.style.position = 'fixed';
-    host.style.top = '0';
-    host.style.left = '0';
-    host.style.width = '1140px';
-    host.style.background = '#ffffff';
-    host.style.opacity = '0.02';
-    host.style.pointerEvents = 'none';
-    host.style.zIndex = '2147483647';
-    host.innerHTML = `<style>${cssText}</style><div id="pdf-render-root" style="padding:12px 14px;background:#ffffff;">${bodyHtml}</div>`;
+    host.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: ${renderWidthPx}px;
+        background: #ffffff;
+        opacity: 0.01;
+        pointer-events: none;
+        z-index: 2147483647;
+        overflow: visible;
+    `;
+    host.innerHTML = `
+        <style>${cssText}</style>
+        <div id="pdf-render-root" style="width:${renderWidthPx}px;padding:8px 16px;background:#ffffff;box-sizing:border-box;">
+            ${bodyHtml}
+        </div>
+    `;
     document.body.appendChild(host);
 
     try {
@@ -5545,18 +5558,21 @@ async function createRealPdfBase64FromHtml(htmlString) {
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
         const opt = {
-            margin: [8, 8, 8, 8],
+            margin: [10, 10, 10, 10],
             filename: 'bao-cao-so-dau-bai.pdf',
-            image: { type: 'jpeg', quality: 0.92 },
+            image: { type: 'jpeg', quality: 0.94 },
             html2canvas: {
                 scale: 1.5,
                 useCORS: true,
                 allowTaint: true,
                 logging: false,
                 backgroundColor: '#ffffff',
+                x: 0,
+                y: 0,
                 scrollX: 0,
                 scrollY: 0,
-                windowWidth: 1140
+                width: renderWidthPx,
+                windowWidth: renderWidthPx
             },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
             pagebreak: { mode: ['css', 'legacy'] }
@@ -5580,9 +5596,14 @@ async function createRealPdfBase64FromHtml(htmlString) {
 }
 
 async function thucHienGuiBaoCaoVaoKhoCaNhan() {
+    const selectDanhMucEl = document.getElementById('select-danh-muc-ky');
+const danhMucKey = selectDanhMucEl ? selectDanhMucEl.value : '';
+const danhMucLabel = (selectDanhMucEl && selectDanhMucEl.selectedOptions && selectDanhMucEl.selectedOptions[0])
+    ? selectDanhMucEl.selectedOptions[0].textContent.trim()
+    : danhMucKey;
+
     const nguoiNhanId = document.getElementById('select-nguoi-nhan-ky').value;
-    const danhMucKey = document.getElementById('select-danh-muc-ky').value;
-    const ghiChu = document.getElementById('input-loi-nhan').value;
+        const ghiChu = document.getElementById('input-loi-nhan').value;
 
     if (!nguoiNhanId) {
         alert("⚠️ Vui lòng chọn người nhận hồ sơ!");
@@ -5656,22 +5677,32 @@ async function thucHienGuiBaoCaoVaoKhoCaNhan() {
         })[c]);
 
         const firstItem = dataToExport[0] || {};
-        const maGV = firstItem.giao_vien ||
-            firstItem.giaoVien ||
-            firstItem.ma_nhan_su ||
-            (typeof currentSession !== 'undefined' && currentSession
-                ? currentSession.maNhanSu : '') || '';
+const maGV = String(
+    firstItem.giao_vien ||
+    firstItem.giaoVien ||
+    firstItem.ma_nhan_su ||
+    (window.thongTinNguoiGuiKySo && window.thongTinNguoiGuiKySo.ma_nhan_su) ||
+    (typeof currentSession !== 'undefined' && currentSession ? (currentSession.maNhanSu || currentSession.ma_nhan_su) : '') ||
+    localStorage.getItem('maNhanSu') ||
+    ''
+).trim();
 
-        let tenGVKH = maGV;
-        if (typeof layTenNhanSu === 'function') {
-            try {
-                tenGVKH = layTenNhanSu(maGV) || maGV;
-            } catch (e) {}
-        }
+let tenGVKH = '';
+if (typeof layTenNhanSu === 'function' && maGV) {
+    try {
+        tenGVKH = String(layTenNhanSu(maGV) || '').trim();
+    } catch (_) {}
+}
 
-        const maNSGui = maGV || (typeof currentSession !== 'undefined' && currentSession ? currentSession.maNhanSu : '') || localStorage.getItem('maNhanSu') || 'GV001';
-        const tenNSGui = tenGVKH || (typeof currentSession !== 'undefined' && currentSession ? currentSession.hoVaTen : '') || 'Giáo viên';
+if (!tenGVKH && window.thongTinNguoiGuiKySo && window.thongTinNguoiGuiKySo.ten_nhan_su) {
+    tenGVKH = String(window.thongTinNguoiGuiKySo.ten_nhan_su).trim();
+}
 
+const maNSGui = maGV || 'GV001';
+const tenNSGui = tenGVKH || (typeof currentSession !== 'undefined' && currentSession ? (currentSession.tenNhanSu || currentSession.hoVaTen) : '') || maNSGui;
+
+// Tên thư mục đồng nhất với dự án ký hồ sơ: "Mã nhân sự - Tên nhân sự"
+const tenThuMucNguoiGui = chuanHoaTenThuMucKySo(maNSGui, tenNSGui);
         const setLopClean = new Set();
         const setMon = new Set();
 
@@ -5683,7 +5714,7 @@ async function thucHienGuiBaoCaoVaoKhoCaNhan() {
             let processedLop = rawLop;
             if (phanMon.toUpperCase().includes('BDHSG') || rawLop.toUpperCase().includes('BDHSG')) {
                 const matchKhoi = rawLop.match(/^(10|11|12)/);
-                processedLop = matchKhoi ? ' ' + matchKhoi[0] + ' ' : 'BDHSG';
+                processedLop = matchKhoi ? 'Khối ' + matchKhoi[0] : 'BDHSG';
             } else if (rawLop.includes('-')) {
                 processedLop = rawLop.split('-')[0].trim();
             }
@@ -5744,39 +5775,40 @@ async function thucHienGuiBaoCaoVaoKhoCaNhan() {
             <meta charset="UTF-8">
             <title>Báo cáo sổ đầu bài</title>
             <style>
-                * { box-sizing: border-box; }
-                body { font-family: "Times New Roman", serif; font-size: 12px; color: #1e293b; margin: 0; padding: 0 8px; background: #ffffff; }
-                .cover-page { min-height: 170mm; padding: 14mm 12mm; display: flex; flex-direction: column; justify-content: space-between; text-align: center; page-break-after: always; break-after: page; }
-                .cover-header { display: flex; justify-content: space-between; gap: 20px; font-size: 13px; font-weight: bold; text-transform: uppercase; }
-                .cover-header > div { min-width: 0; }
-                .cover-title { font-size: 24px; font-weight: bold; color: #1e3a8a; margin: 20px 0; }
-                .content-page { width: 100%; padding: 0 6px; page-break-before: always; break-before: page; }
-                .report-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e293b; padding: 2px 6px 8px 6px; margin-bottom: 12px; gap: 14px; }
-                .report-left { flex: 0 0 220px; min-width: 0; text-align: left; font-size: 11px; line-height: 1.45; }
-                .report-center { flex: 1 1 auto; min-width: 0; text-align: center; line-height: 1.4; }
-                .report-right { flex: 0 0 140px; min-width: 0; text-align: right; font-size: 11px; font-weight: bold; }
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-left: 1px; }
-                thead { display: table-header-group; }
-                tr { page-break-inside: avoid; }
-                th { background: #e2e8f0; border: 1px solid #64748b; padding: 7px 4px; text-align: center; font-size: 10px; }
-                td { border: 1px solid #94a3b8; padding: 6px 4px; font-size: 10px; vertical-align: middle; overflow-wrap: anywhere; }
-                .col-stt { width: 4%; }
-                .col-tuan { width: 5%; }
+                *, *::before, *::after { box-sizing: border-box; }
+                body { font-family: "Times New Roman", serif; font-size: 12px; color: #1e293b; margin: 0; padding: 0; background: #ffffff; }
+                .cover-page { width: 100%; min-height: 175mm; padding: 10mm 8mm; display: flex; flex-direction: column; justify-content: space-between; text-align: center; page-break-after: always; break-after: page; }
+                .cover-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; font-size: 12.5px; font-weight: bold; text-transform: uppercase; line-height: 1.4; }
+                .cover-header > div:first-child { text-align: left; }
+                .cover-header > div:last-child { text-align: center; }
+                .cover-title { font-size: 22px; font-weight: bold; color: #1e3a8a; margin: 16px 0; }
+                .content-page { width: 100%; padding: 0; }
+               .report-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #1e293b; padding: 2px 0 6px 0; margin-bottom: 7px; gap: 12px; }
+.report-left { flex: 0 0 210px; text-align: left; font-size: 10.5px; line-height: 1.3; }
+.report-center { flex: 1 1 auto; text-align: center; line-height: 1.3; }
+.report-right { flex: 0 0 130px; text-align: right; font-size: 10.5px; font-weight: bold; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+thead { display: table-header-group; }
+tr { page-break-inside: avoid; break-inside: avoid; }
+th { background: #e2e8f0; border: 1px solid #64748b; padding: 4px 3px; text-align: center; font-size: 9.5px; line-height: 1.2; word-wrap: break-word; }
+td { border: 1px solid #94a3b8; padding: 3.5px 3px; font-size: 9.5px; line-height: 1.25; vertical-align: middle; overflow-wrap: break-word; word-break: break-word; }
+                .col-stt { width: 5%; }
+                .col-tuan { width: 6%; }
                 .col-thu { width: 10%; }
-                .col-tiet { width: 6%; }
-                .col-mon { width: 11%; }
+                .col-tiet { width: 7%; }
+                .col-mon { width: 12%; }
                 .col-lop { width: 10%; }
-                .col-noidung { width: 34%; }
+                .col-noidung { width: 31%; }
                 .col-gv { width: 13%; }
-                .col-trangthai { width: 7%; }
-                .sub-date { font-size: 8.5px; color: #475569; margin-top: 2px; line-height: 1.2; }
+                .col-trangthai { width: 6%; }
+                .sub-date { font-size: 8px; color: #475569; margin-top: 1px; line-height: 1.15; }
                 .center { text-align: center; }
                 .signed { color: #047857; font-weight: bold; }
                 .unsigned { color: #b45309; font-weight: bold; }
-                .signature-area { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 28px; padding: 0 24px; text-align: center; page-break-inside: avoid; }
-                .signature-box { width: 46%; min-height: 105px; display: flex; flex-direction: column; align-items: center; }
-                .signature-title { font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 52px; }
-                .signature-name { font-weight: bold; font-size: 12px; }
+               .signature-area { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 12px; padding: 0 20px; text-align: center; page-break-inside: avoid; break-inside: avoid; }
+.signature-box { width: 46%; min-height: 68px; display: flex; flex-direction: column; align-items: center; }
+.signature-title { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 50px; line-height: 1.2; }
+.signature-name { font-weight: bold; font-size: 11px; line-height: 1.2; }
             </style>
         </head>
         <body>
@@ -5786,11 +5818,11 @@ async function thucHienGuiBaoCaoVaoKhoCaNhan() {
                     <div>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM<br>Độc lập - Tự do - Hạnh phúc</div>
                 </div>
                 <div>
-                    <div style="font-weight:bold;font-size:16px">HỘI ĐỒNG CHUYÊN MÔN</div>
+                    <div style="font-weight:bold;font-size:15px">HỘI ĐỒNG CHUYÊN MÔN</div>
                     <div class="cover-title">BÁO CÁO CHI TIẾT SỔ ĐẦU BÀI</div>
                     <div style="font-weight:bold">${esc(coverSubText)}</div>
                 </div>
-                <div style="font-weight:bold;font-size:14px">NĂM HỌC: 2026 - 2027</div>
+                <div style="font-weight:bold;font-size:13.5px">NĂM HỌC: 2026 - 2027</div>
             </div>
 
             <div class="content-page">
@@ -5844,29 +5876,40 @@ async function thucHienGuiBaoCaoVaoKhoCaNhan() {
         }
 
         const payloadData = {
-            folderId: googleFolderId,
-            filename: fileName,
-            mimeType: 'application/pdf',
-            fileData: base64Data,
-            uploader: tenNSGui,
-            category: 'ca_nhan',
-            subCategory: danhMucKey
-        };
+    folderId: googleFolderId,
+    filename: fileName,
+    mimeType: 'application/pdf',
+    fileData: base64Data,
+    uploader: tenThuMucNguoiGui,
+    senderFolder: tenThuMucNguoiGui,
+    maNhanSu: maNSGui,
+    tenNhanSu: tenNSGui,
+    category: 'ca_nhan',
+    subCategory: danhMucKey,
+    subCategoryName: danhMucLabel,
+    subFolderName: danhMucLabel
+};
 
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30000);
+const abortReason = 'Quá thời gian kết nối tới Google Apps Script (60s).';
+const timeoutId = setTimeout(() => controller.abort(abortReason), 60000);
 
-        let apiResponse;
-        try {
-            apiResponse = await fetch(googleApiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payloadData),
-                signal: controller.signal
-            });
-        } finally {
-            clearTimeout(timeoutId);
-        }
+let apiResponse;
+try {
+    apiResponse = await fetch(googleApiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payloadData),
+        signal: controller.signal
+    });
+} catch (fetchErr) {
+    if (controller.signal.aborted || fetchErr?.name === 'AbortError') {
+        throw new Error(String(controller.signal.reason || abortReason));
+    }
+    throw fetchErr;
+} finally {
+    clearTimeout(timeoutId);
+}
 
         const responseText = await apiResponse.text();
         let result;
@@ -5891,9 +5934,10 @@ async function thucHienGuiBaoCaoVaoKhoCaNhan() {
             const ngayHienTai = new Date().toLocaleDateString('vi-VN');
             const uniqueId1 = Date.now();
             const uniqueId2 = Date.now() + 1;
+        
 
             const payloadNguoiNhan = {
-                id: uniqueId1,
+                id: Date.now(),
                 name: `Báo cáo Sổ đầu bài (${ngayHienTai}) - Từ ${tenNSGui}`,
                 original_name: fileName,
                 category: 'ca_nhan',
@@ -5907,22 +5951,7 @@ async function thucHienGuiBaoCaoVaoKhoCaNhan() {
                 ghi_chu_tra_lai: ghiChu
             };
 
-            const payloadNguoiGui = {
-                id: uniqueId2,
-                name: `Báo cáo Sổ đầu bài (${ngayHienTai}) - Từ ${tenNSGui}`,
-                original_name: fileName,
-                category: 'ca_nhan',
-                sub_category: danhMucKey,
-                user_id: maNSGui,
-                nguoi_nhan_duyet: nguoiNhanId,
-                uploader: tenNSGui,
-                date: ngayHienTai,
-                status: 'Đã gửi duyệt',
-                drive_url: driveUrl,
-                ghi_chu_tra_lai: ghiChu
-            };
-
-            const { error } = await db.from('quan_ly_ho_so').insert([payloadNguoiNhan, payloadNguoiGui]);
+            const { error } = await db.from('quan_ly_ho_so').insert([payloadNguoiNhan]);
             if (error) throw error;
 
             if (typeof showToast === 'function') {
