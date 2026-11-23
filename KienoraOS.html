@@ -76,7 +76,7 @@
         Kế hoạch - sổ đầu bài
       </span>
     </div>
-    <div onclick="launchApp('quanlygiaoan')" class="flex flex-col items-center group cursor-pointer w-20">
+    <!--<div onclick="launchApp('quanlygiaoan')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-cyan-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
         <i class="fa-solid fa-book-bookmark"></i>
       </div>
@@ -85,7 +85,7 @@
       </span>
     </div>
     
-   <!-- <div onclick="launchApp('KeHoachChamCong')" class="flex flex-col items-center group cursor-pointer w-20">
+   <div onclick="launchApp('KeHoachChamCong')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-cyan-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
         <i class="fa-solid fa-calendar-check"></i>
       </div>
@@ -93,7 +93,7 @@
         Kế hoạch chấm công
       </span>
     </div>
-
+-->
    <div onclick="launchApp('SoChuNhiem')" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-cyan-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
         <i class="fa-solid fa-chalkboard-user"></i>
@@ -102,7 +102,7 @@
         Sổ chủ nhiệm
       </span>
     </div>
-    <div onclick="launchApp('XuatBieuMau)" class="flex flex-col items-center group cursor-pointer w-20">
+    <!--<div onclick="launchApp('XuatBieuMau)" class="flex flex-col items-center group cursor-pointer w-20">
       <div class="w-13 h-13 p-3.5 bg-cyan-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg group-hover:scale-110 transition duration-200">
         <i class="fa-solid fa-trophy"></i>
       </div>
@@ -125,7 +125,7 @@
         <i class="fa-solid fa-folder-tree"></i>
       </div>
       <span class="text-[11px] leading-tight text-white text-center mt-1.5 font-medium drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)] group-hover:underline">
-        Ký hồ sơ
+        Quản lý hồ sơ & Ký số
       </span>
     </div>
    <!-- <div onclick="launchApp('ThiDua')" class="flex flex-col items-center group cursor-pointer w-20">
@@ -321,17 +321,18 @@
     }
 
     const APP_REGISTRY = {
+      
       'tuyensinh10': { title: 'Tuyển sinh Lớp 10', icon: 'fa-solid fa-user-graduate text-rose-400' },
-      'xep_tkb': { title: 'Xếp TKB tự động', icon: 'fa-solid fa-sliders text-indigo-400' },
+      'xep_tkb': { title: 'Xếp TKB tự động', icon: 'fa-solid fa-calendar-days text-indigo-400' },
       'phancong': { title: 'Phân công', icon: 'fa-solid fa-users-gear text-amber-400' },
-      'quanlygiaoan': { title: 'Quản lý Hồ sơ giáo án', icon: 'fa-solid fa-folder-tree text-violet-400' },
+      'quanlygiaoan': { title: 'Quản lý Hồ sơ giáo án', icon: 'fa-solid fa-book-open-reader text-violet-400' },
       'sdb': { title: 'Kế hoạch dạy học - sổ đầu bài', icon: 'fa-solid fa-book-bookmark text-cyan-400' },
       'KeHoachChamCong': { title: 'Kế hoạch chấm công', icon: 'fa-solid fa-calendar-check text-blue-400' },
-      'SoChuNhiem': { title: 'Sổ chủ nhiệm', icon: 'fa-solid fa-chalkboard-user text-cyan-400' },
-      'XuatBieuMau': { title: 'Xuất biểu mẫu học sinh', icon: 'fa-solid fa-trophy text-emerald-400' },
-      'QuanLyHoSoCBVC': { title: 'Quản lý hồ sơ', icon: 'fa-solid fa-ranking-star text-violet-400' },
-      'QuanLyHoSoHocSinh': { title: 'Quản lý Hồ sơ học sinh', icon: 'fa-solid fa-folder-tree text-violet-400' },
-      'ckdbclgd': { title: 'Cam kết đảm bảo chất lượng GD', icon: 'fa-solid fa-file-signature text-blue-400' }
+      'SoChuNhiem': { title: 'Sổ chủ nhiệm', icon: 'fa-solid fa-chalkboard-user text-sky-400' },
+      'XuatBieuMau': { title: 'Xuất biểu mẫu học sinh', icon: 'fa-solid fa-file-export text-emerald-400' },
+      'QuanLyHoSoCBVC': { title: 'Quản lý hồ sơ', icon: 'fa-solid fa-id-card-clip text-amber-400' },
+      'QuanLyHoSoHocSinh': { title: 'Quản lý Hồ sơ học sinh', icon: 'fa-solid fa-address-card text-violet-400' },
+      'ckdbclgd': { title: 'Cam kết đảm bảo chất lượng GD', icon: 'fa-solid fa-file-signature text-teal-400' }
     };
 
     let currentSession = { maTruong: '', maNhanSu: '', user: null, school: null };
