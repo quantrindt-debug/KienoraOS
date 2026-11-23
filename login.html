@@ -44,7 +44,7 @@
         <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-5">
             <div class="form-group">
                 <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">Tên đăng nhập / Tài khoản</label>
-                <input type="text" id="username" required placeholder="VD: c3ndtnl.nan.haitin" 
+                <input type="text" id="username" required placeholder="VD: c3ndtnl.nan.abc" 
                     class="glass-input w-full px-4 py-3 rounded-xl text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
             </div>
 
@@ -116,7 +116,7 @@
                     localStorage.setItem('current_school_name', sessionData.schoolName);
 
                     // Thông báo đăng nhập thành công kèm mã trường
-                    alert("Đăng nhập thành công!\nXin chào: " + users.ho_va_ten + "\nMã trường: " + sessionData.schoolCode);
+                    alert("Đăng nhập thành công!\nXin chào: " + users.ten_nhan_su + "\nMã trường: " + sessionData.schoolCode);
                     
                     // Chuyển hướng sang trang OS chính
                     window.location.href = 'KienoraOS.html'; 
