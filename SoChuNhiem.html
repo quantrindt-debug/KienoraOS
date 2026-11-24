@@ -1347,68 +1347,71 @@ input[type="date"] {
 <section id="tab-nhat-ky" class="space-y-6 my-6 hidden">
     <!-- Header chính -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-    <div class="flex items-center gap-3 min-w-0">
-        <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold shrink-0">
-            📖
-        </div>
-        <div class="min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-                <h2 class="text-lg sm:text-xl font-bold text-slate-800 tracking-tight">
-                    Nhật ký Chủ nhiệm &amp; Biên bản Hoạt động
-                </h2>
-                <span id="nk_tieuDeTenLop"
-                    class="inline-flex items-center text-xs sm:text-sm font-bold px-3 py-0.5 rounded-full bg-indigo-600 text-white shadow-2xs">
-                    Đang tải lớp...
-                </span>
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl font-bold shrink-0">
+                📖
             </div>
-            <p class="text-xs text-slate-500 mt-0.5">
-                Ghi nhận theo dõi học sinh, phối hợp phụ huynh, biên bản sinh hoạt tuần và đánh giá tháng
-            </p>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-lg sm:text-xl font-bold text-slate-800 tracking-tight">
+                        Nhật ký Chủ nhiệm &amp; Biên bản Hoạt động
+                    </h2>
+                    <span id="nk_tieuDeTenLop"
+                        class="inline-flex items-center text-xs sm:text-sm font-bold px-3 py-0.5 rounded-full bg-indigo-600 text-white shadow-2xs">
+                        Đang tải lớp...
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Ghi nhận theo dõi học sinh, phối hợp phụ huynh, biên bản sinh hoạt tuần và đánh giá tháng
+                </p>
+            </div>
         </div>
-    </div>
 
-    <div class="flex flex-wrap items-center gap-2 self-start lg:self-auto">
-        <!-- Bộ lọc riêng cho Kỹ thuật tối cao: chọn từng lớp hoặc toàn bộ lớp -->
-        <div id="nk_boLocKyThuatToiCao" class="hidden items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5">
-            <span class="text-[11px] font-bold text-amber-800 whitespace-nowrap">
-                🛠️ Kỹ thuật tối cao:
+        <div class="flex flex-wrap items-center gap-2 self-start lg:self-auto">
+            <!-- Bộ lọc riêng cho Kỹ thuật tối cao: chọn từng lớp hoặc toàn bộ lớp -->
+            <div id="nk_boLocKyThuatToiCao" class="hidden items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-3 py-1.5">
+                <span class="text-[11px] font-bold text-amber-800 whitespace-nowrap">
+                    🛠️ Kỹ thuật tối cao:
+                </span>
+                <select id="nk_chonLopToanTruong"
+                    onchange="if (typeof onChonLopNhatKyKyThuat === 'function') onChonLopNhatKyKyThuat(this.value)"
+                    class="rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none">
+                    <option value="">-- Lớp hiện tại --</option>
+                    <option value="ALL">🌐 Toàn bộ các lớp (ALL)</option>
+                </select>
+            </div>
+
+            <span class="inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 whitespace-nowrap">
+                Sổ Chủ Nhiệm
             </span>
-            <select id="nk_chonLopToanTruong"
-                onchange="if (typeof onChonLopNhatKyKyThuat === 'function') onChonLopNhatKyKyThuat(this.value)"
-                class="rounded-lg border border-amber-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-800 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 outline-none">
-                <option value="">-- Lớp hiện tại --</option>
-                <option value="ALL">🌐 Toàn bộ các lớp (ALL)</option>
-            </select>
         </div>
+    </div>
 
-        <span class="inline-flex items-center text-[11px] font-semibold px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100 whitespace-nowrap">
-            Sổ Chủ Nhiệm
-        </span>
-    </div>
-    </div>
-        <div id="nk_boxThuanLoiKhoKhan" class="bg-white rounded-lg border border-slate-200 p-4 mt-4 shadow-sm">
+    <!-- Thuận lợi & Khó khăn -->
+    <div id="nk_boxThuanLoiKhoKhan" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
         <div class="flex items-center justify-between mb-3">
-            <h3 class="font-bold text-slate-700 text-sm">📌 Thuận lợi & Khó khăn của lớp (Đưa vào Mục B Sổ Chủ Nhiệm)</h3>
+            <h3 class="font-bold text-slate-800 text-sm">📌 Thuận lợi &amp; Khó khăn của lớp (Đưa vào Mục B Sổ Chủ Nhiệm)</h3>
             <span id="nk_lblLopTlKk" class="text-xs font-semibold text-indigo-600"></span>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label for="nk_txtThuanLoi" class="block text-xs font-bold text-slate-700 mb-1">II. Thuận lợi</label>
-                <textarea id="nk_txtThuanLoi" rows="3" placeholder="Nhập thuận lợi của tập thể lớp..." class="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"></textarea>
+                <label for="nk_txtThuanLoi" class="block text-xs font-bold text-slate-700 mb-1.5">II. Thuận lợi</label>
+                <textarea id="nk_txtThuanLoi" rows="3" placeholder="Nhập thuận lợi của tập thể lớp..." class="w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition"></textarea>
             </div>
             <div>
-                <label for="nk_txtKhoKhan" class="block text-xs font-bold text-slate-700 mb-1">III. Khó khăn</label>
-                <textarea id="nk_txtKhoKhan" rows="3" placeholder="Nhập khó khăn, tồn tại của tập thể lớp..." class="w-full rounded-md border border-slate-300 p-2 text-sm focus:border-indigo-500 focus:outline-none"></textarea>
+                <label for="nk_txtKhoKhan" class="block text-xs font-bold text-slate-700 mb-1.5">III. Khó khăn</label>
+                <textarea id="nk_txtKhoKhan" rows="3" placeholder="Nhập khó khăn, tồn tại của tập thể lớp..." class="w-full rounded-xl border border-slate-300 p-3 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none transition"></textarea>
             </div>
         </div>
 
         <div class="mt-3 flex items-center justify-end gap-2">
-            <button type="button" onclick="nk_luuThuanLoiKhoKhan()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded shadow transition">
-                💾 Lưu Thuận lợi & Khó khăn
+            <button type="button" onclick="nk_luuThuanLoiKhoKhan()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition cursor-pointer">
+                💾 Lưu Thuận lợi &amp; Khó khăn
             </button>
         </div>
     </div>
+
     <!-- 1. NHẬT KÝ THEO DÕI HỌC SINH -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="px-5 py-3.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
@@ -1419,6 +1422,8 @@ input[type="date"] {
         </div>
 
         <div class="p-5 space-y-4">
+            <input type="hidden" id="nk_td_editId" value="" />
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label for="nk_chonHocSinh" class="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -1467,6 +1472,21 @@ input[type="date"] {
                     <span>Lưu Nhật Ký Theo Dõi</span>
                 </button>
             </div>
+
+            <div class="mt-4 overflow-x-auto">
+                <table class="w-full text-xs border-collapse border border-slate-200">
+                    <thead class="bg-slate-50 text-slate-700">
+                        <tr>
+                            <th class="border border-slate-200 p-2 text-left">Học sinh</th>
+                            <th class="border border-slate-200 p-2 text-left">Biểu hiện</th>
+                            <th class="border border-slate-200 p-2 text-left">Biện pháp</th>
+                            <th class="border border-slate-200 p-2 text-left">Kết quả</th>
+                            <th class="border border-slate-200 p-2 text-center w-36">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nk_tbDsTheoDoi"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -1480,6 +1500,8 @@ input[type="date"] {
         </div>
 
         <div class="p-5 space-y-4">
+            <input type="hidden" id="ph_editId" value="" />
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                     <label for="ph_chonHocSinh" class="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -1540,10 +1562,26 @@ input[type="date"] {
                     <span>Lưu Nhật Ký Trao Đổi</span>
                 </button>
             </div>
+
+            <div class="mt-4 overflow-x-auto">
+                <table class="w-full text-xs border-collapse border border-slate-200">
+                    <thead class="bg-slate-50 text-slate-700">
+                        <tr>
+                            <th class="border border-slate-200 p-2 text-left">Học sinh</th>
+                            <th class="border border-slate-200 p-2 text-center">Ngày</th>
+                            <th class="border border-slate-200 p-2 text-center">Hình thức</th>
+                            <th class="border border-slate-200 p-2 text-left">Nội dung</th>
+                            <th class="border border-slate-200 p-2 text-left">Kết quả</th>
+                            <th class="border border-slate-200 p-2 text-center w-36">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nk_tbDsTraoDoiPh"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <!-- L. BIÊN BẢN SINH HOẠT LỚP HÀNG TUẦN (ĐÃ BỎ BẢNG DANH SÁCH HỌC SINH LỚP) -->
+    <!-- L. BIÊN BẢN SINH HOẠT LỚP HÀNG TUẦN -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div class="px-5 py-3.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
             <h3 class="text-sm font-bold text-slate-800">
@@ -1553,6 +1591,8 @@ input[type="date"] {
         </div>
 
         <div class="p-5 space-y-4">
+            <input type="hidden" id="bb_editId" value="" />
+
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                     <label for="bb_chonTuan" class="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -1561,9 +1601,7 @@ input[type="date"] {
                     <select id="bb_chonTuan"
                         class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-800 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition">
                         <option value="Tuần 1 (07/09/2026 - 13/09/2026)">Tuần 1 (07/09/2026 - 13/09/2026)</option>
-                        <option value="Tuần 2">Tuần 2</option>
-                        <option value="Tuần 3">Tuần 3</option>
-                        <option value="Tuần 4">Tuần 4</option>
+                        
                     </select>
                 </div>
 
@@ -1628,6 +1666,22 @@ input[type="date"] {
                     <span>Lưu Biên Bản Sinh Hoạt</span>
                 </button>
             </div>
+
+            <div class="mt-4 overflow-x-auto">
+                <table class="w-full text-xs border-collapse border border-slate-200">
+                    <thead class="bg-slate-50 text-slate-700">
+                        <tr>
+                            <th class="border border-slate-200 p-2 text-left">Tuần</th>
+                            <th class="border border-slate-200 p-2 text-center">Ngày</th>
+                            <th class="border border-slate-200 p-2 text-left">Đánh giá tuần qua</th>
+                            <th class="border border-slate-200 p-2 text-left">Kế hoạch tuần tới</th>
+                            <th class="border border-slate-200 p-2 text-left">Ý kiến HS / GVCN</th>
+                            <th class="border border-slate-200 p-2 text-center w-36">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nk_tbDsBienBan"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
@@ -1641,6 +1695,8 @@ input[type="date"] {
         </div>
 
         <div class="p-5 space-y-4">
+            <input type="hidden" id="th_editId" value="" />
+
             <div class="w-full sm:w-64">
                 <label for="th_chonThang" class="block text-xs font-semibold text-slate-700 mb-1.5">
                     Chọn Tháng
@@ -1695,6 +1751,21 @@ input[type="date"] {
                     <span>💾</span>
                     <span>Lưu Nhận Xét Tháng</span>
                 </button>
+            </div>
+
+            <div class="mt-4 overflow-x-auto">
+                <table class="w-full text-xs border-collapse border border-slate-200">
+                    <thead class="bg-slate-50 text-slate-700">
+                        <tr>
+                            <th class="border border-slate-200 p-2 text-center w-28">Tháng</th>
+                            <th class="border border-slate-200 p-2 text-left">Ưu điểm</th>
+                            <th class="border border-slate-200 p-2 text-left">Tồn tại</th>
+                            <th class="border border-slate-200 p-2 text-left">Biện pháp</th>
+                            <th class="border border-slate-200 p-2 text-center w-36">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nk_tbDsNhanXetThang"></tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -2283,18 +2354,7 @@ async function loadReportData() {
         if (el) el.innerText = val ?? '';
     };
 
-    const hoTenGv =
-        (typeof currentSession !== 'undefined' && currentSession?.hoVaTen) ||
-        window.currentUser?.ho_ten ||
-        window.currentUser?.ten_gvcn ||
-        '';
-
-    setText('lblClass', tenLopHienThi);
-    setText('lblTeacher', hoTenGv);
-    setText('lblSignTeacher', hoTenGv);
-    setText('gvHoTen', hoTenGv);
-
-    const client =
+const client =
         (typeof db !== 'undefined' && db && typeof db.from === 'function' ? db : null) ||
         (window.db && typeof window.db.from === 'function' ? window.db : null) ||
         (window._supabase && typeof window._supabase.from === 'function' ? window._supabase : null) ||
@@ -2302,6 +2362,20 @@ async function loadReportData() {
         (typeof layDbNhatKy === 'function' ? layDbNhatKy() : null);
 
     if (!client) return;
+
+    const tenGvcnLop = typeof layTenGvcnTheoLop === 'function'
+        ? await layTenGvcnTheoLop(client, selectedClass)
+        : (
+            (typeof currentSession !== 'undefined' && currentSession?.hoVaTen) ||
+            window.currentUser?.ho_ten ||
+            window.currentUser?.ten_gvcn ||
+            ''
+        );
+
+    setText('lblClass', tenLopHienThi);
+    setText('lblTeacher', tenGvcnLop);
+    setText('lblSignTeacher', tenGvcnLop);
+    setText('gvHoTen', tenGvcnLop);
 
     try {
         // Cập nhật tên trường / cơ quan chủ quản từ schools_config theo mã trường đăng nhập
@@ -6997,20 +7071,24 @@ function layTenHoacMaLopTuBanGhi(row) {
 }
 
 // ==========================================
-// 2. NHÂN SỰ, QUYỀN KỸ THUẬT TỐI CAO & LỚP TỪ cau_hinh_lop_hoc_ckcl
+// 2. NHÂN SỰ, QUYỀN TOÀN TRƯỜNG (BGH / KỸ THUẬT) & LỚP TỪ cau_hinh_lop_hoc_ckcl
 // ==========================================
 function layMaNhanSuHienTai() {
     const params = new URLSearchParams(window.location.search);
     const u =
+        (typeof currentUser !== 'undefined' && currentUser) ||
         window.currentUser ||
         window.userInfo ||
         window.nguoiDungHienTai ||
         window.thongTinGiaoVien ||
         {};
+    const s = (typeof currentSession !== 'undefined' && currentSession) || window.currentSession || {};
 
     return String(
         u.ma_nhan_su ||
         u.maNhanSu ||
+        s.ma_nhan_su ||
+        s.maNhanSu ||
         window.maNhanSu ||
         window.ma_nhan_su ||
         params.get('maNhanSu') ||
@@ -7020,13 +7098,34 @@ function layMaNhanSuHienTai() {
 }
 
 function kiemTraCheDoKyThuatToiCao() {
+    const u = (typeof currentUser !== 'undefined' && currentUser) || window.currentUser || {};
+    const s = (typeof currentSession !== 'undefined' && currentSession) || window.currentSession || {};
+
+    const rawVals = [
+        window.currentUserRole, window.userRole, window.vaiTro,
+        u.role, u.vai_tro, u.vaiTro, u.quyen, u.chuc_vu, u.chucVu, u.loai_tai_khoan,
+        s.role, s.vai_tro, s.vaiTro, s.quyen, s.chuc_vu, s.chucVu
+    ]
+        .filter(Boolean)
+        .map((v) => String(v).trim().toLowerCase());
+
     const coQuyen = Boolean(
         window.isKyThuatToiCao ||
         window.cheDoKyThuatToiCao ||
         window.isSuperAdmin ||
         window.isAdmin ||
-        ['admin', 'super_admin', 'ky_thuat', 'ky_thuat_toi_cao', 'quantri'].includes(
-            String(window.currentUserRole || window.userRole || window.vaiTro || '').toLowerCase()
+        u.isKyThuatToiCao || u.isSuperAdmin || u.isAdmin || u.isBGH || u.is_bgh ||
+        s.isKyThuatToiCao || s.isSuperAdmin || s.isAdmin || s.isBGH || s.is_bgh ||
+        rawVals.some((val) =>
+            val.includes('admin') ||
+            val.includes('quantri') ||
+            val.includes('ky_thuat') ||
+            val.includes('ky thuat') ||
+            val.includes('kỹ thuật') ||
+            val.includes('bgh') ||
+            val.includes('hieu_truong') ||
+            val.includes('hieu truong') ||
+            val.includes('hiệu trưởng')
         )
     );
 
@@ -7038,24 +7137,28 @@ function kiemTraCheDoKyThuatToiCao() {
     return coQuyen;
 }
 
+// Alias để không gãy các chỗ đang gọi tên hàm này
+function laVaiTroDuocXemToanTruongNhatKy() {
+    return kiemTraCheDoKyThuatToiCao();
+}
+
 async function taiLopChuNhiemTuCauHinh() {
     const db = typeof layDbNhatKy === 'function'
         ? layDbNhatKy()
-        : (window._supabase || window.db || null);
+        : (window._supabase || window.db || window.supabase || null);
 
-    const laKyThuat = kiemTraCheDoKyThuatToiCao();
+    const duocXemToanTruong = kiemTraCheDoKyThuatToiCao();
     const maNhanSu = layMaNhanSuHienTai();
 
-    if (!db) {
+    if (!db || typeof db.from !== 'function') {
         return { maLopChuNhiem: '', tenLopChuNhiem: '', danhSachLop: [] };
     }
 
     try {
-        // Kỹ thuật tối cao: lấy danh sách các lớp để chọn xem
-        if (laKyThuat) {
+        if (duocXemToanTruong) {
             const { data, error } = await db
                 .from('cau_hinh_lop_hoc_ckcl')
-                .select('ma_lop, lop_hoc');
+                .select('*');
 
             if (error) throw error;
 
@@ -7074,19 +7177,22 @@ async function taiLopChuNhiemTuCauHinh() {
             return { maLopChuNhiem: '', tenLopChuNhiem: '', danhSachLop };
         }
 
-        // GVCN: đối chiếu duy nhất theo ma_nhan_su
         if (!maNhanSu) {
             return { maLopChuNhiem: '', tenLopChuNhiem: '', danhSachLop: [] };
         }
 
         const { data, error } = await db
             .from('cau_hinh_lop_hoc_ckcl')
-            .select('ma_lop, lop_hoc, ma_nhan_su')
+            .select('*')
             .eq('ma_nhan_su', maNhanSu);
 
         if (error) throw error;
 
-        const row = Array.isArray(data) && data.length > 0 ? data[0] : null;
+        const rows = Array.isArray(data) ? data : [];
+        if (rows.length > 0) {
+            window.__dsCauHinhLopCKCL = rows;
+        }
+        const row = rows.length > 0 ? rows[0] : null;
         const maLopChuNhiem = row ? String(row.ma_lop || row.lop_hoc || '').trim() : '';
         const tenLopChuNhiem = row ? String(row.lop_hoc || row.ma_lop || '').trim() : '';
 
@@ -7101,30 +7207,113 @@ async function taiLopChuNhiemTuCauHinh() {
     }
 }
 
-async function capNhatTieuDeVaDanhSachLopNhatKy() {
-    const laKyThuat = kiemTraCheDoKyThuatToiCao();
+async function layTenGvcnTheoLop(client, maLop) {
+    const maLopChuan = String(maLop || '').trim();
+    const u = (typeof currentUser !== 'undefined' && currentUser) || window.currentUser || {};
+    const s = (typeof currentSession !== 'undefined' && currentSession) || window.currentSession || {};
+
+    const tenNguoiDangNhap = String(
+        s.hoVaTen || s.ho_va_ten || s.ho_ten ||
+        u.ho_va_ten || u.ho_ten || u.hoVaTen || u.ten_gvcn || u.name || ''
+    ).trim();
+
+    if (!maLopChuan) return tenNguoiDangNhap;
+
+    try {
+        let lopRow = null;
+        if (Array.isArray(window.__dsCauHinhLopCKCL) && window.__dsCauHinhLopCKCL.length > 0) {
+            lopRow = window.__dsCauHinhLopCKCL.find((r) => {
+                const m = String(r?.ma_lop || '').trim().toLowerCase();
+                const t = String(r?.lop_hoc || r?.ten_lop || '').trim().toLowerCase();
+                return m === maLopChuan.toLowerCase() || t === maLopChuan.toLowerCase();
+            }) || null;
+        }
+
+        if (!lopRow && client && typeof client.from === 'function') {
+            const { data, error } = await client
+                .from('cau_hinh_lop_hoc_ckcl')
+                .select('*')
+                .eq('ma_lop', maLopChuan)
+                .limit(1);
+
+            if (!error && Array.isArray(data) && data.length > 0) {
+                lopRow = data[0];
+            }
+        }
+
+        if (lopRow) {
+            // 1. Kiểm tra nếu bảng cau_hinh_lop_hoc_ckcl có sẵn cột tên GVCN
+            const tenGvTrucTiep = String(
+                lopRow.ho_va_ten ||
+                lopRow.gvcn ||
+                lopRow.ten_gvcn ||
+                lopRow.ho_ten_gvcn ||
+                lopRow.ho_ten ||
+                lopRow.giao_vien_chu_nhiem ||
+                ''
+            ).trim();
+
+            if (tenGvTrucTiep) return tenGvTrucTiep;
+
+            // 2. Tra theo ma_nhan_su từ bảng nhân sự / giáo viên trên Supabase
+            const maGv = String(lopRow.ma_nhan_su || lopRow.ma_gvcn || lopRow.gvcn_id || '').trim();
+            if (maGv && client && typeof client.from === 'function') {
+                const bangNsUngVien = ['nhan_su', 'giao_vien', 'can_bo_giao_vien', 'ho_so_cbvc', 'tai_khoan'];
+                for (const tenBang of bangNsUngVien) {
+                    const { data: nsRows, error: nsErr } = await client
+                        .from(tenBang)
+                        .select('*')
+                        .eq('ma_nhan_su', maGv)
+                        .limit(1);
+
+                    if (!nsErr && Array.isArray(nsRows) && nsRows.length > 0) {
+                        const ns = nsRows[0];
+                        const tenNs = ns.ho_va_ten || ns.ho_ten || ns.hoVaTen || ns.ten || '';
+                        if (tenNs) return String(tenNs).trim();
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('⚠️ Không tra được tên GVCN theo lớp:', err);
+    }
+
+    return tenNguoiDangNhap;
+}
+async function capNhatTieuDeVaDanhSachLopNhatKy(lopUuTien = '') {
+    const duocXemToanTruong = laVaiTroDuocXemToanTruongNhatKy();
     const selLop = document.getElementById('nk_chonLopToanTruong');
     const badgeLop = document.getElementById('nk_tieuDeTenLop');
 
-    const { maLopChuNhiem, tenLopChuNhiem, danhSachLop } = await taiLopChuNhiemTuCauHinh();
+    const cauHinh = typeof taiLopChuNhiemTuCauHinh === 'function'
+        ? await taiLopChuNhiemTuCauHinh()
+        : {};
 
-    if (laKyThuat && selLop) {
-        const giaTriCu = selLop.value;
+    const maLopChuNhiem = cauHinh?.maLopChuNhiem || '';
+    const tenLopChuNhiem = cauHinh?.tenLopChuNhiem || '';
+    const danhSachLop = Array.isArray(cauHinh?.danhSachLop) ? cauHinh.danhSachLop : [];
+
+    if (duocXemToanTruong && selLop) {
+        const giaTriMongMuon = String(lopUuTien || selLop.value || '').trim();
         let htmlOpt = `<option value="">-- Chọn lớp --</option><option value="ALL">🌐 Toàn bộ các lớp (ALL)</option>`;
 
-        danhSachLop.forEach(({ ma_lop, ten_lop }) => {
-            htmlOpt += `<option value="${ma_lop}">${ten_lop}</option>`;
+        danhSachLop.forEach((lop) => {
+            const ma = String(lop?.ma_lop ?? lop?.maLop ?? lop?.id ?? '').trim();
+            const ten = String(lop?.ten_lop ?? lop?.tenLop ?? ma).trim();
+            if (ma) {
+                htmlOpt += `<option value="${ma}">${ten}</option>`;
+            }
         });
 
         selLop.innerHTML = htmlOpt;
-        if (giaTriCu && Array.from(selLop.options).some((o) => o.value === giaTriCu)) {
-            selLop.value = giaTriCu;
+        if (giaTriMongMuon && Array.from(selLop.options).some((o) => o.value === giaTriMongMuon)) {
+            selLop.value = giaTriMongMuon;
         }
     }
 
-    const lopDangChon = laKyThuat && selLop ? selLop.value : maLopChuNhiem;
-    const optDangChon = laKyThuat && selLop ? selLop.selectedOptions?.[0] : null;
-    const tenHienThi = laKyThuat
+    const lopDangChon = duocXemToanTruong && selLop ? selLop.value : maLopChuNhiem;
+    const optDangChon = duocXemToanTruong && selLop ? selLop.selectedOptions?.[0] : null;
+    const tenHienThi = duocXemToanTruong
         ? (lopDangChon === 'ALL'
             ? '🌐 Toàn bộ các lớp'
             : (lopDangChon ? (optDangChon?.textContent?.trim() || lopDangChon) : ''))
@@ -7147,7 +7336,7 @@ async function capNhatTieuDeVaDanhSachLopNhatKy() {
             badgeLop.textContent = `Lớp ${String(tenHienThi).replace(/^Lớp\s*/i, '')}`;
             badgeLop.className = 'inline-flex items-center text-xs sm:text-sm font-bold px-3 py-0.5 rounded-full bg-indigo-600 text-white shadow-2xs';
         } else {
-            badgeLop.textContent = laKyThuat ? 'Chọn lớp để xem' : 'Chưa xác định lớp';
+            badgeLop.textContent = duocXemToanTruong ? 'Chọn lớp để xem' : 'Chưa xác định lớp';
             badgeLop.className = 'inline-flex items-center text-xs sm:text-sm font-bold px-3 py-0.5 rounded-full bg-slate-200 text-slate-700';
         }
     }
@@ -7155,22 +7344,45 @@ async function capNhatTieuDeVaDanhSachLopNhatKy() {
     if (typeof napDanhSachHocSinhVaoNhatKy === 'function') {
         napDanhSachHocSinhVaoNhatKy(lopDangChon);
     }
-}
-async function onChonLopNhatKyKyThuat(giaTriLop) {
-    await capNhatTieuDeVaDanhSachLopNhatKy();
 
-    const db = layDbNhatKy();
+    if (typeof nk_taiThuanLoiKhoKhan === 'function' && lopDangChon && lopDangChon !== 'ALL') {
+        await nk_taiThuanLoiKhoKhan(lopDangChon);
+    }
+}
+
+async function onChonLopNhatKyKyThuat(giaTriLop) {
+    const maLopChon = String(giaTriLop || '').trim();
+    const selLop = document.getElementById('nk_chonLopToanTruong');
+    if (selLop && maLopChon) {
+        selLop.value = maLopChon;
+    }
+
+    await capNhatTieuDeVaDanhSachLopNhatKy(maLopChon);
+
+    const db = typeof layDbNhatKy === 'function'
+        ? layDbNhatKy()
+        : (window.db || window._supabase || window.supabase);
     const tenBangHs = typeof TABLE_HO_SO !== 'undefined' ? TABLE_HO_SO : 'hoc_sinh';
 
-    if (db && giaTriLop === 'ALL') {
+    if (db && maLopChon === 'ALL') {
         try {
             const { data, error } = await db.from(tenBangHs).select('*');
             if (!error && Array.isArray(data) && data.length > 0) {
                 window.__allStudentsKyThuat = data;
-                napDanhSachHocSinhVaoNhatKy('ALL');
+                if (typeof napDanhSachHocSinhVaoNhatKy === 'function') {
+                    napDanhSachHocSinhVaoNhatKy('ALL');
+                }
             }
         } catch (e) {
             console.warn('⚠️ Không tải được toàn bộ học sinh từ Supabase:', e);
+        }
+    } else if (maLopChon && maLopChon !== 'ALL') {
+        const selReport = document.getElementById('selectClassReport');
+        if (selReport && Array.from(selReport.options).some((o) => o.value === maLopChon)) {
+            selReport.value = maLopChon;
+            if (typeof loadReportData === 'function') {
+                await loadReportData();
+            }
         }
     }
 }
@@ -7466,7 +7678,532 @@ document.addEventListener('DOMContentLoaded', () => {
         capNhatTieuDeVaDanhSachLopNhatKy();
     }
 });
+//Các hàm liên quan để sửa và tải nhật ký 
+function nk_layDb() {
+    return (
+        (typeof db !== 'undefined' && db && typeof db.from === 'function' ? db : null) ||
+        (window.db && typeof window.db.from === 'function' ? window.db : null) ||
+        (window._supabase && typeof window._supabase.from === 'function' ? window._supabase : null) ||
+        (window.supabase && typeof window.supabase.from === 'function' ? window.supabase : null) ||
+        (typeof layDbNhatKy === 'function' ? layDbNhatKy() : null)
+    );
+}
 
+function nk_layMaLopHienTai() {
+    return (
+        document.getElementById('nk_chonLopToanTruong')?.value?.trim() ||
+        window.maLopHienTai ||
+        window.currentClassCode ||
+        document.getElementById('selectClassReport')?.value?.trim() ||
+        ''
+    );
+}
+
+function nk_layNd(row) {
+    if (!row) return {};
+    if (typeof layNoiDungAnToan === 'function') return layNoiDungAnToan(row) || {};
+    if (row.noi_dung && typeof row.noi_dung === 'object') return row.noi_dung;
+    if (typeof row.noi_dung === 'string') {
+        try { return JSON.parse(row.noi_dung); } catch (_) { return {}; }
+    }
+    return {};
+}
+
+/**
+ * Kiểm tra bản ghi có được phép sửa/xóa trước khi chốt tuần hay không.
+ * Hỗ trợ dò cấu hình tuần/tháng (nếu dự án có mảng cấu hình) + cờ da_chot / han_chot.
+ */
+function nk_kiemTraDuocPhepSuaXoa(row, nd = {}) {
+    if (nd.da_chot === true || nd.daChot === true || row?.da_chot === true) {
+        return { choPhep: false, lyDo: 'Đã chốt tuần/tháng' };
+    }
+
+    const dsCauHinh =
+        window.cauHinhTuanThang ||
+        window.__cauHinhTuanThang ||
+        window.dsCauHinhTuanThang ||
+        window.cauHinhTuan ||
+        [];
+
+    const tuanBanGhi = String(nd.tuan || nd.chon_tuan || '').trim().toLowerCase();
+    const thangBanGhi = String(nd.thang || nd.chon_thang || '').trim().toLowerCase();
+    const ngayBanGhi = String(
+        nd.ngay_lien_lac || nd.ngay_sinh_hoat || row?.moc_thoi_gian || ''
+    ).slice(0, 10);
+
+    let hanChotStr = String(nd.han_chot || nd.ngay_chot || '').trim();
+
+    if (Array.isArray(dsCauHinh) && dsCauHinh.length > 0) {
+        const cfg = dsCauHinh.find((item) => {
+            const tCfg = String(item?.tuan || item?.ten_tuan || item?.ma_tuan || '').trim().toLowerCase();
+            const thCfg = String(item?.thang || item?.ky_thang || '').trim().toLowerCase();
+            const tuNgay = String(item?.tu_ngay || item?.ngay_bat_dau || '').slice(0, 10);
+            const denNgay = String(item?.den_ngay || item?.ngay_ket_thuc || '').slice(0, 10);
+
+            if (tuanBanGhi && tCfg && (tuanBanGhi === tCfg || tuanBanGhi.includes(tCfg) || tCfg.includes(tuanBanGhi))) {
+                return true;
+            }
+            if (ngayBanGhi && tuNgay && denNgay && ngayBanGhi >= tuNgay && ngayBanGhi <= denNgay) {
+                return true;
+            }
+            if (!tuanBanGhi && thangBanGhi && thCfg && thangBanGhi === thCfg) {
+                return true;
+            }
+            return false;
+        });
+
+        if (cfg) {
+            if (cfg.da_chot === true || cfg.bi_khoa === true || cfg.da_khoa === true) {
+                return { choPhep: false, lyDo: 'Đã chốt theo cấu hình tuần/tháng' };
+            }
+            if (!hanChotStr) {
+                hanChotStr = String(cfg.han_chot || cfg.ngay_chot || cfg.han_chot_tuan || '').trim();
+            }
+        }
+    }
+
+    if (hanChotStr) {
+        const dHan = new Date(`${hanChotStr.slice(0, 10)}T23:59:59`);
+        if (!Number.isNaN(dHan.getTime()) && new Date() > dHan) {
+            return { choPhep: false, lyDo: `Quá hạn chốt (${hanChotStr.slice(0, 10)})` };
+        }
+    }
+
+    return { choPhep: true, lyDo: 'Chưa chốt (được sửa/xóa)' };
+}
+
+function nk_renderNutSuaXoa(id, choPhep, lyDo, fnSuaName, fnXoaName) {
+    if (!choPhep) {
+        return `<span class="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[11px]" title="${lyDo}">🔒 ${lyDo}</span>`;
+    }
+    const idEsc = String(id ?? '').replace(/'/g, "\\'");
+    return `
+        <div class="inline-flex items-center gap-1">
+            <button type="button" onclick="${fnSuaName}('${idEsc}')" class="bg-amber-500 hover:bg-amber-600 text-white px-2 py-1 rounded text-[11px] font-semibold cursor-pointer">Sửa</button>
+            <button type="button" onclick="${fnXoaName}('${idEsc}')" class="bg-rose-600 hover:bg-rose-700 text-white px-2 py-1 rounded text-[11px] font-semibold cursor-pointer">Xóa</button>
+        </div>
+    `;
+}
+window.__nkCacheTheoMuc = {
+    theo_doi_hs: [],
+    trao_doi_phhs: [],
+    bien_ban: [],
+    nhan_xet_thang: []
+};
+
+async function nk_taiTatCaCacMucTuCsdl(maLopInput = '') {
+    const maLop = String(maLopInput || nk_layMaLopHienTai() || '').trim();
+    const client = nk_layDb();
+    if (!maLop || maLop === 'ALL' || !client || typeof client.from !== 'function') return;
+
+    const { data, error } = await client
+        .from('nhat_ky_chu_nhiem')
+        .select('*')
+        .ilike('ma_lop', maLop)
+        .order('id', { ascending: false });
+
+    if (error) {
+        console.error('❌ Lỗi tải nhật ký từ CSDL:', error);
+        return;
+    }
+
+    const rows = Array.isArray(data) ? data : [];
+
+    const dsTheoDoi = rows.filter((r) => {
+        const l = String(r.loai || '').trim().toLowerCase();
+        return ['theo_doi_hs', 'theo_doi', 'theo_doi_hoc_sinh', 'nhat_ky_theo_doi'].includes(l);
+    });
+
+    const dsTraoDoi = rows.filter((r) => {
+        const l = String(r.loai || '').trim().toLowerCase();
+        return ['trao_doi_phhs', 'trao_doi_ph', 'phoi_hop_phhs', 'lien_lac_phhs'].includes(l);
+    });
+
+    const dsBienBan = rows.filter((r) => {
+        const l = String(r.loai || '').trim().toLowerCase();
+        return ['bien_ban_tuan', 'sinh_hoat_lop', 'bien_ban_sinh_hoat', 'bien_ban'].includes(l);
+    });
+
+    const dsThang = rows.filter((r) => {
+        const l = String(r.loai || '').trim().toLowerCase();
+        return ['nhan_xet_thang', 'danh_gia_thang', 'tong_ket_thang'].includes(l);
+    });
+
+    window.__nkCacheTheoMuc = {
+        theo_doi_hs: dsTheoDoi,
+        trao_doi_phhs: dsTraoDoi,
+        bien_ban: dsBienBan,
+        nhan_xet_thang: dsThang
+    };
+
+    const tbTd = document.getElementById('nk_tbDsTheoDoi');
+    if (tbTd) {
+        tbTd.innerHTML = dsTheoDoi.length
+            ? dsTheoDoi.map((r) => {
+                const nd = nk_layNd(r);
+                const chk = nk_kiemTraDuocPhepSuaXoa(r, nd);
+                const tenHs = nd.ho_va_ten || nd.hoVaTen || nd.ho_ten || nd.ten_hs || r.hoc_sinh_id || '';
+                const bieuHien = nd.bieu_hien || nd.bieuHien || '';
+                const bienPhap = nd.bien_phap || nd.bienPhap || '';
+                const ketQua = nd.ket_qua || nd.ketQua || '';
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="border border-slate-200 p-2 font-semibold">${tenHs}</td>
+                        <td class="border border-slate-200 p-2">${bieuHien}</td>
+                        <td class="border border-slate-200 p-2">${bienPhap}</td>
+                        <td class="border border-slate-200 p-2">${ketQua}</td>
+                        <td class="border border-slate-200 p-2 text-center">${nk_renderNutSuaXoa(r.id, chk.choPhep, chk.lyDo, 'nk_suaTheoDoi', 'nk_xoaBanGhiNhatKy')}</td>
+                    </tr>`;
+            }).join('')
+            : `<tr><td colspan="5" class="border border-slate-200 p-3 text-center italic text-slate-400">Chưa có bản ghi theo dõi học sinh</td></tr>`;
+    }
+
+    const tbPh = document.getElementById('nk_tbDsTraoDoiPh');
+    if (tbPh) {
+        tbPh.innerHTML = dsTraoDoi.length
+            ? dsTraoDoi.map((r) => {
+                const nd = nk_layNd(r);
+                const chk = nk_kiemTraDuocPhepSuaXoa(r, nd);
+                const tenHs = nd.ho_va_ten || nd.hoVaTen || nd.ho_ten || nd.ten_hs || r.hoc_sinh_id || '';
+                const ngay = nd.ngay_lien_lac || nd.ngayLienLac || nk_formatNgayDdMmYyyy(r.moc_thoi_gian) || '';
+                const hinhThuc = nd.hinh_thuc || nd.hinhThuc || '';
+                const noiDung = nd.noi_dung || nd.noiDung || '';
+                const ketQua = nd.ket_qua || nd.ketQua || '';
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="border border-slate-200 p-2 font-semibold">${tenHs}</td>
+                        <td class="border border-slate-200 p-2 text-center">${ngay}</td>
+                        <td class="border border-slate-200 p-2 text-center">${hinhThuc}</td>
+                        <td class="border border-slate-200 p-2">${noiDung}</td>
+                        <td class="border border-slate-200 p-2">${ketQua}</td>
+                        <td class="border border-slate-200 p-2 text-center">${nk_renderNutSuaXoa(r.id, chk.choPhep, chk.lyDo, 'nk_suaTraoDoiPh', 'nk_xoaBanGhiNhatKy')}</td>
+                    </tr>`;
+            }).join('')
+            : `<tr><td colspan="6" class="border border-slate-200 p-3 text-center italic text-slate-400">Chưa có bản ghi trao đổi phụ huynh</td></tr>`;
+    }
+
+    const tbBb = document.getElementById('nk_tbDsBienBan');
+if (tbBb) {
+    tbBb.innerHTML = dsBienBan.length
+        ? dsBienBan.map((r) => {
+            const nd = nk_layNd(r);
+            const chk = nk_kiemTraDuocPhepSuaXoa(r, nd);
+            const mocTg = String(r.moc_thoi_gian || '').trim();
+
+            // Ưu tiên lấy tuần từ noi_dung; nếu không có thì lấy từ moc_thoi_gian (như "Tuần 1 (07/09/2026...)")
+            const tuan =
+                nd.tuan ||
+                nd.chonTuan ||
+                nd.chon_tuan ||
+                (/^tuần\b/i.test(mocTg) ? mocTg : '') ||
+                (typeof nk_suyRaTuanBienBan === 'function' ? nk_suyRaTuanBienBan(nd, mocTg) : '');
+
+            // Ngày sinh hoạt chỉ lấy nếu có trong noi_dung hoặc moc_thoi_gian là dạng ngày YYYY-MM-DD
+            const ngayRaw = nd.ngay_sinh_hoat || nd.ngaySinhHoat || (/^\d{4}-\d{2}-\d{2}/.test(mocTg) ? mocTg : '');
+            const ngay = nk_formatNgayDdMmYyyy(String(ngayRaw || '').slice(0, 10));
+
+            const danhGia = nd.danh_gia_tuan_qua || nd.danhGiaTuanQua || '';
+            const keHoach = nd.ke_hoach_tuan_toi || nd.keHoachTuanToi || '';
+            const yKien = nd.y_kien || nd.yKien || '';
+
+            return `
+                <tr class="hover:bg-slate-50">
+                    <td class="border border-slate-200 p-2 font-semibold">${tuan}</td>
+                    <td class="border border-slate-200 p-2 text-center">${ngay}</td>
+                    <td class="border border-slate-200 p-2">${danhGia}</td>
+                    <td class="border border-slate-200 p-2">${keHoach}</td>
+                    <td class="border border-slate-200 p-2">${yKien}</td>
+                    <td class="border border-slate-200 p-2 text-center">${nk_renderNutSuaXoa(r.id, chk.choPhep, chk.lyDo, 'nk_suaBienBan', 'nk_xoaBanGhiNhatKy')}</td>
+                </tr>`;
+        }).join('')
+        : `<tr><td colspan="6" class="border border-slate-200 p-3 text-center italic text-slate-400">Chưa có biên bản sinh hoạt lớp</td></tr>`;
+}
+    const tbTh = document.getElementById('nk_tbDsNhanXetThang');
+    if (tbTh) {
+        tbTh.innerHTML = dsThang.length
+            ? dsThang.map((r) => {
+                const nd = nk_layNd(r);
+                const chk = nk_kiemTraDuocPhepSuaXoa(r, nd);
+                const thang = nd.thang || nd.chonThang || nd.chon_thang || r.moc_thoi_gian || '';
+                const uuDiem = nd.uu_diem || nd.uuDiem || '';
+                const tonTai = nd.ton_tai || nd.tonTai || '';
+                const bienPhap = nd.bien_phap || nd.bienPhap || '';
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="border border-slate-200 p-2 font-semibold text-center">${thang}</td>
+                        <td class="border border-slate-200 p-2">${uuDiem}</td>
+                        <td class="border border-slate-200 p-2">${tonTai}</td>
+                        <td class="border border-slate-200 p-2">${bienPhap}</td>
+                        <td class="border border-slate-200 p-2 text-center">${nk_renderNutSuaXoa(r.id, chk.choPhep, chk.lyDo, 'nk_suaNhanXetThang', 'nk_xoaBanGhiNhatKy')}</td>
+                    </tr>`;
+            }).join('')
+            : `<tr><td colspan="5" class="border border-slate-200 p-3 text-center italic text-slate-400">Chưa có nhận xét tháng</td></tr>`;
+    }
+}
+function nk_trichSoTuan(text = '') {
+    const m = String(text || '').match(/(\d+)/);
+    return m ? Number(m[1]) : NaN;
+}
+
+async function nk_napDanhSachTuanVaoBienBan() {
+    const sel = document.getElementById('bb_chonTuan');
+    if (!sel) return;
+
+    const giaTriCu = String(sel.value || '').trim();
+    const client =
+        (typeof nk_layDb === 'function' ? nk_layDb() : null) ||
+        (typeof db !== 'undefined' && db && typeof db.from === 'function' ? db : null) ||
+        (window.db && typeof window.db.from === 'function' ? window.db : null) ||
+        (window._supabase && typeof window._supabase.from === 'function' ? window._supabase : null) ||
+        (window.supabase && typeof window.supabase.from === 'function' ? window.supabase : null) ||
+        (typeof layDbNhatKy === 'function' ? layDbNhatKy() : null);
+
+    let rows = [];
+
+    if (client && typeof client.from === 'function') {
+        try {
+            const { data, error } = await client
+                .from('CauHinhTuan')
+                .select('*');
+
+            if (!error && Array.isArray(data) && data.length > 0) {
+                rows = data;
+                window.__dsCauHinhTuan = rows;
+                window.__dsCauHinhTuanThang = rows;
+            }
+        } catch (err) {
+            console.warn('⚠️ Lỗi tải bảng CauHinhTuan:', err);
+        }
+    }
+
+    if (!rows.length) {
+        rows = Array.isArray(window.__dsCauHinhTuan)
+            ? window.__dsCauHinhTuan
+            : (Array.isArray(window.__dsCauHinhTuanThang) ? window.__dsCauHinhTuanThang : []);
+    }
+
+    const dsTuan = rows
+        .map((r, idx) => {
+            if (!r) return null;
+
+            const tenRaw = String(
+                r.ten_tuan || r.tuan || r.ma_tuan || r.tieu_de || r.ten || ''
+            ).trim();
+            const soTuanRaw = r.so_tuan ?? r.tuan_thu ?? r.stt;
+
+            let labelBase = tenRaw || (soTuanRaw != null && String(soTuanRaw).trim() !== ''
+                ? (/^tuần\b/i.test(String(soTuanRaw)) ? String(soTuanRaw).trim() : `Tuần ${String(soTuanRaw).trim()}`)
+                : `Tuần ${idx + 1}`);
+
+            const tuNgay = String(
+                r.tu_ngay || r.ngay_bat_dau || r.ngay_bd || r.start_date || ''
+            ).slice(0, 10);
+            const denNgay = String(
+                r.den_ngay || r.ngay_ket_thuc || r.ngay_kt || r.end_date || ''
+            ).slice(0, 10);
+            const hanChot = String(
+                r.han_chot || r.ngay_chot || r.han_chot_tuan || r.ngay_chot_tuan || ''
+            ).slice(0, 10);
+            const daChot = Boolean(r.da_chot || r.bi_khoa || r.da_khoa || r.chot_tuan);
+
+            const label = (!labelBase.includes('(') && tuNgay && denNgay)
+                ? `${labelBase} (${tuNgay} - ${denNgay})`
+                : labelBase;
+
+            const soTuan = Number.isFinite(Number(soTuanRaw))
+                ? Number(soTuanRaw)
+                : nk_trichSoTuan(labelBase);
+
+            return {
+                value: label,
+                label,
+                soTuan: Number.isFinite(soTuan) ? soTuan : (idx + 1),
+                tuNgay,
+                denNgay,
+                hanChot,
+                daChot
+            };
+        })
+        .filter(Boolean);
+
+    if (!dsTuan.length) return;
+
+    // Sắp xếp thứ tự tuần rõ ràng theo số tuần / ngày bắt đầu
+    dsTuan.sort((a, b) => {
+        if (a.soTuan !== b.soTuan) return a.soTuan - b.soTuan;
+        if (a.tuNgay && b.tuNgay) return a.tuNgay.localeCompare(b.tuNgay);
+        return a.label.localeCompare(b.label, 'vi');
+    });
+
+    // Tuần mới nhất là phần tử cuối sau khi sắp xếp tăng dần
+    const tuanMoiNhat = dsTuan[dsTuan.length - 1];
+
+    sel.innerHTML = dsTuan
+        .map((t) => {
+            const safeVal = t.value.replace(/"/g, '&quot;');
+            const safeLabel = t.label.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return `<option value="${safeVal}" data-tu-ngay="${t.tuNgay}" data-den-ngay="${t.denNgay}" data-han-chot="${t.hanChot}" data-da-chot="${t.daChot ? '1' : '0'}">${safeLabel}</option>`;
+        })
+        .join('');
+
+    if (giaTriCu && Array.from(sel.options).some((o) => o.value === giaTriCu)) {
+        sel.value = giaTriCu;
+    } else if (tuanMoiNhat) {
+        sel.value = tuanMoiNhat.value;
+    } else if (sel.options.length > 0) {
+        sel.selectedIndex = sel.options.length - 1;
+    }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    if (typeof nk_napDanhSachTuanVaoBienBan === 'function') {
+        nk_napDanhSachTuanVaoBienBan();
+    }
+
+    const tabNk = document.getElementById('tab-nhat-ky');
+    if (tabNk && typeof MutationObserver !== 'undefined') {
+        const obs = new MutationObserver(() => {
+            if (!tabNk.classList.contains('hidden')) {
+                if (typeof nk_napDanhSachTuanVaoBienBan === 'function') {
+                    nk_napDanhSachTuanVaoBienBan();
+                }
+                if (typeof nk_taiTatCaCacMucTuCsdl === 'function') {
+                    nk_taiTatCaCacMucTuCsdl();
+                }
+            }
+        });
+        obs.observe(tabNk, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    const selLopNk = document.getElementById('nk_chonLopToanTruong');
+    if (selLopNk) {
+        selLopNk.addEventListener('change', () => {
+            if (typeof nk_taiTatCaCacMucTuCsdl === 'function') {
+                nk_taiTatCaCacMucTuCsdl(selLopNk.value);
+            }
+        });
+    }
+});
+function nk_timBanGhiTheoId(id) {
+    const c = window.__nkCacheTheoMuc || {};
+    const all = [
+        ...(c.theo_doi_hs || []),
+        ...(c.trao_doi_phhs || []),
+        ...(c.bien_ban || []),
+        ...(c.nhan_xet_thang || [])
+    ];
+    return all.find((r) => String(r.id) === String(id)) || null;
+}
+
+function nk_suaTheoDoi(id) {
+    const r = nk_timBanGhiTheoId(id);
+    if (!r) return;
+    const nd = nk_layNd(r);
+    const chk = nk_kiemTraDuocPhepSuaXoa(r, nd);
+    if (!chk.choPhep) return alert(`Không thể sửa: ${chk.lyDo}`);
+
+    document.getElementById('nk_td_editId').value = String(r.id);
+    if (r.hoc_sinh_id) document.getElementById('nk_chonHocSinh').value = String(r.hoc_sinh_id);
+    document.getElementById('nk_bieuHien').value = nd.bieu_hien || '';
+    document.getElementById('nk_bienPhap').value = nd.bien_phap || '';
+    document.getElementById('nk_ketQua').value = nd.ket_qua || '';
+}
+
+function nk_suaTraoDoiPh(id) {
+    const r = nk_timBanGhiTheoId(id);
+    if (!r) return;
+    const nd = nk_layNd(r);
+    const chk = nk_kiemTraDuocPhepSuaXoa(r, nd);
+    if (!chk.choPhep) return alert(`Không thể sửa: ${chk.lyDo}`);
+
+    document.getElementById('ph_editId').value = String(r.id);
+    if (r.hoc_sinh_id) document.getElementById('ph_chonHocSinh').value = String(r.hoc_sinh_id);
+    document.getElementById('ph_ngayLienLac').value = (nd.ngay_lien_lac || r.moc_thoi_gian || '').slice(0, 10);
+    if (nd.hinh_thuc) document.getElementById('ph_hinhThuc').value = nd.hinh_thuc;
+    document.getElementById('ph_noiDung').value = nd.noi_dung || '';
+    document.getElementById('ph_ketQua').value = nd.ket_qua || '';
+}
+
+function nk_suaBienBan(id) {
+    const r = nk_timBanGhiTheoId(id);
+    if (!r) return;
+    const nd = nk_layNd(r);
+    const chk = nk_kiemTraDuocPhepSuaXoa(r, nd);
+    if (!chk.choPhep) return alert(`Không thể sửa: ${chk.lyDo}`);
+
+    document.getElementById('bb_editId').value = String(r.id);
+    if (nd.tuan) document.getElementById('bb_chonTuan').value = nd.tuan;
+    document.getElementById('bb_ngaySinhHoat').value = (nd.ngay_sinh_hoat || r.moc_thoi_gian || '').slice(0, 10);
+    document.getElementById('bb_chuTri').value = nd.chu_tri || '';
+    document.getElementById('bb_thuKy').value = nd.thu_ky || '';
+    document.getElementById('bb_danhGiaTuanQua').value = nd.danh_gia_tuan_qua || '';
+    document.getElementById('bb_keHoachTuanToi').value = nd.ke_hoach_tuan_toi || '';
+    document.getElementById('bb_yKien').value = nd.y_kien || '';
+}
+
+function nk_suaNhanXetThang(id) {
+    const r = nk_timBanGhiTheoId(id);
+    if (!r) return;
+    const nd = nk_layNd(r);
+    const chk = nk_kiemTraDuocPhepSuaXoa(r, nd);
+    if (!chk.choPhep) return alert(`Không thể sửa: ${chk.lyDo}`);
+
+    document.getElementById('th_editId').value = String(r.id);
+    if (nd.thang) document.getElementById('th_chonThang').value = nd.thang;
+    document.getElementById('th_uuDiem').value = nd.uu_diem || '';
+    document.getElementById('th_tonTai').value = nd.ton_tai || '';
+    document.getElementById('th_bienPhap').value = nd.bien_phap || '';
+}
+
+async function nk_xoaBanGhiNhatKy(id) {
+    const r = nk_timBanGhiTheoId(id);
+    if (r) {
+        const chk = nk_kiemTraDuocPhepSuaXoa(r, nk_layNd(r));
+        if (!chk.choPhep) return alert(`Không thể xóa: ${chk.lyDo}`);
+    }
+
+    if (!confirm('Xác nhận xóa bản ghi này trước khi chốt tuần?')) return;
+
+    const client = nk_layDb();
+    if (!client || typeof client.from !== 'function') return;
+
+    const { error } = await client.from('nhat_ky_chu_nhiem').delete().eq('id', id);
+    if (error) {
+        alert('Lỗi xóa bản ghi: ' + error.message);
+        return;
+    }
+
+    await nk_taiTatCaCacMucTuCsdl();
+    if (typeof loadReportData === 'function') await loadReportData();
+}
+// Hiển thị ra giao diện / bảng / sổ: "2026-11-22" -> "22/11/2026"
+function nk_formatNgayDdMmYyyy(val = '') {
+    const s = String(val || '').trim();
+    if (!s) return '';
+
+    // Nếu đã là dd/mm/yyyy thì giữ nguyên
+    if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+
+    // Lấy phần YYYY-MM-DD (kể cả chuỗi ISO có giờ phút)
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+        return `${m[3]}/${m[2]}/${m[1]}`;
+    }
+    return s;
+}
+
+// Nạp ngược vào <input type="date">: "22/11/2026" hoặc "2026-11-22T..." -> "2026-11-22"
+function nk_toInputDateYyyyMmDd(val = '') {
+    const s = String(val || '').trim();
+    if (!s) return '';
+
+    const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+
+    const vn = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (vn) return `${vn[3]}-${vn[2]}-${vn[1]}`;
+
+    return '';
+}
     </script>
 </body>
 </html>
