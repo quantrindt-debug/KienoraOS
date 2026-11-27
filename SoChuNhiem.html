@@ -187,7 +187,7 @@ input[type="date"] {
                 📁 Hồ Sơ HS
             </button>
             <button onclick="switchTab('nhat-ky')" id="btn-tab-nhat-ky" class="flex-1 min-w-[130px] py-3 px-3 text-center font-bold text-xs sm:text-sm bg-white text-slate-600 hover:bg-slate-50 transition">
-                📖 Nhật Ký
+                📖 Nhật Ký chủ nhiệm
             </button>
             <button onclick="switchTab('xuat-so')" id="btn-tab-xuat-so" class="flex-1 min-w-[130px] py-3 px-3 text-center font-bold text-xs sm:text-sm bg-white text-slate-600 hover:bg-slate-50 transition">
                 🖨️ Xuất Sổ
@@ -459,6 +459,7 @@ input[type="date"] {
                         <th class="border border-slate-200 p-2.5 text-center w-[12%]">Ngày sinh</th>
                         <th class="border border-slate-200 p-2.5 text-center w-[8%]">Tổ</th>
                         <th class="border border-slate-200 p-2.5 text-center w-[15%]">Số điện thoại</th>
+                        <th class="border border-slate-200 p-2.5 text-center w-[15%]">Trạng thái</th>
                         <th class="border border-slate-200 p-2.5 text-center w-[15%]">Thao tác chi tiết</th>
                     </tr>
                 </thead>
@@ -2363,20 +2364,30 @@ const client =
 
     if (!client) return;
 
-    const tenGvcnLop = typeof layTenGvcnTheoLop === 'function'
-        ? await layTenGvcnTheoLop(client, selectedClass)
-        : (
-            (typeof currentSession !== 'undefined' && currentSession?.hoVaTen) ||
-            window.currentUser?.ho_ten ||
-            window.currentUser?.ten_gvcn ||
-            ''
-        );
+    const gvcnInfo = typeof layThongTinGvcnDayDuTheoLop === 'function'
+    ? await layThongTinGvcnDayDuTheoLop(client, selectedClass)
+    : { ho_va_ten: '' };
 
-    setText('lblClass', tenLopHienThi);
-    setText('lblTeacher', tenGvcnLop);
-    setText('lblSignTeacher', tenGvcnLop);
-    setText('gvHoTen', tenGvcnLop);
+const tenGvcnLop = gvcnInfo.ho_va_ten || '';
 
+setText('lblClass', tenLopHienThi);
+setText('lblTeacher', tenGvcnLop);
+setText('lblSignTeacher', tenGvcnLop);
+setText('gvHoTen', tenGvcnLop);
+
+// Điền thêm các trường ở mục A nếu trên HTML có các id tương ứng
+if (gvcnInfo.ngay_sinh) {
+    setText('gvNgaySinh', typeof ck_dinhDangNgaySinhAnToan === 'function'
+        ? ck_dinhDangNgaySinhAnToan(gvcnInfo.ngay_sinh)
+        : gvcnInfo.ngay_sinh);
+}
+if (gvcnInfo.gioi_tinh) setText('gvGioiTinh', gvcnInfo.gioi_tinh);
+if (gvcnInfo.dan_toc) setText('gvDanToc', gvcnInfo.dan_toc);
+if (gvcnInfo.trinh_do) setText('gvTrinhDo', gvcnInfo.trinh_do);
+if (gvcnInfo.mon_giang_day) setText('gvMonGiangDay', gvcnInfo.mon_giang_day);
+if (gvcnInfo.so_nam_cong_tac) setText('gvThamNien', gvcnInfo.so_nam_cong_tac);
+if (gvcnInfo.dien_thoai) setText('gvDienThoai', gvcnInfo.dien_thoai);
+if (gvcnInfo.email) setText('gvEmail', gvcnInfo.email);
     try {
         // Cập nhật tên trường / cơ quan chủ quản từ schools_config theo mã trường đăng nhập
         if (typeof taiThongTinTruongTuConfig === 'function') {
@@ -7207,7 +7218,7 @@ async function taiLopChuNhiemTuCauHinh() {
     }
 }
 
-async function layTenGvcnTheoLop(client, maLop) {
+async function layThongTinGvcnDayDuTheoLop(client, maLop) {
     const maLopChuan = String(maLop || '').trim();
     const u = (typeof currentUser !== 'undefined' && currentUser) || window.currentUser || {};
     const s = (typeof currentSession !== 'undefined' && currentSession) || window.currentSession || {};
@@ -7217,7 +7228,64 @@ async function layTenGvcnTheoLop(client, maLop) {
         u.ho_va_ten || u.ho_ten || u.hoVaTen || u.ten_gvcn || u.name || ''
     ).trim();
 
-    if (!maLopChuan) return tenNguoiDangNhap;
+    const ketQua = {
+        ho_va_ten: tenNguoiDangNhap,
+        ngay_sinh: '',
+        gioi_tinh: '',
+        dan_toc: '',
+        trinh_do: '',
+        mon_giang_day: '',
+        so_nam_cong_tac: '',
+        dien_thoai: '',
+        email: '',
+        raw_lop: null,
+        raw_nhan_su: null
+    };
+
+    const gopTruong = (row) => {
+        if (!row || typeof row !== 'object') return;
+        const ten = String(
+            row.ho_va_ten || row.gvcn || row.ten_gvcn || row.ho_ten_gvcn ||
+            row.ho_ten || row.giao_vien_chu_nhiem || row.ten || ''
+        ).trim();
+        if (ten && !ketQua.ho_va_ten) ketQua.ho_va_ten = ten;
+
+        if (!ketQua.ngay_sinh) {
+            ketQua.ngay_sinh = String(row.ngay_sinh || row.ngaySinh || row.dob || row.birth_date || '').trim();
+        }
+        if (!ketQua.gioi_tinh) {
+            ketQua.gioi_tinh = String(row.gioi_tinh || row.gioiTinh || row.gender || '').trim();
+        }
+        if (!ketQua.dan_toc) {
+            ketQua.dan_toc = String(row.dan_toc || row.danToc || '').trim();
+        }
+        if (!ketQua.trinh_do) {
+            ketQua.trinh_do = String(
+                row.trinh_do || row.trinh_do_chuyen_mon || row.trinhDo || row.chuyen_mon || ''
+            ).trim();
+        }
+        if (!ketQua.mon_giang_day) {
+            ketQua.mon_giang_day = String(
+                row.mon_giang_day || row.monGiangDay || row.mon_day || row.bo_mon || row.mon || ''
+            ).trim();
+        }
+        if (!ketQua.so_nam_cong_tac) {
+            const sn = row.so_nam_cong_tac ?? row.soNamCongTac ?? row.tham_nien ?? row.nam_cong_tac ?? '';
+            if (sn !== null && sn !== undefined && String(sn).trim() !== '') {
+                ketQua.so_nam_cong_tac = String(sn).trim();
+            }
+        }
+        if (!ketQua.dien_thoai) {
+            ketQua.dien_thoai = String(
+                row.dien_thoai || row.sdt || row.so_dien_thoai || row.phone || ''
+            ).trim();
+        }
+        if (!ketQua.email) {
+            ketQua.email = String(row.email || row.mail || '').trim();
+        }
+    };
+
+    if (!maLopChuan) return ketQua;
 
     try {
         let lopRow = null;
@@ -7242,43 +7310,67 @@ async function layTenGvcnTheoLop(client, maLop) {
         }
 
         if (lopRow) {
-            // 1. Kiểm tra nếu bảng cau_hinh_lop_hoc_ckcl có sẵn cột tên GVCN
-            const tenGvTrucTiep = String(
-                lopRow.ho_va_ten ||
-                lopRow.gvcn ||
-                lopRow.ten_gvcn ||
-                lopRow.ho_ten_gvcn ||
-                lopRow.ho_ten ||
-                lopRow.giao_vien_chu_nhiem ||
-                ''
+            ketQua.raw_lop = lopRow;
+            const tenTrenLop = String(
+                lopRow.ho_va_ten || lopRow.gvcn || lopRow.ten_gvcn ||
+                lopRow.ho_ten_gvcn || lopRow.ho_ten || lopRow.giao_vien_chu_nhiem || ''
             ).trim();
+            if (tenTrenLop) ketQua.ho_va_ten = tenTrenLop;
 
-            if (tenGvTrucTiep) return tenGvTrucTiep;
-
-            // 2. Tra theo ma_nhan_su từ bảng nhân sự / giáo viên trên Supabase
             const maGv = String(lopRow.ma_nhan_su || lopRow.ma_gvcn || lopRow.gvcn_id || '').trim();
-            if (maGv && client && typeof client.from === 'function') {
-                const bangNsUngVien = ['nhan_su', 'giao_vien', 'can_bo_giao_vien', 'ho_so_cbvc', 'tai_khoan'];
+            if (client && typeof client.from === 'function') {
+                const bangNsUngVien = ['nhan_su', 'giao_vien', 'can_bo_giao_vien', 'ho_so_cbvc', 'users'];
                 for (const tenBang of bangNsUngVien) {
-                    const { data: nsRows, error: nsErr } = await client
-                        .from(tenBang)
-                        .select('*')
-                        .eq('ma_nhan_su', maGv)
-                        .limit(1);
+                    let nsRow = null;
 
-                    if (!nsErr && Array.isArray(nsRows) && nsRows.length > 0) {
-                        const ns = nsRows[0];
-                        const tenNs = ns.ho_va_ten || ns.ho_ten || ns.hoVaTen || ns.ten || '';
-                        if (tenNs) return String(tenNs).trim();
+                    if (maGv) {
+                        const { data: nsRows, error: nsErr } = await client
+                            .from(tenBang)
+                            .select('*')
+                            .eq('ma_nhan_su', maGv)
+                            .limit(1);
+
+                        if (!nsErr && Array.isArray(nsRows) && nsRows.length > 0) {
+                            nsRow = nsRows[0];
+                        }
+                    }
+
+                    if (!nsRow && ketQua.ho_va_ten) {
+                        const { data: byName, error: nameErr } = await client
+                            .from(tenBang)
+                            .select('*')
+                            .ilike('ho_va_ten', ketQua.ho_va_ten)
+                            .limit(1);
+
+                        if (!nameErr && Array.isArray(byName) && byName.length > 0) {
+                            nsRow = byName[0];
+                        }
+                    }
+
+                    if (nsRow) {
+                        ketQua.raw_nhan_su = nsRow;
+                        // Ưu tiên dữ liệu chi tiết từ bảng nhân sự trước, rồi mới bổ sung từ cấu hình lớp
+                        gopTruong(nsRow);
+                        gopTruong(lopRow);
+                        break;
                     }
                 }
             }
+
+            if (!ketQua.raw_nhan_su) {
+                gopTruong(lopRow);
+            }
         }
     } catch (err) {
-        console.warn('⚠️ Không tra được tên GVCN theo lớp:', err);
+        console.warn('⚠️ Không tra được thông tin GVCN theo lớp:', err);
     }
 
-    return tenNguoiDangNhap;
+    return ketQua;
+}
+
+async function layTenGvcnTheoLop(client, maLop) {
+    const info = await layThongTinGvcnDayDuTheoLop(client, maLop);
+    return info.ho_va_ten || '';
 }
 async function capNhatTieuDeVaDanhSachLopNhatKy(lopUuTien = '') {
     const duocXemToanTruong = laVaiTroDuocXemToanTruongNhatKy();
